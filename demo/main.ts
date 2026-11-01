@@ -1,4 +1,4 @@
-import { AudioEngine, linkPlayback, StudioTimeline, StudioToolbar, trackStrip, uid } from '@toneflix/studio';
+import { AudioEngine, linkPlayback, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid } from '@toneflix/studio';
 import { loadSample } from './sample.ts';
 
 const engine = new AudioEngine();
@@ -9,8 +9,9 @@ const timeline = new StudioTimeline('#timeline', {
   renderHeader: trackStrip(engine),
 });
 
-const toolbar = new StudioToolbar('#toolbar', { timeline, engine });
+const mixer = new StudioMixer('#mixer', { timeline, engine, hidden: true });
+const toolbar = new StudioToolbar('#toolbar', { timeline, engine, mixer });
 loadSample(timeline, { engine });
 linkPlayback(timeline, engine);
 
-Object.assign(window, { timeline, engine, toolbar, StudioToolbar });
+Object.assign(window, { timeline, engine, mixer, toolbar, StudioToolbar });
