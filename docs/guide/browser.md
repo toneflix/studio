@@ -72,7 +72,7 @@ const freesound: LibrarySource = {
 browser.setSources([freesound, sessionSource(timeline, engine), filesSource(document)]);
 ```
 
-An audio item gives its file as `url`, or a `load(signal)` that resolves to a `Blob`, an `ArrayBuffer` or a decoded `AudioBuffer`, for files behind your own auth. `preview` is a lighter file to listen to. A plugin item's `url` is its Web Audio Module. `data` carries anything you want back in the `add` event:
+An audio item gives its file as `url`, or a `load(signal)` that resolves to a `Blob`, an `ArrayBuffer` or a decoded `AudioBuffer`, for files behind your own auth. `preview` is a lighter file to listen to. A plugin item's `url` is its Web Audio Module. `image` is a picture shown in place of the item's icon, like a plugin's editor. `data` carries anything you want back in the `add` event:
 
 ```ts
 browser.on('add', ({ item, source, track, clip }) => analytics.track('sound-added', { id: item.id, source: source.id }));
@@ -83,7 +83,7 @@ A source with an `action`, like the files source's Import files button, gets a b
 
 ## Community plugins and security
 
-`wamCommunitySource` lists plugins from the [Web Audio Modules community](https://www.webaudiomodules.com/community/plugins.json), or from a list in the same shape at `url`. The browser never fetches it unless you add the source, and it shows only the plugins `allow` accepts.
+`wamCommunitySource` lists plugins from the [Web Audio Modules community](https://www.webaudiomodules.com/community/plugins.json), or from a list in the same shape at `url`. Their paths start from the `plugins/` folder beside the list, as the community lays it out; pass `base` for another layout. Each plugin's thumbnail shows in its row. The browser never fetches it unless you add the source, and it shows only the plugins `allow` accepts.
 
 A Web Audio Module is JavaScript that runs in your page, with your page's rights. A plugin you load can read cookies and storage that scripts can reach, call your API as the signed-in user and change the page. A plugin list that changes, or a plugin file that is replaced, changes what runs. So:
 

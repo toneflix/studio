@@ -33,7 +33,7 @@ new StudioBrowser('#editor', { timeline, engine, plugins, sources: [curatedWamSo
 new StudioMixer('#editor', { timeline, engine, plugins, catalog: curatedWams() });
 ```
 
-Pass `base` to serve the `plugins` folder yourself, for example from your own storage under a strict Content Security Policy, and `allow` to offer only some of them. `plugins/plugins.json` lists them in the WAM community list's shape, for `wamCommunitySource({ url })` or other hosts.
+Pass `base` to serve the `plugins` folder yourself, for example from your own storage under a strict Content Security Policy, and `allow` to offer only some of them. `plugins/plugins.json` lists them in the WAM community list's shape, for `wamCommunitySource({ url, base })` (with `base` set to the `plugins` folder) or other hosts.
 
 See `THIRD_PARTY_NOTICES.md` for where each plugin came from. It is one part of Toneflix Studio. Install [`@toneflix/studio`](https://www.npmjs.com/package/@toneflix/studio) to get every part from one import.
 
