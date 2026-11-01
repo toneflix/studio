@@ -1,10 +1,10 @@
 # StudioTimeline
 
 ```ts
-new StudioTimeline(container: HTMLElement, options?: TimelineOptions)
+new StudioTimeline(container: HTMLElement | string, options?: TimelineOptions)
 ```
 
-Renders into `container`, which should have a height. The timeline fills it.
+Renders into `container`, which should have a height. The timeline fills it. Pass the element itself or a CSS selector for it, like `'#editor'`. A selector that matches nothing throws an error.
 
 ## Options
 
