@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-waveforms",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Fast waveforms for Toneflix Studio: peaks worked out in a Web Worker, cached on the device and drawn at any zoom.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",

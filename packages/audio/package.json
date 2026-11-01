@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-audio",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Playback for Toneflix Studio: plays a multitrack timeline with Web Audio, with a mixer, effects, loops, a metronome and offline mixdown.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
