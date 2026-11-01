@@ -1,13 +1,15 @@
 import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
 import type { SnapTo } from '@toneflix/studio-core';
 import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
+import { createDisplay } from './display.ts';
 import { renderIcon, type IconName, type IconSet } from './icons.ts';
+import { createMeter } from './meter.ts';
 import { injectControlStyles } from './styles.ts';
 
-/** A toolbar button, the snap picker, or `'|'` for a divider. */
-export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo'> | '|';
+/** A toolbar button, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
+export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo'> | 'display' | 'meter' | '|';
 
-export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause', string>;
+export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature', string>;
 
 export interface ToolbarOptions {
   timeline: StudioTimeline;
@@ -28,6 +30,8 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'loop',
   'metronome',
   '|',
+  'display',
+  '|',
   'split',
   'duplicate',
   'delete',
@@ -42,6 +46,7 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'snap',
   '|',
   'export',
+  'meter',
 ];
 
 export const DEFAULT_LABELS: ToolbarLabels = {
@@ -60,9 +65,13 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   fit: 'Fit to view',
   snap: 'Snap',
   export: 'Export WAV',
+  display: 'Playhead position',
+  tempo: 'Tempo',
+  timeSignature: 'Time signature',
+  meter: 'Output level',
 };
 
-const AUDIO: ToolbarItem[] = ['play', 'stop', 'loop', 'metronome', 'export'];
+const AUDIO: ToolbarItem[] = ['play', 'stop', 'loop', 'metronome', 'export', 'meter'];
 const SNAPS: [SnapTo, string][] = [
   ['off', 'Off'],
   ['bar', 'Bar'],
@@ -104,6 +113,8 @@ export class StudioToolbar {
       if (item === '|') {
         if (i > 0 && items[i - 1] !== '|' && i < items.length - 1) this.root.append(this.divider());
       } else if (item === 'snap') this.root.append(this.snapPicker());
+      else if (item === 'display') this.root.append(this.display());
+      else if (item === 'meter') this.root.append(this.outputMeter());
       else this.root.append(this.button(item));
     }
 
@@ -213,7 +224,30 @@ export class StudioToolbar {
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
 
-  private button(item: Exclude<ToolbarItem, '|' | 'snap'>) {
+  private display() {
+    const display = createDisplay(this.doc, this.timeline, this.engine, {
+      position: this.labels.display,
+      tempo: this.labels.tempo,
+      meter: this.labels.timeSignature,
+    });
+
+    this.unsubscribe.push(display.destroy);
+
+    return display.element;
+  }
+
+  private outputMeter() {
+    const engine = this.engine!;
+    const meter = createMeter(this.doc, engine, () => engine.mixer.master);
+
+    meter.element.classList.add('tfs-meter--output');
+    meter.element.title = this.labels.meter;
+    this.unsubscribe.push(meter.stop);
+
+    return meter.element;
+  }
+
+  private button(item: Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter'>) {
     const button = this.doc.createElement('button');
 
     button.type = 'button';
