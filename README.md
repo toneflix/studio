@@ -21,7 +21,7 @@ import { AudioEngine, StudioTimeline, Waveforms, linkPlayback, makeClip, uid } f
 
 const engine = new AudioEngine();
 
-const timeline = new StudioTimeline(document.getElementById('editor')!, {
+const timeline = new StudioTimeline('#editor', {
   grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
   createTrack: () => ({ id: uid('t'), name: 'New stem' }),
 });

@@ -22,12 +22,12 @@ The package ships ES modules with type declarations and has no third-party depen
 
 ## Your first timeline
 
-Give the timeline an element with a height, then load tracks and clips into it.
+Give the timeline an element with a height, or a CSS selector for one, then load tracks and clips into it.
 
 ```ts
 import { StudioTimeline, makeClip, uid } from '@toneflix/studio';
 
-const timeline = new StudioTimeline(document.getElementById('editor')!, {
+const timeline = new StudioTimeline('#editor', {
   grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
   createTrack: () => ({ id: uid('t'), name: 'New track' }),
 });

@@ -24,6 +24,7 @@ import {
   trimStart,
 } from '@toneflix/studio-core';
 import { ClipView } from './clip-view.ts';
+import { resolveContainer, type ContainerTarget } from './container.ts';
 import { injectStyles } from './styles.ts';
 
 export interface TimelineOptions {
@@ -120,8 +121,12 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private pps: number;
   private playheadTime = 0;
 
-  constructor(container: HTMLElement, options: TimelineOptions = {}) {
+  /** Renders into an element, or the element a CSS selector like `'#editor'` points to. */
+  constructor(target: ContainerTarget, options: TimelineOptions = {}) {
     super();
+
+    const container = resolveContainer(target);
+
     this.doc = container.ownerDocument;
     this.model = options.model ?? new TimelineModel(undefined, options.history);
     this.grid = new Grid(options.grid);
