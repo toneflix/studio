@@ -111,6 +111,8 @@ const mix = await engine.render({
 const wav = new Blob([encodeWav(mix, 24)], { type: 'audio/wav' });
 ```
 
+`effects` may return a promise. For plugins, pass `plugins.renderEffects` (see [Plugins](./plugins#mixdown)).
+
 `encodeWav` writes 16-bit or 24-bit PCM.
 
 ## Without the full package

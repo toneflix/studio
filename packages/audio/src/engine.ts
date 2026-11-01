@@ -31,7 +31,7 @@ export interface RenderOptions {
   sampleRate?: number;
   channels?: number;
   /** Effects for the render, made in its context. `track` is null for the master. */
-  effects?: (track: string | null, context: BaseAudioContext) => Effect[];
+  effects?: (track: string | null, context: BaseAudioContext) => Effect[] | Promise<Effect[]>;
 }
 
 interface Playing {
@@ -208,8 +208,8 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     engine.mixer.restore(this.mixer.snapshot());
 
     if (options.effects) {
-      engine.mixer.master.setEffects(options.effects(null, offline));
-      for (const track of this.current.tracks) engine.mixer.channel(track.id).setEffects(options.effects(track.id, offline));
+      engine.mixer.master.setEffects(await options.effects(null, offline));
+      for (const track of this.current.tracks) engine.mixer.channel(track.id).setEffects(await options.effects(track.id, offline));
     }
 
     engine.origin = from;

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { withBase } from 'vitepress';
 
 const props = withDefaults(defineProps<{ height?: number }>(), { height: 420 });
 const bar = ref<HTMLElement>();
@@ -7,19 +8,21 @@ const host = ref<HTMLElement>();
 let cleanup = () => {};
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, linkRecorder, Recorder, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, linkRecorder, PluginRack, Recorder, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const engine = new AudioEngine();
   const recorder = new Recorder(engine);
+  const plugins = new PluginRack(engine);
   const waveforms = new Waveforms();
+  const plugin = (name: string, file: string) => ({ name, url: new URL(withBase(`/plugins/${file}`), location.href).href });
   const timeline = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: host.value!.clientWidth < 600 ? 120 : 160,
     createTrack: () => ({ id: uid('t'), name: 'New stem' }),
     renderHeader: trackStrip(engine, { recorder }),
   });
-  const mixer = new StudioMixer(host.value!, { timeline, engine, hidden: true });
-  const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer, recorder });
+  const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog: [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')], hidden: true });
+  const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer, recorder, plugins });
 
   loadSample(timeline, { engine, waveforms });
 
@@ -31,6 +34,7 @@ onMounted(async () => {
     unlinkRecorder();
     recorder.destroy();
     toolbar.destroy();
+    plugins.destroy();
     mixer.destroy();
     engine.destroy();
     timeline.destroy();
@@ -44,7 +48,7 @@ onBeforeUnmount(() => cleanup());
   <div class="studio-playground">
     <div ref="bar" class="studio-playground__bar" />
     <div ref="host" class="studio-playground__timeline" :style="{ height: `${props.height}px` }" />
-    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. The sliders button opens the mixer. Arm a track with R and press the red button to record over the music.</p>
+    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. Arm a track with R and press the red button to record over the music. The sliders button opens the mixer, where + adds an Echo or Drive plugin to a track.</p>
   </div>
 </template>
 
