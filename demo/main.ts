@@ -1,22 +1,5 @@
-import { makeClip, StudioTimeline, uid, Waveforms, type SnapTo } from '../src/index.ts';
-
-const rate = 22050;
-
-/** A few seconds of made-up audio so the demo needs no files. */
-const synth = (seconds: number, voice: (t: number) => number) => {
-  const data = new Float32Array(Math.floor(seconds * rate));
-  for (let i = 0; i < data.length; i++) data[i] = voice(i / rate);
-
-  return { sampleRate: rate, numberOfChannels: 1, getChannelData: () => data, duration: seconds };
-};
-
-const beat = (t: number) => (t * 2) % 1;
-const sources = {
-  drums: synth(16, (t) => Math.exp(-beat(t) * 18) * Math.sin(t * 2 * Math.PI * 60 * (1 - beat(t) * 0.5))),
-  bass: synth(16, (t) => 0.6 * Math.sin(t * 2 * Math.PI * 55) * (0.6 + 0.4 * Math.sin(t * Math.PI))),
-  keys: synth(12, (t) => 0.4 * Math.sin(t * 2 * Math.PI * 330) * Math.max(0, Math.sin(t * Math.PI * 0.5))),
-  vocal: synth(10, (t) => 0.7 * Math.sin(t * 2 * Math.PI * 220) * Math.abs(Math.sin(t * 3)) * Math.exp(-((t % 2.5) * 0.6))),
-};
+import { StudioTimeline, uid, type SnapTo } from '../src/index.ts';
+import { loadSample } from './sample.ts';
 
 const container = document.getElementById('timeline')!;
 const timeline = new StudioTimeline(container, {
@@ -25,24 +8,7 @@ const timeline = new StudioTimeline(container, {
   createTrack: () => ({ id: uid('t'), name: 'New stem' }),
 });
 
-timeline.load({
-  tracks: [
-    { id: 'drums', name: 'Drums' },
-    { id: 'bass', name: 'Bass' },
-    { id: 'keys', name: 'Keys' },
-    { id: 'vocal', name: 'Vocal' },
-  ],
-  clips: Object.entries(sources).map(([id, audio], i) =>
-    makeClip({ track: id, source: id, name: id[0]!.toUpperCase() + id.slice(1), start: i * 2, offset: 0, duration: audio.duration, fadeIn: i === 3 ? 1 : 0 }),
-  ),
-});
-
-const waveforms = new Waveforms();
-
-for (const [id, audio] of Object.entries(sources)) {
-  timeline.setSource({ id, duration: audio.duration });
-  waveforms.get(`demo:${id}`, () => audio).then((peaks) => timeline.setSource({ id }, peaks));
-}
+loadSample(timeline);
 
 const button = (id: string, fn: () => void) => document.getElementById(id)!.addEventListener('click', fn);
 const undo = document.getElementById('undo') as HTMLButtonElement;
