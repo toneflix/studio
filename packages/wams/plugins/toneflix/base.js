@@ -1,5 +1,5 @@
 /**
- * A tiny base for the demo plugins: a Web Audio Module (WAM 2) made of plain
+ * A tiny base for the Toneflix plugins: a Web Audio Module (WAM 2) made of plain
  * Web Audio nodes, with parameters, state, transport events and a slider editor.
  */
 
@@ -86,7 +86,7 @@ export const makePlugin = ({ identifier, name, params, build, apply }) => {
       this.groupId = groupId;
       this.audioContext = audioContext;
       this.audioNode = new Node(audioContext);
-      this.descriptor = { identifier, name, vendor: 'Toneflix Studio demo', version: '1.0.0', apiVersion: '2.0.0', hasAudioInput: true, hasAudioOutput: true };
+      this.descriptor = { identifier, name, vendor: 'Toneflix', version: '1.0.0', apiVersion: '2.0.0', hasAudioInput: true, hasAudioOutput: true };
       this.instanceId = `${identifier}-${Math.random().toString(36).slice(2)}`;
     }
 

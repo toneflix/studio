@@ -6,5 +6,6 @@ export * from '@toneflix/studio-plugins';
 export * from '@toneflix/studio-recorder';
 export * from '@toneflix/studio-exchange';
 export * from '@toneflix/studio-controls';
+export * from '@toneflix/studio-wams';
 export * from './playback.ts';
 export * from './recording.ts';
