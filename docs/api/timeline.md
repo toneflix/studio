@@ -16,7 +16,9 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `showGrid` | `boolean` | `true` | Bars and beats on the tracks and ruler |
 | `pxPerSecond` | `number` | `40` | Starting zoom |
 | `minPxPerSecond` / `maxPxPerSecond` | `number` | `2` / `2000` | Zoom limits |
-| `trackHeight` | `number` | `96` | Track height in pixels |
+| `trackHeight` | `number` | `72` | Default track height in pixels; a track's own `height` wins |
+| `resizeTracks` | `boolean` | `true` | Drag a track's bottom edge to resize it |
+| `minTrackHeight` / `maxTrackHeight` | `number` | `40` / `320` | Resize limits |
 | `headerWidth` | `number` | `180` | Header column width; `0` hides it |
 | `readonly` | `boolean` | `false` | No editing |
 | `snapToClips` | `boolean` | `true` | Pull towards clip edges and the playhead when grid snap is off |
@@ -57,7 +59,8 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `nudge(seconds, tracks?)` | Move the selected clips |
 | `undo()` / `redo()` | |
 | `setGrid({ bpm?, meter?, snap?, show? })` | |
-| `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, keyboard? })` | |
+| `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, resizeTracks?, keyboard? })` | |
+| `heightOf(track)` | The track's row height in pixels |
 | `on(event, listener)` | Returns a function that removes the listener |
 | `destroy()` | Remove the timeline and its listeners |
 

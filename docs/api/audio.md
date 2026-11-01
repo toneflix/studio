@@ -30,6 +30,7 @@ Events: `play`, `pause`, `seek` and `end` with `{ time }`, and `loop` with `{ lo
 | `mixer.master` | The master `Channel` |
 | `mixer.snapshot()` / `mixer.restore(snapshot)` | Every channel's settings, to save and load |
 | `channel.setEffects(effects)` | `AudioNode` or `{ input, output }`, in order |
+| `channel.levels()` | Peak level of the left and right sides right now, as gains |
 | `channel.settings`, `channel.effects`, `channel.input`, `channel.output` | |
 | `dbToGain(db)` / `gainToDb(gain)` | |
 
@@ -60,7 +61,10 @@ From `@toneflix/studio-controls`, also exported by `@toneflix/studio`. See [Tool
 | --- | --- |
 | `new StudioToolbar(container, options)` | `timeline`, `engine?`, `items?`, `icons?`, `labels?`, `exportName?`; `refresh()`, `destroy()` |
 | `DEFAULT_TOOLBAR`, `DEFAULT_LABELS` | The default buttons and their names |
-| `trackStrip(engine, options?)` | A `renderHeader` for the timeline; `icons?`, `labels?`, `maxVolume?` (1.5) |
+| `trackStrip(engine, options?)` | A `renderHeader` for the timeline; `icons?`, `labels?`, `maxVolume?` (1.5), `meter?` (true) |
+| `createMeter(document, engine, channel)` | A level meter for a channel; returns `{ element, stop }` |
+| `createDisplay(document, timeline, engine?, labels)` | The transport display; returns `{ element, update, destroy }` |
+| `barsAndBeats(time, bpm, meter)` / `clockTime(time)` | Format a time like the display does |
 | `setDefaultIcons(icons)` | Replace icons for every control made afterwards |
 | `renderIcon(document, name, icons?)` | An icon element, to use the same icons in your own UI |
 | `lucideIcons` | The default icons, as SVG shapes |
