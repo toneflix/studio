@@ -169,6 +169,9 @@ importers:
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.14.0)
+      '@toneflix/studio':
+        specifier: workspace:*
+        version: link:packages/studio
       '@types/node':
         specifier: ^26.6.6
         version: 26.6.6
@@ -193,6 +196,35 @@ importers:
       vitepress:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.61.0)(@types/node@26.6.6)(@typescript/typescript6@6.0.2)(lightningcss@1.33.0)(postcss@8.5.32)(search-insights@2.17.3)
+
+  packages/core: {}
+
+  packages/studio:
+    dependencies:
+      '@toneflix/studio-core':
+        specifier: workspace:^
+        version: link:../core
+      '@toneflix/studio-timeline':
+        specifier: workspace:^
+        version: link:../timeline
+      '@toneflix/studio-waveforms':
+        specifier: workspace:^
+        version: link:../waveforms
+
+  packages/timeline:
+    dependencies:
+      '@toneflix/studio-core':
+        specifier: workspace:^
+        version: link:../core
+      '@toneflix/studio-waveforms':
+        specifier: workspace:^
+        version: link:../waveforms
+
+  packages/waveforms:
+    dependencies:
+      '@toneflix/studio-core':
+        specifier: workspace:^
+        version: link:../core
 
 packages:
 

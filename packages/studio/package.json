@@ -1,0 +1,55 @@
+{
+  "name": "@toneflix/studio",
+  "version": "0.1.0",
+  "description": "The studio engine for the web: multitrack audio editing that feels like a desktop DAW, in any browser app. Includes every Toneflix Studio package.",
+  "license": "MIT",
+  "author": "Toneflix <code@toneflix.com.ng>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toneflix/studio.git",
+    "directory": "packages/studio"
+  },
+  "homepage": "https://toneflix.github.io/studio/",
+  "bugs": {
+    "url": "https://github.com/toneflix/studio/issues"
+  },
+  "keywords": [
+    "daw",
+    "audio",
+    "waveform",
+    "timeline",
+    "web-audio",
+    "music"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@toneflix/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@toneflix/studio-core": "workspace:^",
+    "@toneflix/studio-waveforms": "workspace:^",
+    "@toneflix/studio-timeline": "workspace:^"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

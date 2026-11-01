@@ -1,4 +1,5 @@
-import { computePeakData, makePeaks, peaksOf, type Peaks } from './peaks.ts';
+import type { Peaks } from '@toneflix/studio-core';
+import { computePeakData, makePeaks, peaksOf } from './peaks.ts';
 
 interface AudioLike {
   sampleRate: number;

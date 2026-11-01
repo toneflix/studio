@@ -1,4 +1,4 @@
-import { StudioTimeline, uid, type SnapTo } from '../src/index.ts';
+import { StudioTimeline, uid, type SnapTo } from '@toneflix/studio';
 import { loadSample } from './sample.ts';
 
 const container = document.getElementById('timeline')!;

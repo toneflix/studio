@@ -1,4 +1,5 @@
-import { decodePeaks, encodePeaks, type Peaks } from './peaks.ts';
+import type { Peaks } from '@toneflix/studio-core';
+import { decodePeaks, encodePeaks } from './peaks.ts';
 
 /** Where peaks are kept between visits. Keys should change when the audio changes. */
 export interface PeaksStore {

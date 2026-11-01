@@ -1,5 +1,5 @@
-import { peakAt, type Peaks } from './peaks.ts';
-import type { Clip } from './types.ts';
+import type { Clip, Peaks } from '@toneflix/studio-core';
+import { peakAt } from './peaks.ts';
 
 export interface WaveformDraw {
   clip: Clip;

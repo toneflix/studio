@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import { withBase } from 'vitepress';
-import type { StudioTimeline } from '../../../src/index.ts';
+import type { StudioTimeline } from '@toneflix/studio';
 
 const host = ref<HTMLElement>();
 const timeline = shallowRef<StudioTimeline>();
@@ -50,7 +50,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { StudioTimeline, uid } = await import('../../../src/index.ts');
+  const { StudioTimeline, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const view = new StudioTimeline(host.value!, {

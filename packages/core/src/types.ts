@@ -51,3 +51,18 @@ export interface TimeRange {
 export type ClipInput = Omit<Clip, 'id' | 'gain' | 'fadeIn' | 'fadeOut'> & Partial<Pick<Clip, 'id' | 'gain' | 'fadeIn' | 'fadeOut'>>;
 
 export const clipEnd = (clip: Pick<Clip, 'start' | 'duration'>) => clip.start + clip.duration;
+
+/** Min/max pairs of an audio file at one resolution, scaled to 16-bit. */
+export interface PeakLevel {
+  samplesPerPeak: number;
+  /** min, max, min, max… */
+  data: Int16Array;
+}
+
+/** A waveform overview of audio at several resolutions, finest first. */
+export interface Peaks {
+  sampleRate: number;
+  /** Audio length in samples */
+  length: number;
+  levels: PeakLevel[];
+}

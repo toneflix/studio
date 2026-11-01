@@ -1,0 +1,53 @@
+{
+  "name": "@toneflix/studio-timeline",
+  "version": "0.1.0",
+  "description": "The multitrack timeline editor of Toneflix Studio: drag, split, trim, fade and layer clips in any web app.",
+  "license": "MIT",
+  "author": "Toneflix <code@toneflix.com.ng>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toneflix/studio.git",
+    "directory": "packages/timeline"
+  },
+  "homepage": "https://toneflix.github.io/studio/",
+  "bugs": {
+    "url": "https://github.com/toneflix/studio/issues"
+  },
+  "keywords": [
+    "daw",
+    "timeline",
+    "multitrack",
+    "audio",
+    "editor"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@toneflix/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@toneflix/studio-core": "workspace:^",
+    "@toneflix/studio-waveforms": "workspace:^"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
