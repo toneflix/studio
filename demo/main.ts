@@ -23,6 +23,9 @@ import { demoSounds, loadSample } from './sample.ts';
 const engine = new AudioEngine();
 const recorder = new Recorder(engine);
 const plugins = new PluginRack(engine);
+
+// Instrument tracks play the built-in synth and drums, or a WAM instrument by URL
+engine.setInstruments(plugins.instruments());
 const waveforms = new Waveforms();
 const timeline = new StudioTimeline('#timeline', {
   grid: { bpm: 120, meter: [4, 4], snap: 'beat' },

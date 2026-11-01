@@ -1,10 +1,28 @@
-import type { Clip, Peaks } from '@toneflix/studio-core';
+import type { Clip, Note, Peaks } from '@toneflix/studio-core';
 import { drawWaveform } from '@toneflix/studio-waveforms';
 
 /** Width of one waveform canvas in CSS pixels. Long clips use several. */
 export const TILE = 1024;
 
 const HEAD = 16;
+
+const keys = new WeakMap<readonly Note[], string>();
+
+/** A short key that changes when the notes do; worked out once per list. */
+const notesKey = (notes: readonly Note[]) => {
+  let key = keys.get(notes);
+
+  if (key === undefined) {
+    let hash = notes.length;
+
+    for (const n of notes) hash = (hash * 31 + Math.round(n.pitch * 7 + n.start * 9973 + n.duration * 7919 + n.velocity * 127)) | 0;
+
+    key = `|n${hash}`;
+    keys.set(notes, key);
+  }
+
+  return key;
+};
 
 const parsed = new Map<string, [number, number, number]>();
 let probe: CanvasRenderingContext2D | null = null;
@@ -31,6 +49,43 @@ export const lighten = (color: string, amount: number, doc: Document) => {
   const [red, green, blue] = rgb.map((c) => Math.round(c + (255 - c) * amount));
 
   return `rgb(${red}, ${green}, ${blue})`;
+};
+
+/** Draw a note clip's notes on one canvas tile, scaled to the clip's pitch range. */
+const drawNotes = (canvas: HTMLCanvasElement, o: { clip: Clip; pxPerSecond: number; from: number; color: string; pixelRatio: number }) => {
+  const g = canvas.getContext('2d');
+  const notes = o.clip.notes ?? [];
+  if (!g || !notes.length) return;
+
+  let low = 127;
+  let high = 0;
+
+  for (const note of notes) {
+    low = Math.min(low, note.pitch);
+    high = Math.max(high, note.pitch);
+  }
+
+  // At least an octave, so a few notes don't fill the whole height
+  const span = Math.max(12, high - low + 1);
+  const bottom = low - Math.floor((span - (high - low + 1)) / 2);
+  const height = canvas.height / o.pixelRatio;
+  const row = Math.max(1, Math.min(6, height / span));
+  const top = (height - row * span) / 2;
+
+  g.scale(o.pixelRatio, o.pixelRatio);
+  g.fillStyle = o.color;
+
+  for (const note of notes) {
+    const x = (note.start - o.clip.offset) * o.pxPerSecond - o.from;
+    const w = Math.max(2, note.duration * o.pxPerSecond - 1);
+
+    if (x + w < 0 || x > canvas.width / o.pixelRatio) continue;
+
+    const y = top + (span - 1 - (note.pitch - bottom)) * row;
+
+    g.globalAlpha = 0.45 + 0.55 * note.velocity;
+    g.fillRect(x, y, w, Math.max(1, row - 1));
+  }
 };
 
 /**
@@ -98,6 +153,7 @@ export class ClipView {
     style.setProperty('--clip', color);
 
     this.el.classList.toggle('tfs-clip--selected', selected);
+    this.el.classList.toggle('tfs-clip--notes', !!clip.notes);
     this.el.setAttribute('aria-pressed', String(selected));
     this.el.setAttribute('aria-label', `${clip.name ?? 'Clip'}, ${clip.start.toFixed(2)} seconds, ${clip.duration.toFixed(2)} seconds long`);
     this.head.textContent = clip.name ?? '';
@@ -110,7 +166,7 @@ export class ClipView {
     const clip = this.clip;
     const width = clip.duration * pxPerSecond;
     const height = Math.max(1, this.el.clientHeight - HEAD - 2);
-    const signature = [height, clip.offset, clip.duration, clip.gain, clip.fadeIn, clip.fadeOut, pxPerSecond, pixelRatio, peaks ? peaks.length : 0, this.colour].join();
+    const signature = [height, clip.offset, clip.duration, clip.gain, clip.fadeIn, clip.fadeOut, pxPerSecond, pixelRatio, peaks ? peaks.length : 0, this.colour].join() + (clip.notes ? notesKey(clip.notes) : '');
 
     if (signature !== this.drawn) {
       for (const canvas of this.tiles.values()) canvas.remove();
@@ -143,7 +199,8 @@ export class ClipView {
       canvas.style.left = `${left}px`;
       canvas.style.width = `${tileWidth}px`;
 
-      drawWaveform(canvas, { clip, peaks, pxPerSecond, from: left, color: this.waveColour, pixelRatio });
+      if (clip.notes) drawNotes(canvas, { clip, pxPerSecond, from: left, color: this.waveColour, pixelRatio });
+      else drawWaveform(canvas, { clip, peaks, pxPerSecond, from: left, color: this.waveColour, pixelRatio });
       this.wave.append(canvas);
       this.tiles.set(index, canvas);
     }

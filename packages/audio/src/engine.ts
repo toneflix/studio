@@ -1,7 +1,8 @@
-import { AUTOMATION_PARAMS, AUTOMATION_RANGES, automationAt, automationOf, automationSteps, Emitter, timelineEnd, type TimelineState } from '@toneflix/studio-core';
+import { AUTOMATION_PARAMS, AUTOMATION_RANGES, automationAt, automationOf, automationSteps, Emitter, timelineEnd, type AudibleRange, type TimelineState } from '@toneflix/studio-core';
+import { builtInInstruments, type Instrument, type InstrumentFactory } from './instruments.ts';
 import { Metronome } from './metronome.ts';
 import { Mixer, type Effect } from './mixer.ts';
-import { clicksIn, gainSteps, heardRanges, loops, passesBetween, timelineAt, voicesIn, type Click, type Loop, type Voice } from './schedule.ts';
+import { clicksIn, gainSteps, heardRanges, loops, passesBetween, timelineAt, voicesIn, type Click, type Loop, type Pass, type Voice } from './schedule.ts';
 
 export interface AudioEngineOptions {
   /** The context to play in; one is made when left out */
@@ -12,6 +13,8 @@ export interface AudioEngineOptions {
   interval?: number;
   /** Pause after the last clip ends, unless looping */
   stopAtEnd?: boolean;
+  /** Makes instrument tracks' instruments; the built-in synth and drums by default */
+  instruments?: InstrumentFactory;
 }
 
 export interface AudioEngineEvents extends Record<string, unknown> {
@@ -21,6 +24,8 @@ export interface AudioEngineEvents extends Record<string, unknown> {
   loop: { loop: Loop | null };
   /** Playback reached the end of the last clip and paused */
   end: { time: number };
+  /** An instrument track's instrument is ready, or failed to load */
+  instrument: { track: string; instrument: Instrument | null; error?: unknown };
 }
 
 export interface RenderOptions {
@@ -39,6 +44,16 @@ interface Playing {
   edge: GainNode;
 }
 
+/** An instrument track's instrument, made when the track asks for it. */
+interface Loaded {
+  /** The choice's id it was made for */
+  id: string;
+  state: unknown;
+  instrument: Instrument | null;
+  ready: Promise<Instrument | null>;
+}
+
+
 /** Time between pressing play and the first sound, so the first notes are not cut. */
 const START_DELAY = 0.04;
 /** Length of the ramps that smooth cuts into audio */
@@ -52,7 +67,9 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
   readonly context: BaseAudioContext;
   readonly mixer: Mixer;
   readonly metronome: Metronome;
-  private readonly options: Required<Omit<AudioEngineOptions, 'context'>>;
+  private readonly options: Required<Omit<AudioEngineOptions, 'context' | 'instruments'>>;
+  private factory: InstrumentFactory;
+  private readonly loaded = new Map<string, Loaded>();
   private readonly ownContext: boolean;
   private readonly buffers = new Map<string, AudioBuffer>();
   private readonly voices = new Set<Playing>();
@@ -78,6 +95,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
       interval: options.interval ?? 25,
       stopAtEnd: options.stopAtEnd ?? true,
     };
+    this.factory = options.instruments ?? builtInInstruments;
     this.mixer = new Mixer(this.context);
     this.metronome = new Metronome(this.context);
   }
@@ -123,8 +141,26 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     this.current = state;
     this.metronome.grid.setTempo(state.tempo);
     this.mixer.sync(state.tracks);
+    this.syncInstruments();
     if (this.playing) this.restart();
     else this.holdAutomation(this.position);
+  }
+
+  /** Use another way of making instruments, for example one that also loads WAM instruments. */
+  setInstruments(factory: InstrumentFactory) {
+    this.factory = factory;
+    for (const track of this.loaded.keys()) this.unload(track);
+    this.syncInstruments();
+  }
+
+  /** An instrument track's instrument, once it is ready. */
+  instrument(track: string) {
+    return this.loaded.get(track)?.instrument ?? null;
+  }
+
+  /** Resolves when every instrument track's instrument has loaded or failed. */
+  async instrumentsReady() {
+    await Promise.all([...this.loaded.values()].map((entry) => entry.ready));
   }
 
   /** The decoded audio of a source. */
@@ -210,12 +246,14 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     const to = options.to ?? timelineEnd(this.current);
     const sampleRate = options.sampleRate ?? this.context.sampleRate;
     const offline = new OfflineAudioContext(options.channels ?? 2, Math.max(1, Math.ceil((to - from) * sampleRate)), sampleRate);
-    const engine = new AudioEngine({ context: offline });
+    const engine = new AudioEngine({ context: offline, instruments: this.factory });
 
     for (const [id, buffer] of this.buffers) engine.buffers.set(id, buffer);
 
     engine.current = this.current;
     engine.mixer.restore(this.mixer.snapshot());
+    engine.syncInstruments();
+    await engine.instrumentsReady();
 
     if (options.effects) {
       engine.mixer.master.setEffects(await options.effects(null, offline));
@@ -231,6 +269,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
 
   destroy() {
     this.pause();
+    for (const track of [...this.loaded.keys()]) this.unload(track);
     this.mixer.destroy();
     this.removeAllListeners();
     if (this.ownContext) void (this.context as AudioContext).close();
@@ -283,7 +322,8 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     const now = this.context.currentTime;
 
     for (const pass of passesBetween(this.origin, this.loopRange, from, to)) {
-      for (const voice of voicesIn(ranges, pass)) this.startVoice(voice, clockStart);
+      for (const voice of voicesIn(ranges, pass)) if (!voice.clip.notes) this.startVoice(voice, clockStart);
+      this.scheduleNotes(ranges, pass, clockStart, now);
       this.scheduleAutomation(pass, clockStart, now);
 
       for (const click of clicksIn(this.metronome.grid, pass)) {
@@ -343,6 +383,91 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     };
   }
 
+  /** Play the notes of note clips that start in a pass's window, through their track's instrument. */
+  private scheduleNotes(ranges: readonly AudibleRange[], pass: Pass, clockStart: number, now: number) {
+    for (const range of ranges) {
+      if (range.start >= pass.to) break;
+
+      const { clip } = range;
+      if (!clip.notes?.length || range.end <= pass.from) continue;
+
+      const instrument = this.loaded.get(clip.track)?.instrument;
+      if (!instrument) continue;
+
+      const base = clip.start - clip.offset;
+      const from = Math.max(range.start, pass.from);
+      const to = Math.min(range.end, pass.to);
+
+      for (const note of clip.notes) {
+        const at = base + note.start;
+        if (at < from || at >= to) continue;
+
+        const when = clockStart + pass.at + at - pass.start;
+        if (when < now - 0.005) continue;
+
+        const length = Math.min(note.duration, range.end - at, pass.end - at);
+
+        instrument.play(note.pitch, Math.min(1, note.velocity * clip.gain), Math.max(when, now), length);
+      }
+    }
+  }
+
+  /** Make, update or drop instruments to match the tracks. */
+  private syncInstruments() {
+    const tracks = new Map(this.current.tracks.map((track) => [track.id, track]));
+
+    for (const id of [...this.loaded.keys()]) {
+      if (tracks.get(id)?.instrument?.id !== this.loaded.get(id)!.id) this.unload(id);
+    }
+
+    for (const track of tracks.values()) {
+      const choice = track.instrument;
+      if (!choice) continue;
+
+      const entry = this.loaded.get(track.id);
+
+      if (entry) {
+        if (entry.state !== choice.state) {
+          entry.state = choice.state;
+          if (choice.state !== undefined) entry.instrument?.setState?.(choice.state);
+        }
+        continue;
+      }
+
+      const loading: Loaded = { id: choice.id, state: choice.state, instrument: null, ready: Promise.resolve(null) };
+
+      loading.ready = Promise.resolve()
+        .then(() => this.factory(choice, this.context, track))
+        .then(
+          (instrument) => {
+            if (this.loaded.get(track.id) !== loading) {
+              instrument?.destroy();
+              return null;
+            }
+
+            loading.instrument = instrument;
+            instrument?.output.connect(this.mixer.channel(track.id).input);
+            this.emit('instrument', { track: track.id, instrument });
+            if (instrument && this.playing) this.restart();
+
+            return instrument;
+          },
+          (error: unknown) => {
+            this.emit('instrument', { track: track.id, instrument: null, error });
+            return null;
+          },
+        );
+      this.loaded.set(track.id, loading);
+    }
+  }
+
+  private unload(track: string) {
+    const entry = this.loaded.get(track);
+
+    this.loaded.delete(track);
+    entry?.instrument?.destroy();
+  }
+
   /** Ramp each automated setting along its points through a pass's window. */
   private scheduleAutomation(pass: { start: number; from: number; to: number; at: number }, clockStart: number, now: number) {
     for (const track of this.current.tracks) {
@@ -398,5 +523,6 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     }
 
     this.voices.clear();
+    for (const entry of this.loaded.values()) entry.instrument?.stopAll(now);
   }
 }

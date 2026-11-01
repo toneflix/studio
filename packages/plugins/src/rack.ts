@@ -1,4 +1,5 @@
-import type { AudioEngine, Effect } from '@toneflix/studio-audio';
+import { builtInInstruments, type AudioEngine, type Effect, type InstrumentFactory } from '@toneflix/studio-audio';
+import { WamInstrument } from './instrument.ts';
 import { Emitter, uid } from '@toneflix/studio-core';
 import { initializeWamHost } from './host.ts';
 import type { WamConstructor, WamTransportData, WebAudioModule } from './types.ts';
@@ -213,6 +214,19 @@ export class PluginRack extends Emitter<PluginRackEvents> {
     for (const id of [...this.chains.keys()]) this.clear(id);
     for (const off of this.unlisten) off();
     this.removeAllListeners();
+  }
+
+  /**
+   * Makes instruments for the engine: the ones `fallback` knows (the built-in synth and
+   * drums by default), and any other choice as a WAM instrument loaded from its id, a URL.
+   * Pass it to `engine.setInstruments`.
+   */
+  instruments(fallback: InstrumentFactory = builtInInstruments): InstrumentFactory {
+    return async (choice, context, track) => {
+      const known = await fallback(choice, context, track);
+
+      return known ?? new WamInstrument(await this.create(context, choice.id, choice.state));
+    };
   }
 
   private async create(context: BaseAudioContext, url: string, state?: unknown) {

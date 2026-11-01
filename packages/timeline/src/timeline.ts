@@ -15,7 +15,9 @@ import {
   Grid,
   type GridOptions,
   type History,
+  type InstrumentChoice,
   makeClip,
+  makeNoteClip,
   type Marker,
   removeMarker as dropMarker,
   removeTempoChange as dropTempoChange,
@@ -84,6 +86,11 @@ export interface TimelineOptions {
   editTracks?: boolean;
   /** Names for the add track button and the track menu, for example to translate them */
   trackLabels?: Partial<TrackLabels>;
+  /**
+   * Instrument tracks the add track button offers beside an audio track. The built-in
+   * synth and drums by default; an empty list leaves only audio tracks.
+   */
+  instrumentTracks?: InstrumentTrackKind[];
   /** Height in pixels of the automation lane under a track */
   automationHeight?: number;
   /** Show markers in the ruler, above the bar numbers */
@@ -132,8 +139,24 @@ const METERS: [number, number][] = [
   [12, 8],
 ];
 
+/** A kind of instrument track the add track button offers. */
+export interface InstrumentTrackKind {
+  /** In the add track menu */
+  label: string;
+  /** Name of a new track; `{n}` is its number */
+  name: string;
+  instrument: InstrumentChoice;
+}
+
+export const DEFAULT_INSTRUMENT_TRACKS: InstrumentTrackKind[] = [
+  { label: 'Instrument track', name: 'Synth {n}', instrument: { id: 'synth' } },
+  { label: 'Drum track', name: 'Drums {n}', instrument: { id: 'drums' } },
+];
+
 export interface TrackLabels {
   add: string;
+  /** The add track menu's audio track, when it offers instrument tracks too */
+  audioTrack: string;
   addBelow: string;
   rename: string;
   duplicate: string;
@@ -153,6 +176,7 @@ export interface TrackLabels {
 
 export const DEFAULT_TRACK_LABELS: TrackLabels = {
   add: 'Add track',
+  audioTrack: 'Audio track',
   addBelow: 'Add track below',
   rename: 'Rename',
   duplicate: 'Duplicate',
@@ -314,6 +338,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       automationHeight: options.automationHeight ?? 64,
       markers: options.markers ?? true,
       tempoTrack: options.tempoTrack ?? true,
+      instrumentTracks: options.instrumentTracks ?? DEFAULT_INSTRUMENT_TRACKS,
     };
     this.trackLabels = { ...DEFAULT_TRACK_LABELS, ...options.trackLabels };
     this.rulerLabels = { ...DEFAULT_RULER_LABELS, ...options.rulerLabels };
@@ -344,9 +369,23 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.addButton.title = this.trackLabels.add;
     this.addButton.setAttribute('aria-label', this.trackLabels.add);
     this.addButton.addEventListener('click', () => {
-      const track = this.addTrack();
+      const kinds = this.options.instrumentTracks;
+      const add = (track?: Track) => {
+        const added = this.addTrack(track);
 
-      if (track) this.editTrackName(track.id);
+        if (added) this.editTrackName(added.id);
+      };
+
+      if (!kinds.length) return add();
+
+      const box = this.addButton.getBoundingClientRect();
+
+      openMenu(
+        this.doc,
+        { x: box.left, y: box.bottom + 2 },
+        [{ label: this.trackLabels.audioTrack, onSelect: () => add() }, ...kinds.map((kind) => ({ label: kind.label, onSelect: () => add(this.makeInstrumentTrack(kind)) }))],
+        this.trackLabels.add,
+      );
     });
     this.ruler = el('div', 'tfs-ruler', rulerRow);
     this.loopEl = el('div', 'tfs-loop', this.ruler);
@@ -589,6 +628,46 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     while (names.has(this.trackLabels.newTrack.replace('{n}', String(n)))) n++;
 
     return { id: uid('t'), name: this.trackLabels.newTrack.replace('{n}', String(n)) };
+  }
+
+  /** A new instrument track of a kind, numbered after the others with its name. */
+  private makeInstrumentTrack(kind: InstrumentTrackKind): Track {
+    const names = new Set(this.state.tracks.map((track) => track.name));
+    let n = 1;
+
+    while (names.has(kind.name.replace('{n}', String(n)))) n++;
+
+    return { ...this.makeTrack(), name: kind.name.replace('{n}', String(n)), instrument: { ...kind.instrument } };
+  }
+
+  /**
+   * Add an empty note clip on an instrument track, as one undo step, and select it.
+   * It starts at the bar `time` falls in and lasts `bars` bars.
+   */
+  addNoteClip(track: string, time: number, bars = 1) {
+    const lane = this.state.tracks.find((t) => t.id === track);
+    if (!lane?.instrument) return null;
+
+    const bar = this.grid.position(time).bar;
+    const start = this.grid.barTime(bar);
+    const clip = makeNoteClip({ track, start, duration: this.grid.barTime(bar + bars) - start, name: lane.name });
+
+    this.model.apply('Add note clip', (state) => addClips(state, [clip]));
+    this.select([clip.id]);
+
+    return clip;
+  }
+
+  /** Change the notes of a note clip, as one undo step. */
+  setNotes(id: string, notes: Clip['notes'] & {}, label = 'Edit notes') {
+    if (!this.state.clips.some((clip) => clip.id === id && clip.notes)) return;
+
+    this.model.apply(label, (state) => ({ ...state, clips: state.clips.map((clip) => (clip.id === id ? { ...clip, notes } : clip)) }));
+  }
+
+  /** Choose a track's instrument, or its settings, as one undo step. */
+  setInstrument(track: string, instrument: InstrumentChoice | undefined) {
+    this.model.apply('Change instrument', (state) => updateTrack(state, track, { instrument }));
   }
 
   /** Add a track, at the end unless an index is given, as one undo step. Returns it. */
@@ -1528,6 +1607,19 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       if (id && this.tracksEditable) {
         closeMenu();
         this.editTrackName(id);
+      }
+    });
+    // An empty spot on an instrument track's lane gets a note clip. Found by position,
+    // since a drag's pointer capture can move the event's target off the lane.
+    on(this.root, 'dblclick', (e) => {
+      if (this.options.readonly || (e.target as HTMLElement).closest('.tfs-clip, .tfs-header, .tfs-ruler-row')) return;
+      if (e.clientX < this.ruler.getBoundingClientRect().left) return;
+
+      const track = this.trackAt(e.clientY);
+      const time = this.timeAt(e.clientX);
+
+      if (track?.instrument && !this.state.clips.some((clip) => clip.track === track.id && time >= clip.start && time < clipEnd(clip))) {
+        this.addNoteClip(track.id, time);
       }
     });
     on(this.scroller, 'wheel', (e) => this.onWheel(e), { passive: false });
