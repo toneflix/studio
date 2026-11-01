@@ -4,7 +4,6 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 const props = withDefaults(defineProps<{ height?: number }>(), { height: 420 });
 const bar = ref<HTMLElement>();
 const host = ref<HTMLElement>();
-const desk = ref<HTMLElement>();
 let cleanup = () => {};
 
 onMounted(async () => {
@@ -17,7 +16,7 @@ onMounted(async () => {
     createTrack: () => ({ id: uid('t'), name: 'New stem' }),
     renderHeader: trackStrip(engine),
   });
-  const mixer = new StudioMixer(desk.value!, { timeline, engine, hidden: true });
+  const mixer = new StudioMixer(host.value!, { timeline, engine, hidden: true });
   const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer });
 
   loadSample(timeline, { engine });
@@ -40,7 +39,6 @@ onBeforeUnmount(() => cleanup());
   <div class="studio-playground">
     <div ref="bar" class="studio-playground__bar" />
     <div ref="host" class="studio-playground__timeline" :style="{ height: `${props.height}px` }" />
-    <div ref="desk" class="studio-playground__mixer" />
     <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. The sliders button opens the mixer.</p>
   </div>
 </template>
@@ -58,9 +56,6 @@ onBeforeUnmount(() => cleanup());
   --tfs-toolbar-active: var(--vp-c-brand-1);
   --tfs-toolbar-active-text: var(--tf-on-primary, #03141c);
   --tfs-toolbar-line: var(--vp-c-divider);
-}
-.studio-playground__mixer {
-  --tfs-mixer-height: 280px;
 }
 .studio-playground__hint {
   margin: 0 !important;

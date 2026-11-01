@@ -119,10 +119,12 @@ const timeline = new StudioTimeline('#editor', {
 ```ts
 import { StudioMixer } from '@toneflix/studio';
 
-const mixer = new StudioMixer('#mixer', { timeline, engine, hidden: true });
+const mixer = new StudioMixer('#editor', { timeline, engine, hidden: true });
 
 new StudioToolbar('#toolbar', { timeline, engine, mixer });
 ```
+
+The mixer slides up over the bottom of the element you give it, usually the timeline's, so opening it doesn't move anything else on the page. Pass `docked: true` to place it in the page flow instead, for example in a panel of your own.
 
 Given a `mixer`, the toolbar gets a mixer button that shows and hides it. You can also call `mixer.show()`, `hide()` and `toggle()`, and listen for `toggle`.
 

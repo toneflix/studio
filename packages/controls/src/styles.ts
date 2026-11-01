@@ -91,6 +91,9 @@ export const CONTROL_STYLES = `
 
 .tfs-mixer { display: flex; height: var(--tfs-mixer-height, 320px); box-sizing: border-box; border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
 .tfs-mixer[hidden] { display: none; }
+.tfs-mixer--overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; max-height: 100%; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.45); animation: tfs-mixer-in 0.18s ease-out; }
+@keyframes tfs-mixer-in { from { transform: translateY(24px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tfs-mixer--overlay { animation: none; } }
 .tfs-mixer-strips { display: flex; flex: 1; min-width: 0; overflow-x: auto; }
 .tfs-channel { display: flex; flex: none; flex-direction: column; align-items: center; gap: 8px; width: var(--tfs-channel-width, 84px); padding-top: 10px; box-sizing: border-box; border-right: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-channel-bg, #1a1a1e); }
 .tfs-channel--master { border-right: 0; border-left: 2px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-channel-master-bg, #202026); }

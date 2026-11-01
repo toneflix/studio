@@ -25,6 +25,12 @@ export interface MixerOptions {
   maxVolume?: number;
   /** Start hidden, to be opened with `show()` or the toolbar's mixer button */
   hidden?: boolean;
+  /**
+   * Sit in the page flow under whatever comes before it, taking its own height.
+   * By default it slides up over the bottom of its container, so opening it
+   * leaves the layout alone.
+   */
+  docked?: boolean;
 }
 
 export interface MixerViewEvents extends Record<string, unknown> {
@@ -78,6 +84,15 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
     this.root.setAttribute('role', 'group');
     this.root.setAttribute('aria-label', 'Mixer');
     this.root.hidden = !!options.hidden;
+
+    if (!options.docked) {
+      this.root.classList.add('tfs-mixer--overlay');
+
+      const view = this.doc.defaultView;
+
+      if (view && view.getComputedStyle(container).position === 'static') container.style.position = 'relative';
+    }
+
     this.lane.className = 'tfs-mixer-strips';
     injectControlStyles(this.doc);
 
