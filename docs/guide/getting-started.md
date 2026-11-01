@@ -18,7 +18,7 @@ yarn add @toneflix/studio
 
 :::
 
-The package ships ES modules with type declarations and has no dependencies. It runs in any modern browser and needs no bundler setup, including for its Web Worker.
+The package ships ES modules with type declarations and has no third-party dependencies. It includes every part of Toneflix Studio; to install only some of them, see [Packages](./packages). It runs in any modern browser and needs no bundler setup, including for its Web Worker.
 
 ## Your first timeline
 

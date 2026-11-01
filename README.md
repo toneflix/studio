@@ -53,12 +53,18 @@ timeline.on('change', ({ state, final }) => final && save(state));
 
 Where clips overlap on a lane, the one that starts later is on top and is the one heard. `audibleRanges(clips)` gives the heard part of each clip, for players and mix renderers.
 
-## Pieces
+## Packages
 
-- `StudioTimeline`: the view. Tiles waveform canvases so only what is on screen is drawn. Restyle it with the `--tfs-*` CSS variables or fill track headers with `renderHeader`.
-- `TimelineModel` and `History`: tracks and clips as plain immutable data, and the undo list. Pass your own `History` to put your app's steps (mixer, effects) in the same list.
-- Pure edits (`splitClips`, `moveClips`, `trimStart`, `setFades`…): usable without the view, on the server or in tests.
-- `Waveforms`, `PeaksWorker`, `PeaksCache`: peaks off the main thread, cached on the device.
+Install `@toneflix/studio` for everything, or only the parts your app uses. Every package is released with the same version.
+
+| Package | What it gives you |
+| --- | --- |
+| [`@toneflix/studio`](packages/studio) | Everything below, from one import |
+| [`@toneflix/studio-core`](packages/core) | Tracks, clips, pure edits (`splitClips`, `moveClips`, `trimStart`, `setFades`…), snapping, `TimelineModel` and `History`. No DOM or audio, so it also runs on servers and in tests |
+| [`@toneflix/studio-waveforms`](packages/waveforms) | `Waveforms`, `PeaksWorker`, `PeaksCache` and `drawWaveform`: peaks off the main thread, cached on the device |
+| [`@toneflix/studio-timeline`](packages/timeline) | `StudioTimeline`, the editor view. Restyle it with the `--tfs-*` CSS variables or fill track headers with `renderHeader` |
+
+Playback and recording will arrive as their own packages.
 
 ## Develop
 
@@ -67,12 +73,12 @@ pnpm install
 pnpm test        # node --test, no browser needed
 pnpm demo        # the demo page with made-up audio
 pnpm docs:dev    # the docs site with a live playground
-pnpm build       # dist/ with type declarations
+pnpm build       # each package's dist/ with type declarations
 ```
 
 ## Release
 
-Publish a GitHub release tagged with the version, like `v0.2.0`. The Publish workflow takes the version from the tag, runs the checks, publishes to npm and saves the version in `package.json` on the default branch. A release marked as a pre-release goes out under the `next` tag.
+Publish a GitHub release tagged with the version, like `v0.2.0`. The Publish workflow takes the version from the tag, runs the checks, publishes every package to npm and saves the version in each `package.json` on the default branch. A release marked as a pre-release goes out under the `next` tag.
 
 To publish without a release, run the Publish workflow from the Actions tab with a version and a dist-tag.
 
