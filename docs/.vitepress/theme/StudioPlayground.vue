@@ -37,8 +37,6 @@ onMounted(async () => {
       studio.sessionSource(timeline, engine),
       studio.filesSource(document),
       studio.curatedWamSource(wams),
-      // Community plugins run as code in this page; the docs have no sign-in, so they can take them all
-      studio.wamCommunitySource({ allow: () => true }),
     ],
   });
   const toolbar = new StudioToolbar(bar.value!, {
