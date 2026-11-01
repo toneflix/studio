@@ -14,6 +14,7 @@ export const STYLES = `
   --tfs-select: #ffd34d;
   --tfs-playhead: #ff5a5f;
   --tfs-range: rgba(255, 211, 77, 0.16);
+  --tfs-loop: #4da3ff;
   --tfs-ruler-height: 28px;
   position: relative;
   width: 100%;
@@ -68,6 +69,7 @@ export const STYLES = `
 .tfs-playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--tfs-playhead); }
 .tfs-playhead::before { content: ''; position: absolute; top: 0; left: -5px; border: 5px solid transparent; border-top: 7px solid var(--tfs-playhead); }
 .tfs-range { position: absolute; background: var(--tfs-range); border-left: 1px solid var(--tfs-select); border-right: 1px solid var(--tfs-select); }
+.tfs-loop { position: absolute; top: 0; bottom: 0; box-sizing: border-box; background: color-mix(in srgb, var(--tfs-loop) 28%, transparent); border-left: 2px solid var(--tfs-loop); border-right: 2px solid var(--tfs-loop); pointer-events: none; }
 .tfs-snap { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--tfs-select); opacity: 0.7; }
 `;
 

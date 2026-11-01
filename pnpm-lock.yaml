@@ -197,10 +197,19 @@ importers:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.61.0)(@types/node@26.6.6)(@typescript/typescript6@6.0.2)(lightningcss@1.33.0)(postcss@8.5.32)(search-insights@2.17.3)
 
+  packages/audio:
+    dependencies:
+      '@toneflix/studio-core':
+        specifier: workspace:^
+        version: link:../core
+
   packages/core: {}
 
   packages/studio:
     dependencies:
+      '@toneflix/studio-audio':
+        specifier: workspace:^
+        version: link:../audio
       '@toneflix/studio-core':
         specifier: workspace:^
         version: link:../core

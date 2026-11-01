@@ -104,11 +104,13 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private overlay: HTMLDivElement;
   private playhead: HTMLDivElement;
   private rangeEl: HTMLDivElement;
+  private loopEl: HTMLDivElement;
   private snapEl: HTMLDivElement;
   private trackRows = new Map<string, { row: HTMLDivElement; header: HTMLDivElement; lane: HTMLDivElement; cleanup?: () => void }>();
   private clipViews = new Map<string, ClipView>();
   private selected = new Set<string>();
   private currentRange: TimeRange | null = null;
+  private loopRange: { start: number; end: number } | null = null;
   private gesture: Gesture | null = null;
   private frame = 0;
   private resize?: ResizeObserver;
@@ -161,6 +163,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.ruler = el('div', 'tfs-ruler', rulerRow);
     this.rows = el('div', 'tfs-rows', this.content);
     this.overlay = el('div', 'tfs-overlay', this.content);
+    this.loopEl = this.doc.createElement('div');
+    this.loopEl.className = 'tfs-loop';
     this.rangeEl = el('div', 'tfs-range', this.overlay);
     this.snapEl = el('div', 'tfs-snap', this.overlay);
     this.playhead = el('div', 'tfs-playhead', this.overlay);
@@ -198,6 +202,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     return this.currentRange;
   }
 
+  get loop() {
+    return this.loopRange;
+  }
+
   /** Replace the tracks and clips without an undo step. */
   load(state: TimelineState) {
     this.model.load(state);
@@ -231,6 +239,12 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   setRange(range: TimeRange | null) {
     this.currentRange = range && range.end - range.start > 1e-3 ? range : null;
     this.emit('range', { range: this.currentRange });
+    this.schedule();
+  }
+
+  /** Mark the stretch that playback repeats on the ruler, or clear it with null. */
+  setLoop(loop: { start: number; end: number } | null) {
+    this.loopRange = loop && loop.end > loop.start ? { start: loop.start, end: loop.end } : null;
     this.schedule();
   }
 
@@ -368,6 +382,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.renderClips(state);
     this.renderRuler();
     this.renderRange();
+    this.renderLoop();
     this.placePlayhead();
     this.paint();
   }
@@ -524,7 +539,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       for (let time = Math.floor(from / step) * step; time < to; time += step) add(time, formatTime(time, step));
     }
 
-    this.ruler.replaceChildren(...labels);
+    this.ruler.replaceChildren(this.loopEl, ...labels);
   }
 
   private renderRange() {
@@ -547,6 +562,17 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     style.width = `${(range.end - range.start) * this.pps}px`;
     style.top = `${ruler + first * this.options.trackHeight}px`;
     style.height = `${(last - first + 1) * this.options.trackHeight}px`;
+  }
+
+  private renderLoop() {
+    const loop = this.loopRange;
+    const style = this.loopEl.style;
+
+    style.display = loop ? '' : 'none';
+    if (!loop) return;
+
+    style.left = `${loop.start * this.pps}px`;
+    style.width = `${(loop.end - loop.start) * this.pps}px`;
   }
 
   private placePlayhead() {
