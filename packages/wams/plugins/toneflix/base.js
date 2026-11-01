@@ -48,6 +48,11 @@ const loadWorklet = (context, code) => {
   return loaded.get(code);
 };
 
+/** A value as 0 to 1 of a parameter's range, and back. */
+const toNormal = (p, value) => (p.maxValue === p.minValue ? 0 : (value - p.minValue) / (p.maxValue - p.minValue));
+const fromNormal = (p, value) => p.minValue + value * (p.maxValue - p.minValue);
+const clampTo = (p, value) => Math.min(p.maxValue, Math.max(p.minValue, Number(value)));
+
 /** Decimals to show for a parameter's step. */
 const decimals = (step) => Math.min(2, String(step).split('.')[1]?.length ?? 0);
 
@@ -83,12 +88,19 @@ export const makePlugin = ({ identifier, name, params, build, apply, worklet }) 
       return Object.fromEntries(Object.entries(params).filter(([id]) => !ids.length || ids.includes(id)).map(([id, p]) => [id, { id, type: 'float', ...p }]));
     }
 
-    async getParameterValues(normalized, ...ids) {
-      return Object.fromEntries(Object.entries(this.values).filter(([id]) => !ids.length || ids.includes(id)).map(([id, value]) => [id, { id, value, normalized: false }]));
+    async getParameterValues(normalized = false, ...ids) {
+      return Object.fromEntries(
+        Object.entries(this.values)
+          .filter(([id]) => !ids.length || ids.includes(id))
+          .map(([id, value]) => [id, { id, value: normalized ? toNormal(params[id], value) : value, normalized }]),
+      );
     }
 
     async setParameterValues(values) {
-      for (const { id, value } of Object.values(values)) this.values[id] = value;
+      for (const { id, value, normalized } of Object.values(values)) {
+        if (params[id]) this.values[id] = clampTo(params[id], normalized ? fromNormal(params[id], value) : value);
+      }
+
       this.update();
     }
 

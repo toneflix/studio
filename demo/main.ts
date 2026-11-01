@@ -15,7 +15,6 @@ import {
   StudioToolbar,
   trackStrip,
   uid,
-  wamCommunitySource,
   Waveforms,
 } from '@toneflix/studio';
 import { demoSounds, loadSample } from './sample.ts';
@@ -47,8 +46,6 @@ const browser = new StudioBrowser('#timeline', {
     sessionSource(timeline, engine),
     filesSource(document),
     curatedWamSource(wams),
-    // Community plugins run as code in this page; a demo with no sign-in can take them all
-    wamCommunitySource({ allow: () => true }),
   ],
 });
 const toolbar = new StudioToolbar('#toolbar', {

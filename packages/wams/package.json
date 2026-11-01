@@ -35,7 +35,6 @@
   "files": [
     "dist",
     "plugins",
-    "licenses",
     "README.md",
     "LICENSE",
     "THIRD_PARTY_NOTICES.md"

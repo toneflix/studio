@@ -91,7 +91,9 @@ A Web Audio Module is JavaScript that runs in your page, with your page's rights
 - **Limit where scripts can come from** with a Content Security Policy `script-src`, so only your plugin host can serve plugin code.
 - **Keep sign-in tokens out of reach of scripts**, in HttpOnly cookies.
 
-A plugin can't run in a sandboxed frame on another origin and still process the session's audio, since Web Audio nodes can't cross frames. A page with nothing to protect, like this documentation, can allow every plugin.
+A plugin can't run in a sandboxed frame on another origin and still process the session's audio, since Web Audio nodes can't cross frames.
+
+Test a plugin before you allow it, too. Many community plugins only partly work: some fail to load, some editors ignore touch, and some sound different, or not at all, in an exported mix. This documentation and the demo offer only the curated plugins for that reason.
 
 ## Labels and styling
 
