@@ -1,0 +1,53 @@
+{
+  "name": "@toneflix/studio-recorder",
+  "version": "0.3.1",
+  "description": "Recording for Toneflix Studio: records a microphone or line input onto a track, lined up with playback.",
+  "license": "MIT",
+  "author": "Toneflix <code@toneflix.com.ng>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toneflix/studio.git",
+    "directory": "packages/recorder"
+  },
+  "homepage": "https://toneflix.github.io/studio/",
+  "bugs": {
+    "url": "https://github.com/toneflix/studio/issues"
+  },
+  "keywords": [
+    "web-audio",
+    "recording",
+    "microphone",
+    "daw",
+    "audio-worklet"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@toneflix/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@toneflix/studio-audio": "workspace:^",
+    "@toneflix/studio-core": "workspace:^"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

@@ -1,5 +1,6 @@
 import type { AudioEngine } from '@toneflix/studio-audio';
 import type { Track } from '@toneflix/studio-core';
+import type { Recorder } from '@toneflix/studio-recorder';
 import { renderIcon, type IconSet } from './icons.ts';
 import { createMeter } from './meter.ts';
 import { injectControlStyles } from './styles.ts';
@@ -7,11 +8,13 @@ import { injectControlStyles } from './styles.ts';
 export interface TrackStripOptions {
   /** Icons for mute and solo; without them the buttons show M and S, as in most DAWs */
   icons?: Partial<IconSet>;
-  labels?: Partial<{ mute: string; solo: string; volume: string }>;
+  labels?: Partial<{ mute: string; solo: string; volume: string; arm: string }>;
   /** Highest volume on the slider, as linear gain */
   maxVolume?: number;
   /** Show a level meter under the volume slider */
   meter?: boolean;
+  /** Adds an R button that arms the track for this recorder */
+  recorder?: Recorder;
 }
 
 /**
@@ -19,7 +22,8 @@ export interface TrackStripOptions {
  * level meter, wired to an engine's mixer. Pass the result as the timeline's `renderHeader`.
  */
 export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {}) => {
-  const labels = { mute: 'Mute', solo: 'Solo', volume: 'Volume', ...options.labels };
+  const labels = { mute: 'Mute', solo: 'Solo', volume: 'Volume', arm: 'Arm for recording', ...options.labels };
+  const recorder = options.recorder;
 
   return (track: Track, cell: HTMLElement) => {
     const doc = cell.ownerDocument;
@@ -31,7 +35,7 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
     const tab = doc.createElement('i');
     const channel = () => engine.mixer.channel(track.id).settings;
 
-    const toggle = (kind: 'mute' | 'solo') => {
+    const toggle = (kind: 'mute' | 'solo' | 'arm', letter: string, onClick: () => void) => {
       const button = doc.createElement('button');
 
       button.type = 'button';
@@ -39,20 +43,22 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
       button.dataset.tool = kind;
       button.title = labels[kind];
       button.setAttribute('aria-label', `${labels[kind]} ${track.name}`);
-      if (options.icons?.[kind]) button.append(renderIcon(doc, kind, options.icons));
-      else button.textContent = kind === 'mute' ? 'M' : 'S';
-      button.addEventListener('click', () => engine.mixer.set(track.id, { [kind]: !channel()[kind] }));
+      if (kind !== 'arm' && options.icons?.[kind]) button.append(renderIcon(doc, kind, options.icons));
+      else button.textContent = letter;
+      button.addEventListener('click', onClick);
 
       return button;
     };
 
-    const mute = toggle('mute');
-    const solo = toggle('solo');
+    const mute = toggle('mute', 'M', () => engine.mixer.set(track.id, { mute: !channel().mute }));
+    const solo = toggle('solo', 'S', () => engine.mixer.set(track.id, { solo: !channel().solo }));
+    const arm = recorder && toggle('arm', 'R', () => !recorder.isRecording && recorder.arm(recorder.armed === track.id ? null : track.id));
     const show = () => {
       const now = channel();
 
       mute.setAttribute('aria-pressed', String(now.mute));
       solo.setAttribute('aria-pressed', String(now.solo));
+      arm?.setAttribute('aria-pressed', String(recorder!.armed === track.id));
       volume.value = String(now.volume);
     };
 
@@ -70,7 +76,7 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
     volume.addEventListener('dblclick', () => engine.mixer.set(track.id, { volume: 1 }));
     tab.className = 'tfs-strip-tab';
     body.className = 'tfs-strip-body';
-    top.append(name, mute, solo);
+    top.append(name, ...(arm ? [arm] : []), mute, solo);
     body.append(top, volume);
     strip.append(tab, body);
 
@@ -81,9 +87,11 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
     show();
 
     const off = engine.mixer.on('change', ({ track: id }) => id === track.id && show());
+    const offArm = recorder?.on('arm', show);
 
     return () => {
       off();
+      offArm?.();
       meter?.stop();
       strip.remove();
     };

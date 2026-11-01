@@ -44,6 +44,7 @@
     "@toneflix/studio-audio": "workspace:^",
     "@toneflix/studio-controls": "workspace:^",
     "@toneflix/studio-core": "workspace:^",
+    "@toneflix/studio-recorder": "workspace:^",
     "@toneflix/studio-timeline": "workspace:^",
     "@toneflix/studio-waveforms": "workspace:^"
   },
