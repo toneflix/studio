@@ -67,7 +67,9 @@ yarn build       # dist/ with type declarations
 
 ## Release
 
-Bump `version` in `package.json`, merge, then publish a GitHub release tagged `v<version>` (for example `v0.1.0`). The Publish workflow checks the tag, runs the checks and publishes to npm. A release marked as a pre-release goes out under the `next` tag.
+Publish a GitHub release tagged with the version, like `v0.2.0`. The Publish workflow takes the version from the tag, runs the checks, publishes to npm and saves the version in `package.json` on the default branch. A release marked as a pre-release goes out under the `next` tag.
+
+To publish without a release, run the Publish workflow from the Actions tab with a version and a dist-tag.
 
 ## License
 
