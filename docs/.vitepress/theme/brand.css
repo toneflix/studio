@@ -1,0 +1,52 @@
+/* Toneflix colours for the whole docs site */
+:root,
+.dark {
+  --tf-bg: #0a0c10;
+  --tf-surface-1: #111419;
+  --tf-surface-2: #171b22;
+  --tf-surface-3: #1e232c;
+  --tf-border: #232832;
+  --tf-border-strong: #313846;
+  --tf-text: #eceef2;
+  --tf-text-muted: #a0a7b4;
+  --tf-text-subtle: #6c7383;
+  --tf-primary: #03bfff;
+  --tf-primary-hover: #38ceff;
+  --tf-on-primary: #03141c;
+  --tf-secondary: #8b7cff;
+  --tf-accent: #ff5c8a;
+  --tf-success: #2fd07f;
+  --tf-warning: #f5b53d;
+}
+
+:root {
+  --vp-c-brand-1: #0083b3;
+  --vp-c-brand-2: #0098cf;
+  --vp-c-brand-3: #03bfff;
+  --vp-c-brand-soft: rgb(3 191 255 / 14%);
+  --vp-button-brand-text: #03141c;
+  --vp-button-brand-hover-text: #03141c;
+}
+
+.dark {
+  --vp-c-bg: var(--tf-bg);
+  --vp-c-bg-alt: var(--tf-surface-1);
+  --vp-c-bg-elv: var(--tf-surface-2);
+  --vp-c-bg-soft: var(--tf-surface-1);
+  --vp-c-divider: var(--tf-border);
+  --vp-c-gutter: var(--tf-border);
+  --vp-c-border: var(--tf-border-strong);
+  --vp-c-text-1: var(--tf-text);
+  --vp-c-text-2: var(--tf-text-muted);
+  --vp-c-text-3: var(--tf-text-subtle);
+  --vp-c-brand-1: #03bfff;
+  --vp-c-brand-2: #38ceff;
+  --vp-c-brand-3: #03bfff;
+  --vp-c-brand-soft: rgb(3 191 255 / 14%);
+  --vp-code-block-bg: var(--tf-surface-1);
+}
+
+/* The landing has its own top bar. */
+.landing-page .VPLocalNav {
+  display: none;
+}
