@@ -9,6 +9,7 @@ const engine = shallowRef<AudioEngine>();
 const toolbar = shallowRef<StudioToolbar>();
 const actions = ref<HTMLElement>();
 let unlink = () => {};
+let stopExtras = () => {};
 const copied = ref(false);
 const install = 'pnpm add @toneflix/studio';
 
@@ -38,7 +39,7 @@ const features = [
 const uses = ['Music apps', 'Podcast editors', 'Classrooms', 'AI audio tools', 'Games', 'Sample libraries'];
 
 const roadmap = [
-  { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, effects, loops and a metronome.' },
+  { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, live plugins, loops and a metronome.' },
   { stage: 'Next', title: 'Recording', text: 'Record over the mix with latency compensation and overdub, with waveforms drawn live.' },
   { stage: 'Planned', title: 'DAW project exchange', text: 'Open and save sessions that travel to and from desktop studios.' },
 ];
@@ -54,10 +55,12 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, PluginRack, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const audio = new AudioEngine();
+  const plugins = new PluginRack(audio);
+  const plugin = (name: string, file: string) => ({ name, url: new URL(withBase(`/plugins/${file}`), location.href).href });
   const view = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: narrow ? 112 : 168,
@@ -67,19 +70,28 @@ onMounted(async () => {
     renderHeader: trackStrip(audio),
   });
 
+  const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog: [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')], hidden: true });
+
   toolbar.value = new StudioToolbar(actions.value!, {
     timeline: view,
     engine: audio,
-    items: ['play', 'stop', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'meter'],
+    mixer,
+    plugins,
+    items: ['play', 'stop', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
   });
   loadSample(view, { engine: audio });
   unlink = linkPlayback(view, audio);
+  stopExtras = () => {
+    mixer.destroy();
+    plugins.destroy();
+  };
   timeline.value = view;
   engine.value = audio;
 });
 
 onBeforeUnmount(() => {
   unlink();
+  stopExtras();
   toolbar.value?.destroy();
   engine.value?.destroy();
   timeline.value?.destroy();
@@ -123,7 +135,7 @@ onBeforeUnmount(() => {
       </div>
       <div ref="actions" class="window-actions" />
       <div ref="host" class="window-body" />
-      <p class="window-hint">It's live. Press play, drag a clip while it plays, or click the ruler and press S to split.</p>
+      <p class="window-hint">It's live. Press play, drag a clip while it plays, or click the ruler and press S to split. The sliders button opens the mixer, where + adds a plugin.</p>
     </section>
 
     <section class="features">

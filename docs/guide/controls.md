@@ -133,7 +133,9 @@ Given a `mixer`, the toolbar gets a mixer button that shows and hides it. You ca
 | Fader | Drag, click or use the arrow keys. Double-click for 0 dB. The top is +6 dB; set `maxVolume` to change it |
 | Pan knob | Drag up or down, or use the arrow keys. Double-click to centre it |
 
-Set `--tfs-mixer-height` (320px) to size it, and `--tfs-channel-width` (84px) for the strips.
+Given a `PluginRack` as `plugins`, each strip gets insert slots for plugins above the pan knob, and `catalog` lists the plugins its + button offers. See [Plugins](./plugins).
+
+Set `--tfs-mixer-height` (320px) to size it, `--tfs-channel-width` (84px) for the strips and `--tfs-inserts-height` (78px) for the insert slots.
 
 ## Custom icons
 

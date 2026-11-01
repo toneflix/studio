@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { withBase } from 'vitepress';
 
 const props = withDefaults(defineProps<{ height?: number }>(), { height: 420 });
 const bar = ref<HTMLElement>();
@@ -7,17 +8,19 @@ const host = ref<HTMLElement>();
 let cleanup = () => {};
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, PluginRack, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const engine = new AudioEngine();
+  const plugins = new PluginRack(engine);
+  const plugin = (name: string, file: string) => ({ name, url: new URL(withBase(`/plugins/${file}`), location.href).href });
   const timeline = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: host.value!.clientWidth < 600 ? 120 : 160,
     createTrack: () => ({ id: uid('t'), name: 'New stem' }),
     renderHeader: trackStrip(engine),
   });
-  const mixer = new StudioMixer(host.value!, { timeline, engine, hidden: true });
-  const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer });
+  const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog: [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')], hidden: true });
+  const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer, plugins });
 
   loadSample(timeline, { engine });
 
@@ -26,6 +29,7 @@ onMounted(async () => {
   cleanup = () => {
     unlink();
     toolbar.destroy();
+    plugins.destroy();
     mixer.destroy();
     engine.destroy();
     timeline.destroy();
@@ -39,7 +43,7 @@ onBeforeUnmount(() => cleanup());
   <div class="studio-playground">
     <div ref="bar" class="studio-playground__bar" />
     <div ref="host" class="studio-playground__timeline" :style="{ height: `${props.height}px` }" />
-    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. The sliders button opens the mixer.</p>
+    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. The sliders button opens the mixer, where + adds an Echo or Drive plugin to a track.</p>
   </div>
 </template>
 

@@ -1,0 +1,54 @@
+{
+  "name": "@toneflix/studio-plugins",
+  "version": "0.3.1",
+  "description": "Plugins for Toneflix Studio: hosts Web Audio Modules (WAM 2) as live track and master inserts, with their own editors, state and offline mixdown.",
+  "license": "MIT",
+  "author": "Toneflix <code@toneflix.com.ng>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toneflix/studio.git",
+    "directory": "packages/plugins"
+  },
+  "homepage": "https://toneflix.github.io/studio/",
+  "bugs": {
+    "url": "https://github.com/toneflix/studio/issues"
+  },
+  "keywords": [
+    "web-audio",
+    "wam",
+    "web-audio-modules",
+    "plugins",
+    "effects",
+    "daw"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@toneflix/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@toneflix/studio-audio": "workspace:^",
+    "@toneflix/studio-core": "workspace:^"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

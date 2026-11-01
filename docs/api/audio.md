@@ -14,7 +14,7 @@ From `@toneflix/studio-audio`, also exported by `@toneflix/studio`.
 | `engine.stop()` | Back to where playback began, or to 0 when already stopped |
 | `engine.seek(time)` | |
 | `engine.setLoop({ start, end } \| null)` | |
-| `engine.render(options?)` | Offline mix to an `AudioBuffer`: `from`, `to`, `sampleRate`, `channels`, `effects(track, context)` |
+| `engine.render(options?)` | Offline mix to an `AudioBuffer`: `from`, `to`, `sampleRate`, `channels`, `effects(track, context)`, which may be async |
 | `engine.time`, `isPlaying`, `loop`, `state` | |
 | `engine.mixer`, `engine.metronome`, `engine.context` | |
 | `engine.destroy()` | Stops playback and closes the context it made |
@@ -59,9 +59,9 @@ From `@toneflix/studio-controls`, also exported by `@toneflix/studio`. See [Tool
 
 | | |
 | --- | --- |
-| `new StudioToolbar(container, options)` | `timeline`, `engine?`, `items?`, `icons?`, `labels?`, `exportName?`, `actions?`, `onSave?`, `info?`; `addAction()`, `removeAction()`, `showInfo()`, `refresh()`, `destroy()` |
+| `new StudioToolbar(container, options)` | `timeline`, `engine?`, `plugins?` (in the exported mix), `items?`, `icons?`, `labels?`, `exportName?`, `actions?`, `onSave?`, `info?`; `addAction()`, `removeAction()`, `showInfo()`, `refresh()`, `destroy()` |
 | `sessionInfo(timeline)` | The info dialog's default rows |
-| `new StudioMixer(container, options)` | `timeline`, `engine`, `icons?`, `labels?`, `maxVolume?` (2), `hidden?`, `docked?`; `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; event `toggle` |
+| `new StudioMixer(container, options)` | `timeline`, `engine`, `plugins?`, `catalog?`, `pickPlugin?`, `icons?`, `labels?`, `maxVolume?` (2), `hidden?`, `docked?`; `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; event `toggle` |
 | `faderToGain(position, max?)` / `gainToFader(gain, max?)` | The fader curve |
 | `formatDb(gain)` / `formatPan(pan)` | Readouts like `-3.5` and `L 40` |
 | `createKnob(document, options)` | The rotary knob the mixer uses for pan |

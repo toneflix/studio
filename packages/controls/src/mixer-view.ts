@@ -1,8 +1,10 @@
 import type { AudioEngine, ChannelSettings } from '@toneflix/studio-audio';
 import { Emitter, type Track } from '@toneflix/studio-core';
+import type { PluginRack } from '@toneflix/studio-plugins';
 import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { faderToGain, formatDb, formatPan, gainToFader } from './fader.ts';
 import { renderIcon, type IconSet } from './icons.ts';
+import { createInserts, DEFAULT_INSERTS_LABELS, type InsertsLabels, type PluginChoice } from './inserts.ts';
 import { createKnob } from './knob.ts';
 import { createMeter } from './meter.ts';
 import { injectControlStyles } from './styles.ts';
@@ -13,6 +15,8 @@ export interface MixerLabels {
   pan: string;
   mute: string;
   solo: string;
+  /** Insert slot buttons and the plugin window */
+  inserts: InsertsLabels;
 }
 
 export interface MixerOptions {
@@ -20,7 +24,7 @@ export interface MixerOptions {
   engine: AudioEngine;
   /** Icons for mute and solo; without them the buttons show M and S */
   icons?: Partial<IconSet>;
-  labels?: Partial<MixerLabels>;
+  labels?: Partial<Omit<MixerLabels, 'inserts'>> & { inserts?: Partial<InsertsLabels> };
   /** Top of the faders, as linear gain; 2 is +6 dB */
   maxVolume?: number;
   /** Start hidden, to be opened with `show()` or the toolbar's mixer button */
@@ -31,13 +35,19 @@ export interface MixerOptions {
    * leaves the layout alone.
    */
   docked?: boolean;
+  /** Shows insert slots on every strip, for plugins hosted by this rack */
+  plugins?: PluginRack;
+  /** Plugins the add button offers */
+  catalog?: PluginChoice[];
+  /** Pick a plugin your own way instead of the built-in menu */
+  pickPlugin?: (track: string | null) => Promise<PluginChoice | null>;
 }
 
 export interface MixerViewEvents extends Record<string, unknown> {
   toggle: { visible: boolean };
 }
 
-export const DEFAULT_MIXER_LABELS: MixerLabels = { master: 'Master', volume: 'Volume', pan: 'Pan', mute: 'Mute', solo: 'Solo' };
+export const DEFAULT_MIXER_LABELS: MixerLabels = { master: 'Master', volume: 'Volume', pan: 'Pan', mute: 'Mute', solo: 'Solo', inserts: DEFAULT_INSERTS_LABELS };
 
 /** dB marks beside each fader. */
 const SCALE = [6, 0, -6, -12, -24, -48];
@@ -61,6 +71,7 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
   private readonly icons: Partial<IconSet>;
   private readonly labels: MixerLabels;
   private readonly maxVolume: number;
+  private readonly plugins?: Pick<MixerOptions, 'plugins' | 'catalog' | 'pickPlugin'>;
   private readonly doc: Document;
   private readonly lane: HTMLDivElement;
   private readonly strips = new Map<string, Strip>();
@@ -76,8 +87,9 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
     this.timeline = options.timeline;
     this.engine = options.engine;
     this.icons = options.icons ?? {};
-    this.labels = { ...DEFAULT_MIXER_LABELS, ...options.labels };
+    this.labels = { ...DEFAULT_MIXER_LABELS, ...options.labels, inserts: { ...DEFAULT_INSERTS_LABELS, ...options.labels?.inserts } };
     this.maxVolume = options.maxVolume ?? 2;
+    this.plugins = options.plugins && { plugins: options.plugins, catalog: options.catalog, pickPlugin: options.pickPlugin };
     this.root = this.doc.createElement('div');
     this.lane = this.doc.createElement('div');
     this.root.className = 'tfs-mixer';
@@ -254,7 +266,11 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
     title.title = name;
     pan.element.classList.add('tfs-channel-pan');
     body.append(scale, fader, meter.element);
-    element.append(pan.element, buttons, body, readout, title);
+    const inserts = this.plugins?.plugins
+      ? createInserts(doc, this.plugins.plugins, id, { catalog: this.plugins.catalog, pick: this.plugins.pickPlugin, labels: labels.inserts, icons: this.icons })
+      : null;
+
+    element.append(...(inserts ? [inserts.element] : []), pan.element, buttons, body, readout, title);
 
     const show = (settings: ChannelSettings) => {
       pan.set(settings.pan);
@@ -267,6 +283,14 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
 
     show(channel().settings);
 
-    return { element, key: '', show, stop: meter.stop };
+    return {
+      element,
+      key: '',
+      show,
+      stop: () => {
+        meter.stop();
+        inserts?.stop();
+      },
+    };
   }
 }

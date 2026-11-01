@@ -1,5 +1,6 @@
 import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
 import type { SnapTo } from '@toneflix/studio-core';
+import type { PluginRack } from '@toneflix/studio-plugins';
 import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { createDisplay } from './display.ts';
 import { renderIcon, type Icon, type IconName, type IconSet } from './icons.ts';
@@ -60,6 +61,8 @@ export interface ToolbarOptions {
    * for example to upload the mix or store the project. The button waits while it runs.
    */
   onSave?: (context: ToolbarContext) => void | Promise<void>;
+  /** Plugins to include when exporting the mix */
+  plugins?: PluginRack;
   /** A mixer view for the mixer button to show and hide; the button is left out without one */
   mixer?: StudioMixer;
   /** Rows for the info dialog; gets the default rows to extend or replace */
@@ -145,6 +148,7 @@ export class StudioToolbar {
   private readonly onSave?: ToolbarOptions['onSave'];
   private readonly infoRows?: ToolbarOptions['info'];
   private readonly mixer?: StudioMixer;
+  private readonly plugins?: PluginRack;
   private infoDialog?: ReturnType<typeof createInfoDialog>;
 
   constructor(target: ContainerTarget, options: ToolbarOptions) {
@@ -159,6 +163,7 @@ export class StudioToolbar {
     this.onSave = options.onSave;
     this.infoRows = options.info;
     this.mixer = options.mixer;
+    this.plugins = options.plugins;
     this.root = this.doc.createElement('div');
     this.root.className = 'tfs-toolbar';
     this.root.setAttribute('role', 'toolbar');
@@ -356,7 +361,7 @@ export class StudioToolbar {
   private async mix() {
     if (!this.engine) throw new Error('Rendering a mix needs an engine');
 
-    const audio = await this.engine.render();
+    const audio = await this.engine.render({ effects: this.plugins?.renderEffects });
 
     return new Blob([encodeWav(audio)], { type: 'audio/wav' });
   }

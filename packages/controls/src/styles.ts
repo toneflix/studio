@@ -108,6 +108,28 @@ export const CONTROL_STYLES = `
 .tfs-fader:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #03bfff); outline-offset: 2px; }
 .tfs-channel-db { min-width: 44px; padding: 2px 4px; box-sizing: border-box; border-radius: 4px; background: var(--tfs-display-bg, #0b0d10); font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; font-variant-numeric: tabular-nums; }
 .tfs-channel-name { width: 100%; padding: 5px 4px; box-sizing: border-box; overflow: hidden; background: var(--clip, #8d8d96); color: #fff; font-weight: 600; text-align: center; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35); }
+.tfs-inserts { display: flex; flex: none; flex-direction: column; gap: 2px; width: 100%; height: var(--tfs-inserts-height, 78px); padding: 0 5px; box-sizing: border-box; overflow-y: auto; scrollbar-width: thin; }
+.tfs-inserts-list { display: flex; flex-direction: column; gap: 2px; }
+.tfs-insert { display: flex; align-items: center; height: 18px; flex: none; box-sizing: border-box; border: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); border-radius: 3px; background: var(--tfs-insert-bg, #26262c); color: var(--tfs-toolbar-text, #e8e8ea); font: 600 10px/1 system-ui, sans-serif; overflow: hidden; }
+.tfs-insert button { height: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.tfs-insert-power { width: 14px; flex: none; }
+.tfs-insert-power::before { content: ''; display: block; width: 6px; height: 6px; margin: auto; border-radius: 50%; background: var(--tfs-toolbar-active, #03bfff); box-shadow: 0 0 4px var(--tfs-toolbar-active, #03bfff); }
+.tfs-insert[data-bypass='true'] { color: var(--tfs-muted, #8d8d96); }
+.tfs-insert[data-bypass='true'] .tfs-insert-power::before { background: #55555c; box-shadow: none; }
+.tfs-insert-name { flex: 1; min-width: 0; overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.tfs-insert-name:hover { text-decoration: underline; }
+.tfs-insert-remove { width: 14px; flex: none; opacity: 0; font-size: 12px !important; }
+.tfs-insert:hover .tfs-insert-remove, .tfs-insert-remove:focus-visible { opacity: 0.7; }
+.tfs-insert--add { justify-content: center; border-style: dashed; background: transparent; color: var(--tfs-muted, #8d8d96); font-size: 12px; cursor: pointer; }
+.tfs-insert--add:hover:not(:disabled) { color: var(--tfs-toolbar-text, #e8e8ea); border-color: var(--tfs-muted, #8d8d96); }
+.tfs-insert-menu { position: fixed; z-index: 1000; display: flex; flex-direction: column; min-width: 140px; padding: 4px; border: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.12)); border-radius: 6px; background: var(--tfs-menu-bg, #1f1f24); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); font: 12px/1.3 system-ui, sans-serif; }
+.tfs-insert-menu button { padding: 6px 10px; border: 0; border-radius: 4px; background: none; color: var(--tfs-toolbar-text, #e8e8ea); font: inherit; text-align: left; cursor: pointer; }
+.tfs-insert-menu button:hover, .tfs-insert-menu button:focus-visible { background: rgba(255, 255, 255, 0.08); }
+.tfs-plugin-window { position: fixed; z-index: 1000; display: flex; flex-direction: column; min-width: 220px; max-width: calc(100vw - 16px); max-height: calc(100vh - 16px); border: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.12)); border-radius: 8px; background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55); font: 12px/1.3 system-ui, sans-serif; overflow: hidden; }
+.tfs-plugin-window-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 4px 12px; background: var(--tfs-toolbar-bg, #18181b); font-weight: 600; cursor: move; user-select: none; touch-action: none; }
+.tfs-plugin-window-bar .tfs-tool { width: 24px; height: 24px; }
+.tfs-plugin-window-body { overflow: auto; padding: 0; min-height: 40px; }
+.tfs-plugin-window-body:not(:has(*)) { padding: 12px; color: var(--tfs-muted, #8d8d96); }
 .tfs-knob { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #4a4a52, #26262b 70%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4); cursor: ns-resize; touch-action: none; }
 .tfs-knob:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #03bfff); outline-offset: 2px; }
 .tfs-knob-dial { position: absolute; inset: 0; border-radius: 50%; }

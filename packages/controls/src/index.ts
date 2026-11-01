@@ -9,3 +9,4 @@ export * from './info.ts';
 export * from './fader.ts';
 export * from './knob.ts';
 export * from './mixer-view.ts';
+export * from './inserts.ts';
