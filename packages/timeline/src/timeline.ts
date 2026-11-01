@@ -22,6 +22,7 @@ import {
   type Track,
   trimEnd,
   trimStart,
+  updateTrack,
 } from '@toneflix/studio-core';
 import { ClipView } from './clip-view.ts';
 import { resolveContainer, type ContainerTarget } from './container.ts';
@@ -39,7 +40,12 @@ export interface TimelineOptions {
   pxPerSecond?: number;
   minPxPerSecond?: number;
   maxPxPerSecond?: number;
+  /** Default row height in pixels; a track's own `height` wins */
   trackHeight?: number;
+  /** Let tracks be resized by dragging the bottom edge of their row */
+  resizeTracks?: boolean;
+  minTrackHeight?: number;
+  maxTrackHeight?: number;
   /** Width of the track header column; 0 hides it */
   headerWidth?: number;
   readonly?: boolean;
@@ -69,7 +75,8 @@ type Gesture =
   | { kind: 'move'; id: number; x: number; y: number; started: boolean; clip: Clip; ids: Set<string>; lane: number; base: TimelineState; track?: Track }
   | { kind: 'trim-start' | 'trim-end' | 'fade-in' | 'fade-out'; id: number; x: number; started: boolean; clip: Clip }
   | { kind: 'range'; id: number; x: number; y: number; started: boolean; time: number; lane: number; additive: boolean; ruler: boolean; touch: boolean }
-  | { kind: 'click-clip'; id: number; x: number; y: number; clip: Clip };
+  | { kind: 'click-clip'; id: number; x: number; y: number; clip: Clip }
+  | { kind: 'resize-track'; id: number; x: number; y: number; started: boolean; track: Track; height: number };
 
 const PALETTE = ['#4f9cf9', '#f97362', '#5fd08a', '#c58af9', '#f9c74f', '#4fd1d9', '#f98fc4', '#a3b18a'];
 
@@ -107,12 +114,13 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private rangeEl: HTMLDivElement;
   private loopEl: HTMLDivElement;
   private snapEl: HTMLDivElement;
-  private trackRows = new Map<string, { row: HTMLDivElement; header: HTMLDivElement; lane: HTMLDivElement; cleanup?: () => void }>();
+  private trackRows = new Map<string, { row: HTMLDivElement; header: HTMLDivElement; lane: HTMLDivElement; grip: HTMLDivElement; cleanup?: () => void }>();
   private clipViews = new Map<string, ClipView>();
   private selected = new Set<string>();
   private currentRange: TimeRange | null = null;
   private loopRange: { start: number; end: number } | null = null;
   private gesture: Gesture | null = null;
+  private lastGrip: { track: string; at: number } | null = null;
   private frame = 0;
   private resize?: ResizeObserver;
   private unsubscribe: (() => void)[] = [];
@@ -135,7 +143,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       pxPerSecond: options.pxPerSecond ?? 40,
       minPxPerSecond: options.minPxPerSecond ?? 2,
       maxPxPerSecond: options.maxPxPerSecond ?? 2000,
-      trackHeight: options.trackHeight ?? 96,
+      trackHeight: options.trackHeight ?? 72,
+      resizeTracks: options.resizeTracks ?? true,
+      minTrackHeight: options.minTrackHeight ?? 40,
+      maxTrackHeight: options.maxTrackHeight ?? 320,
       headerWidth: options.headerWidth ?? 180,
       readonly: options.readonly ?? false,
       snapToClips: options.snapToClips ?? true,
@@ -228,7 +239,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.schedule();
   }
 
-  setOptions(options: Partial<Pick<TimelineOptions, 'readonly' | 'follow' | 'snapToClips' | 'trackHeight' | 'keyboard'>>) {
+  setOptions(options: Partial<Pick<TimelineOptions, 'readonly' | 'follow' | 'snapToClips' | 'trackHeight' | 'resizeTracks' | 'keyboard'>>) {
     Object.assign(this.options, options);
     for (const view of this.clipViews.values()) view.invalidate();
 
@@ -393,7 +404,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   }
 
   private renderTracks(state: TimelineState, width: number) {
-    const { trackHeight, headerWidth } = this.options;
+    const { headerWidth } = this.options;
+    const resizable = this.options.resizeTracks && !this.options.readonly;
     const seen = new Set<string>();
 
     state.tracks.forEach((track, index) => {
@@ -409,8 +421,12 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         header.className = 'tfs-header';
         lane.className = 'tfs-lane';
         lane.dataset.track = track.id;
-        rowEl.append(header, lane);
-        row = { row: rowEl, header, lane };
+        const grip = this.doc.createElement('div');
+
+        grip.className = 'tfs-row-resize';
+        grip.dataset.track = track.id;
+        rowEl.append(header, lane, grip);
+        row = { row: rowEl, header, lane, grip };
         this.trackRows.set(track.id, row);
         this.fillHeader(track, row);
       } else if (row.header.dataset.name !== track.name || row.header.dataset.color !== this.trackColor(track, index)) {
@@ -418,7 +434,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         this.fillHeader(track, row);
       }
 
-      row.row.style.height = `${trackHeight}px`;
+      row.row.style.height = `${this.heightOf(track)}px`;
+      row.grip.style.display = resizable ? '' : 'none';
       row.row.style.boxSizing = 'border-box';
       row.row.style.setProperty('--clip', this.trackColor(track, index));
       row.header.style.width = `${headerWidth}px`;
@@ -460,6 +477,20 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     cell.append(swatch, name);
     row.header.append(cell);
     row.cleanup = undefined;
+  }
+
+  /** A track's row height in pixels. */
+  heightOf(track: Track) {
+    return clamp(Math.round(track.height ?? this.options.trackHeight), this.options.minTrackHeight, this.options.maxTrackHeight);
+  }
+
+  /** Top of a lane, in pixels below the ruler. */
+  private laneTop(index: number) {
+    let top = 0;
+
+    for (let i = 0; i < index && i < this.state.tracks.length; i++) top += this.heightOf(this.state.tracks[i]!);
+
+    return top;
   }
 
   private trackColor(track: Track, index: number) {
@@ -565,8 +596,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     style.display = '';
     style.left = `${range.start * this.pps}px`;
     style.width = `${(range.end - range.start) * this.pps}px`;
-    style.top = `${ruler + first * this.options.trackHeight}px`;
-    style.height = `${(last - first + 1) * this.options.trackHeight}px`;
+    const top = this.laneTop(first);
+
+    style.top = `${ruler + top}px`;
+    style.height = `${this.laneTop(last + 1) - top}px`;
   }
 
   private renderLoop() {
@@ -618,14 +651,49 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     }
   }
 
+  /** The lane under a point. Above the first it is -1; below the last it counts on in default-height rows. */
   private laneAt(clientY: number) {
-    return Math.floor((clientY - this.rows.getBoundingClientRect().top) / this.options.trackHeight);
+    const y = clientY - this.rows.getBoundingClientRect().top;
+    if (y < 0) return Math.floor(y / this.options.trackHeight);
+
+    let top = 0;
+
+    for (const [index, track] of this.state.tracks.entries()) {
+      top += this.heightOf(track);
+      if (y < top) return index;
+    }
+
+    return this.state.tracks.length + Math.floor((y - top) / this.options.trackHeight);
   }
 
   private onPointerDown(e: PointerEvent) {
     if (e.button !== 0 || this.gesture) return;
 
     const target = e.target as HTMLElement;
+    const grip = target.closest<HTMLElement>('.tfs-row-resize');
+    const resizing = grip ? this.state.tracks.find((track) => track.id === grip.dataset.track) : undefined;
+
+    if (resizing) {
+      e.preventDefault();
+
+      const last = this.lastGrip;
+
+      this.lastGrip = { track: resizing.id, at: e.timeStamp };
+
+      // A double click gives the row the default height again.
+      if (last && last.track === resizing.id && e.timeStamp - last.at < 400) {
+        this.lastGrip = null;
+        if (resizing.height !== undefined) this.model.apply('Resize track', (state) => updateTrack(state, resizing.id, { height: undefined }));
+
+        return;
+      }
+
+      this.gesture = { kind: 'resize-track', id: e.pointerId, x: e.clientX, y: e.clientY, started: false, track: resizing, height: this.heightOf(resizing) };
+      this.content.setPointerCapture?.(e.pointerId);
+
+      return;
+    }
+
     if (target.closest('.tfs-header, .tfs-corner')) return;
 
     const clipEl = target.closest<HTMLElement>('.tfs-clip');
@@ -697,6 +765,14 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       if (g.kind === 'range' && g.touch) return;
 
       g.started = true;
+    }
+
+    if (g.kind === 'resize-track') {
+      const height = clamp(Math.round(g.height + e.clientY - g.y), this.options.minTrackHeight, this.options.maxTrackHeight);
+
+      this.model.draft('Resize track', (state) => updateTrack(state, g.track.id, { height }));
+
+      return;
     }
 
     this.autoScroll(e.clientX);
@@ -771,7 +847,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     } else if (g.kind === 'range') {
       this.endRange(g);
     } else if (g.started) {
-      const labels = { move: 'Move', 'trim-start': 'Trim', 'trim-end': 'Trim', 'fade-in': 'Fade in', 'fade-out': 'Fade out' } as const;
+      const labels = { move: 'Move', 'trim-start': 'Trim', 'trim-end': 'Trim', 'fade-in': 'Fade in', 'fade-out': 'Fade out', 'resize-track': 'Resize track' } as const;
       this.model.commit(g.kind === 'move' && g.ids.size > 1 ? 'Move clips' : labels[g.kind]);
     } else if (g.kind === 'move' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       this.select([g.clip.id]);

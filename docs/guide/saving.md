@@ -12,6 +12,7 @@ interface Track {
   id: string;
   name: string;
   color?: string;
+  height?: number; // row height in pixels, set by dragging its edge
   data?: unknown; // anything your app keeps with the track
 }
 

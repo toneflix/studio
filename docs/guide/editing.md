@@ -16,6 +16,7 @@ Clips are pieces of audio on a track. Each one says where it starts on the timel
 | Click the ruler or an empty track | Moves the playhead |
 | Alt while dragging | Turns snapping off |
 | Ctrl or ⌘ + wheel | Zooms around the pointer |
+| Drag a track's bottom edge | Makes the track taller or shorter; double-click to reset |
 
 On touch screens, drag clips with a finger and swipe empty space to scroll. Range selection works from the ruler.
 

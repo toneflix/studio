@@ -36,6 +36,7 @@ export class Channel {
   private chain: Effect[] = [];
   private current: ChannelSettings = { ...DEFAULT_CHANNEL };
   private silenced = false;
+  private meter?: { splitter: ChannelSplitterNode; analysers: AnalyserNode[]; data: Float32Array<ArrayBuffer> };
 
   constructor(context: BaseAudioContext) {
     this.context = context;
@@ -70,6 +71,40 @@ export class Channel {
     this.wire();
   }
 
+  /**
+   * Peak level of the left and right output right now, after volume, pan and mute,
+   * as linear gain. Metering starts on the first call.
+   */
+  levels(): [number, number] {
+    if (!this.meter) {
+      const splitter = this.context.createChannelSplitter(2);
+      const analysers = [0, 1].map((side) => {
+        const analyser = this.context.createAnalyser();
+
+        analyser.fftSize = 1024;
+        splitter.connect(analyser, side);
+
+        return analyser;
+      });
+
+      this.output.connect(splitter);
+      this.meter = { splitter, analysers, data: new Float32Array(1024) };
+    }
+
+    const { analysers, data } = this.meter;
+    const peak = (analyser: AnalyserNode) => {
+      analyser.getFloatTimeDomainData(data);
+
+      let max = 0;
+
+      for (let i = 0; i < data.length; i++) max = Math.max(max, Math.abs(data[i]!));
+
+      return max;
+    };
+
+    return [peak(analysers[0]!), peak(analysers[1]!)];
+  }
+
   /** Silenced by another channel's solo. */
   setSilenced(silenced: boolean) {
     this.silenced = silenced;
@@ -77,6 +112,7 @@ export class Channel {
   }
 
   destroy() {
+    this.meter?.splitter.disconnect();
     this.unwire();
     this.input.disconnect();
     this.volumeNode.disconnect();

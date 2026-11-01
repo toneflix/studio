@@ -1,18 +1,22 @@
 import type { AudioEngine } from '@toneflix/studio-audio';
 import type { Track } from '@toneflix/studio-core';
 import { renderIcon, type IconSet } from './icons.ts';
+import { createMeter } from './meter.ts';
 import { injectControlStyles } from './styles.ts';
 
 export interface TrackStripOptions {
+  /** Icons for mute and solo; without them the buttons show M and S, as in most DAWs */
   icons?: Partial<IconSet>;
   labels?: Partial<{ mute: string; solo: string; volume: string }>;
   /** Highest volume on the slider, as linear gain */
   maxVolume?: number;
+  /** Show a level meter under the volume slider */
+  meter?: boolean;
 }
 
 /**
- * Track headers with the name, mute, solo and a volume slider, wired to an
- * engine's mixer. Pass the result as the timeline's `renderHeader`.
+ * Track headers with a colour tab, the name, mute, solo, a volume slider and a
+ * level meter, wired to an engine's mixer. Pass the result as the timeline's `renderHeader`.
  */
 export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {}) => {
   const labels = { mute: 'Mute', solo: 'Solo', volume: 'Volume', ...options.labels };
@@ -23,6 +27,8 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
     const top = doc.createElement('div');
     const name = doc.createElement('span');
     const volume = doc.createElement('input');
+    const body = doc.createElement('div');
+    const tab = doc.createElement('i');
     const channel = () => engine.mixer.channel(track.id).settings;
 
     const toggle = (kind: 'mute' | 'solo') => {
@@ -33,7 +39,8 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
       button.dataset.tool = kind;
       button.title = labels[kind];
       button.setAttribute('aria-label', `${labels[kind]} ${track.name}`);
-      button.append(renderIcon(doc, kind, options.icons));
+      if (options.icons?.[kind]) button.append(renderIcon(doc, kind, options.icons));
+      else button.textContent = kind === 'mute' ? 'M' : 'S';
       button.addEventListener('click', () => engine.mixer.set(track.id, { [kind]: !channel()[kind] }));
 
       return button;
@@ -61,8 +68,15 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
     volume.setAttribute('aria-label', `${labels.volume} ${track.name}`);
     volume.addEventListener('input', () => engine.mixer.set(track.id, { volume: Number(volume.value) }));
     volume.addEventListener('dblclick', () => engine.mixer.set(track.id, { volume: 1 }));
-    top.append(doc.createElement('i'), name, mute, solo);
-    strip.append(top, volume);
+    tab.className = 'tfs-strip-tab';
+    body.className = 'tfs-strip-body';
+    top.append(name, mute, solo);
+    body.append(top, volume);
+    strip.append(tab, body);
+
+    const meter = options.meter === false ? null : createMeter(doc, engine, () => engine.mixer.channel(track.id));
+
+    if (meter) body.append(meter.element);
     cell.append(strip);
     show();
 
@@ -70,6 +84,7 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
 
     return () => {
       off();
+      meter?.stop();
       strip.remove();
     };
   };

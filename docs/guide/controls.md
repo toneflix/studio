@@ -1,6 +1,6 @@
 # Toolbar and track controls
 
-`@toneflix/studio-controls` has ready-made controls drawn with [Lucide](https://lucide.dev) icons: a toolbar for playback and editing, and track headers with mute, solo and volume. The icons are built in, so there's nothing extra to install, and you can replace any of them.
+`@toneflix/studio-controls` has ready-made controls drawn with [Lucide](https://lucide.dev) icons: a toolbar for playback and editing with a transport display and output meter, and track headers with mute, solo, volume and a level meter. The icons are built in, so there's nothing extra to install, and you can replace any of them.
 
 ## Toolbar
 
@@ -14,7 +14,7 @@ new StudioToolbar('#toolbar', { timeline, engine });
 linkPlayback(timeline, engine);
 ```
 
-The default toolbar has play, stop, loop, metronome, split, duplicate, delete, undo, redo, zoom, fit, snap and export. Undo, redo, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
+The default toolbar has play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, export and the output meter. Undo, redo, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
 
 Pick the buttons and their order with `items`. `'|'` adds a divider:
 
@@ -26,7 +26,15 @@ new StudioToolbar('#toolbar', {
 });
 ```
 
-Without an `engine`, the playback buttons are left out.
+Without an `engine`, the playback buttons and the meter are left out.
+
+### Transport display
+
+The `display` item shows where the playhead is in bars, beats and sixteenths (`3.2.1`) and in minutes and seconds, with the tempo and time signature beside them. Type a new tempo or pick a time signature there to change the timeline's grid and the metronome together.
+
+### Output meter
+
+The `meter` item shows the master output level for the left and right sides, from -60 dB to 0 dB. It only does work while something plays.
 
 Each button's name is its tooltip and is read by screen readers. Change them with `labels`, for example to translate them:
 
@@ -38,7 +46,9 @@ Loop repeats the selected range, or four bars from the playhead when nothing is 
 
 ## Track strips
 
-`trackStrip` fills each track header with its colour, name, mute and solo buttons, and a volume slider. Double-click the slider to set it back to full volume.
+`trackStrip` fills each track header with a tab in the track's colour, its name, M (mute) and S (solo) buttons, a volume slider and a level meter. Double-click the slider to set it back to full volume. Set `meter: false` to leave the meter out.
+
+Drag the bottom edge of a track to make it taller or shorter, and double-click the edge to give it the default height again. Short tracks hide the volume slider.
 
 ```ts
 const timeline = new StudioTimeline('#editor', {
@@ -76,6 +86,8 @@ import { setDefaultIcons } from '@toneflix/studio';
 setDefaultIcons({ play: playSvg, pause: pauseSvg, stop: stopSvg });
 ```
 
+Mute and solo show the letters M and S unless you give them icons.
+
 Icon names: `play`, `pause`, `stop`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute` and `solo`. Icons use `currentColor`, so they take the button's text colour.
 
 ## Styling
@@ -92,5 +104,8 @@ Set these CSS variables on the toolbar or any parent of it:
 | `--tfs-toolbar-active-text` | `#08131f` | Icons on the active colour |
 | `--tfs-toolbar-size` | `32px` | Button size |
 | `--tfs-mute` / `--tfs-solo` | `#f5b53d` / `#4da3ff` | Mute and solo when on |
+| `--tfs-meter-off` | `rgba(255,255,255,.07)` | Unlit part of the meters |
+| `--tfs-display-bg` | `#0b0d10` | Transport display background |
+| `--tfs-display-text` / `--tfs-display-muted` | `#e8e8ea` / `#7d8590` | Display numbers and captions |
 
 Buttons have the class `tfs-tool` and a `data-tool` attribute with their name, for more specific styling.
