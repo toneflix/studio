@@ -68,6 +68,20 @@ Notes snap to the piano roll's own grid (1/16 by default), which follows the tim
 
 It slides up over the bottom of its container, like the mixer; pass `docked: true` to place it in the page flow. Set `--tfs-roll-height` (340px) to size it. The note helpers it uses, such as `moveNotes`, `quantizeNotes` and `duplicateNotes`, are exported for your own editors.
 
+## Step sequencer
+
+The piano roll's **Steps** view shows a note clip as a step sequencer: a row per drum and a column per step. Drum track clips open in it, and **Notes** switches back to the keys. Pass `stepsForDrums: false` to open them on keys, or call `pianoRoll.setView('steps')` for any clip; on other instruments the rows are C4 to C5 plus every note the clip uses.
+
+| Gesture | What it does |
+| --- | --- |
+| Click or tap a step | Turns it on with a hit, or off |
+| Drag across steps with a mouse | Paints them on, or off when the first one was on |
+| **Accent**, then click a step | New hits play at full velocity; clicking a normal hit accents it |
+| **Bars** | Makes the clip, and so the pattern, 1 to 16 bars long |
+| **Swing** | Delays every second step, from 50% (straight) to 75% |
+
+A step is the snap when it is finer than a beat, a sixteenth otherwise. The grid is a view of the clip's notes, so steps drawn here show in the piano roll and the other way round; a note counts as on a step when it starts within a quarter of a step of it. Swing moves the notes already on swung steps, and new hits land swung. The playing step lights up during playback. Each change is one undo step.
+
 ## Built-in instruments
 
 | Id | Instrument | Settings (`state`) |

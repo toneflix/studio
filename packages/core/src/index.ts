@@ -8,3 +8,4 @@ export * from './model.ts';
 export * from './envelope.ts';
 export * from './automation.ts';
 export * from './notes.ts';
+export * from './steps.ts';
