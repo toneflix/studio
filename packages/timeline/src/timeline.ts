@@ -75,6 +75,7 @@ type Gesture =
   | { kind: 'move'; id: number; x: number; y: number; started: boolean; clip: Clip; ids: Set<string>; lane: number; base: TimelineState; track?: Track }
   | { kind: 'trim-start' | 'trim-end' | 'fade-in' | 'fade-out'; id: number; x: number; started: boolean; clip: Clip }
   | { kind: 'range'; id: number; x: number; y: number; started: boolean; time: number; lane: number; additive: boolean; ruler: boolean; touch: boolean }
+  | { kind: 'range-edge'; id: number; x: number; y: number; started: boolean; edge: 'start' | 'end'; range: TimeRange }
   | { kind: 'click-clip'; id: number; x: number; y: number; clip: Clip }
   | { kind: 'resize-track'; id: number; x: number; y: number; started: boolean; track: Track; height: number };
 
@@ -112,6 +113,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private overlay: HTMLDivElement;
   private playhead: HTMLDivElement;
   private rangeEl: HTMLDivElement;
+  private rangeMark: HTMLDivElement;
   private loopEl: HTMLDivElement;
   private snapEl: HTMLDivElement;
   private trackRows = new Map<string, { row: HTMLDivElement; header: HTMLDivElement; lane: HTMLDivElement; grip: HTMLDivElement; cleanup?: () => void }>();
@@ -182,6 +184,14 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.loopEl = this.doc.createElement('div');
     this.loopEl.className = 'tfs-loop';
     this.rangeEl = el('div', 'tfs-range', this.overlay);
+    this.rangeMark = this.doc.createElement('div');
+    this.rangeMark.className = 'tfs-range-mark';
+
+    for (const edge of ['start', 'end']) {
+      el('div', 'tfs-range-edge', this.rangeEl).dataset.rangeEdge = edge;
+      el('div', 'tfs-range-grip', this.rangeMark).dataset.rangeEdge = edge;
+    }
+
     this.snapEl = el('div', 'tfs-snap', this.overlay);
     this.playhead = el('div', 'tfs-playhead', this.overlay);
     this.snapEl.style.display = 'none';
@@ -318,15 +328,36 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
    * Split the selected clips at a time, or every clip under it when none are
    * selected. Only the left pieces stay selected, so the right ones drag alone.
    */
+  /**
+   * Split the selected clips at a time, the playhead by default. With no clips
+   * selected, a selected range is cut at both of its edges on its tracks.
+   * Nothing happens when nothing is selected.
+   */
   split(time = this.playheadTime) {
-    const ids = this.selected.size
-      ? this.selected
-      : new Set(this.state.clips.filter((clip) => clip.start < time && clipEnd(clip) > time).map((clip) => clip.id));
-    this.model.apply('Split', (state) => {
-      const result = splitClips(state, ids, time);
+    const range = this.currentRange;
 
-      return result.created.length ? result.state : state;
-    });
+    if (this.selected.size) {
+      const ids = this.selected;
+
+      this.model.apply('Split', (state) => {
+        const result = splitClips(state, ids, time);
+
+        return result.created.length ? result.state : state;
+      });
+    } else if (range) {
+      const at = (state: TimelineState, cut: number) => {
+        const ids = new Set(state.clips.filter((clip) => range.tracks.includes(clip.track) && clip.start < cut && clipEnd(clip) > cut).map((clip) => clip.id));
+
+        return ids.size ? splitClips(state, ids, cut).state : state;
+      };
+
+      this.model.apply('Split', (state) => at(at(state, range.start), range.end));
+    }
+  }
+
+  /** Whether `split()` has anything to cut: selected clips or a range. */
+  get canSplit() {
+    return this.selected.size > 0 || !!this.currentRange;
   }
 
   deleteSelected() {
@@ -580,18 +611,24 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       for (let time = Math.floor(from / step) * step; time < to; time += step) add(time, formatTime(time, step));
     }
 
-    this.ruler.replaceChildren(this.loopEl, ...labels);
+    this.ruler.replaceChildren(this.loopEl, this.rangeMark, ...labels);
   }
 
   private renderRange() {
     const range = this.currentRange;
     const style = this.rangeEl.style;
+    const mark = this.rangeMark.style;
 
     if (!range) {
       style.display = 'none';
+      mark.display = 'none';
 
       return;
     }
+
+    mark.display = 'block';
+    mark.left = `${range.start * this.pps}px`;
+    mark.width = `${(range.end - range.start) * this.pps}px`;
 
     const lanes = range.tracks.map((id) => this.state.tracks.findIndex((track) => track.id === id)).filter((i) => i >= 0);
     const ruler = this.ruler.offsetHeight;
@@ -694,6 +731,16 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       }
 
       this.gesture = { kind: 'resize-track', id: e.pointerId, x: e.clientX, y: e.clientY, started: false, track: resizing, height: this.heightOf(resizing) };
+      this.content.setPointerCapture?.(e.pointerId);
+
+      return;
+    }
+
+    const edge = target.closest<HTMLElement>('[data-range-edge]')?.dataset.rangeEdge as 'start' | 'end' | undefined;
+
+    if (edge && this.currentRange && !this.options.readonly) {
+      e.preventDefault();
+      this.gesture = { kind: 'range-edge', id: e.pointerId, x: e.clientX, y: e.clientY, started: false, edge, range: this.currentRange };
       this.content.setPointerCapture?.(e.pointerId);
 
       return;
@@ -805,6 +852,14 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       case 'fade-out':
         this.model.draft('Fade out', (state) => setFades(state, g.clip.id, { fadeOut: clipEnd(g.clip) - time }));
         break;
+      case 'range-edge': {
+        const moved = free || !this.options.showGrid ? time : this.grid.round(time);
+        const other = g.edge === 'start' ? g.range.end : g.range.start;
+
+        this.currentRange = { ...g.range, start: Math.max(0, Math.min(moved, other)), end: Math.max(moved, other) };
+        this.renderRange();
+        break;
+      }
       case 'range': {
         const snap = (t: number) => (free || !this.options.showGrid ? t : this.grid.round(t));
         const start = snap(Math.min(g.time, time));
@@ -851,6 +906,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       this.select([g.clip.id]);
     } else if (g.kind === 'range') {
       this.endRange(g);
+    } else if (g.kind === 'range-edge') {
+      if (g.started) this.setRange(this.currentRange);
     } else if (g.started) {
       const labels = { move: 'Move', 'trim-start': 'Trim', 'trim-end': 'Trim', 'fade-in': 'Fade in', 'fade-out': 'Fade out', 'resize-track': 'Resize track' } as const;
       this.model.commit(g.kind === 'move' && g.ids.size > 1 ? 'Move clips' : labels[g.kind]);

@@ -11,7 +11,8 @@ Clips are pieces of audio on a track. Each one says where it starts on the timel
 | Drag a clip edge | Trims it, up to the ends of its audio |
 | Drag a corner handle | Fade in or fade out |
 | Click / Shift click / Ctrl or ⌘ click | Select, add to the selection, toggle in the selection |
-| Drag on an empty track or the ruler | Selects a time range |
+| Drag on an empty track or the ruler | Selects a time range, also marked on the ruler |
+| Drag a range's handles | Moves its start or end, on the ruler or at its edges on the tracks |
 | Shift + drag on an empty track | Selects every clip inside the box |
 | Click the ruler or an empty track | Moves the playhead |
 | Alt while dragging | Turns snapping off |
@@ -26,7 +27,7 @@ While the timeline has focus:
 
 | Key | What it does |
 | --- | --- |
-| <kbd>S</kbd> | Split at the playhead: the selected clips, or every clip under the playhead |
+| <kbd>S</kbd> | Split the selected clips at the playhead, or cut a selected range at both edges. Does nothing when nothing is selected |
 | <kbd>Delete</kbd> / <kbd>Backspace</kbd> | Delete the selected clips |
 | <kbd>Ctrl</kbd>+<kbd>D</kbd> | Duplicate the selected clips right after themselves |
 | <kbd>Ctrl</kbd>+<kbd>A</kbd> | Select every clip |
