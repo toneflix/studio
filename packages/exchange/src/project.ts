@@ -1,5 +1,5 @@
 import { encodeWav, type AudioEngine, type ChannelSettings } from '@toneflix/studio-audio';
-import type { TimelineState } from '@toneflix/studio-core';
+import { sourcesInUse, type TimelineState } from '@toneflix/studio-core';
 import type { PluginRack, RackSnapshot } from '@toneflix/studio-plugins';
 import type { StudioTimeline } from '@toneflix/studio-timeline';
 import { fromReaper, toReaper } from './rpp.ts';
@@ -77,12 +77,13 @@ export interface OpenedProject {
 /** A file name that is safe on every system. */
 const safe = (name: string) => name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'audio';
 
-/** Each source the clips use as a WAV entry, with its path in the archive. */
-const audioEntries = (timeline: StudioTimeline, engine: AudioEngine) => {
+/** Each source as a WAV entry, with its path in the archive: the clips' audio, and the instruments' samples too when `samples` is set. */
+const audioEntries = (timeline: StudioTimeline, engine: AudioEngine, samples: boolean) => {
   const files = new Map<string, string>();
   const entries: ZipEntry[] = [];
+  const sources = samples ? sourcesInUse(timeline.state) : new Set(timeline.state.clips.map((clip) => clip.source));
 
-  for (const source of new Set(timeline.state.clips.map((clip) => clip.source))) {
+  for (const source of sources) {
     const buffer = engine.getBuffer(source);
     if (!buffer) continue;
 
@@ -111,7 +112,7 @@ const describe = (app: AppIdentity) =>
 export const saveReaperProject = async (timeline: StudioTimeline, engine: AudioEngine, options: SaveProjectOptions = {}) => {
   const app = options.app ?? DEFAULT_APP;
   const name = safe(options.name ?? app.name);
-  const { files, entries } = audioEntries(timeline, engine);
+  const { files, entries } = audioEntries(timeline, engine, false);
 
   const text = toReaper(timeline.state, {
     bpm: timeline.grid.bpm,
@@ -133,7 +134,7 @@ export const saveReaperProject = async (timeline: StudioTimeline, engine: AudioE
  */
 export const saveAppProject = async (timeline: StudioTimeline, engine: AudioEngine, options: SaveProjectOptions = {}) => {
   const app = options.app ?? DEFAULT_APP;
-  const { files, entries } = audioEntries(timeline, engine);
+  const { files, entries } = audioEntries(timeline, engine, true);
   const plugins = await options.plugins?.snapshot();
 
   const manifest: ProjectManifest = {

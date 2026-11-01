@@ -1,6 +1,6 @@
 # Instruments and notes
 
-An instrument track plays note clips through an instrument: the built-in synth or drum kit, or a Web Audio Module instrument. Its clips hold notes instead of audio, the timeline draws them as a small piano roll, and the piano roll editor draws and changes them.
+An instrument track plays note clips through an instrument: the built-in synth, drum kit or sampler, or a Web Audio Module instrument. Its clips hold notes instead of audio, the timeline draws them as a small piano roll, and the piano roll editor draws and changes them.
 
 <StudioPlayground />
 
@@ -30,7 +30,7 @@ A note's `pitch` is a MIDI note number (60 is middle C), its `start` counts in s
 
 ## Adding tracks and clips
 
-The add track button asks what to add: an empty audio track, audio from a file on the device (with the `importAudio` option, see [Editing](./editing)), an instrument track or a drum track. Double-click an empty spot on an instrument track's lane to add a one-bar note clip there. Pass `instrumentTracks` to change the kinds on offer, or an empty list to offer only audio tracks.
+The add track button asks what to add: an empty audio track, audio from a file on the device (with the `importAudio` option, see [Editing](./editing)), an instrument track, a drum track or a sampler track. Double-click an empty spot on an instrument track's lane to add a one-bar note clip there. Pass `instrumentTracks` to change the kinds on offer, or an empty list to offer only audio tracks.
 
 | Method | What it does |
 | --- | --- |
@@ -82,12 +82,37 @@ The piano roll's **Steps** view shows a note clip as a step sequencer: a row per
 
 A step is the snap when it is finer than a beat, a sixteenth otherwise. The grid is a view of the clip's notes, so steps drawn here show in the piano roll and the other way round; a note counts as on a step when it starts within a quarter of a step of it. Swing moves the notes already on swung steps, and new hits land swung. The playing step lights up during playback. Each change is one undo step.
 
+## Custom samples
+
+Drum kits and samplers play audio files you load, so a beat or a melody can use any sound.
+
+- **Drum pads.** In the step sequencer, click a drum's name and pick **Load sample…** to replace its sound; **Use built-in sound** brings the kit's own back. **+ Add pad** adds a row for a new sound, on the first free note from C4 up, and **Remove pad** takes it away with its notes.
+- **Sampler tracks.** A sampler repitches each sample from its root note, and every note plays the sample whose root is nearest. Press a key, then pick **Samples → Add sample on (that key)…**. The keys show the sample names, and the same menu removes them. A sampler's Steps view gets a row per sample too.
+- **Drops.** Drop an audio file, or a sound dragged out of the [browser](./browser), on a step row or a piano roll key to put it on that note.
+
+Each change is one undo step. The samples live in the instrument's settings as `samples`, so they are saved with the track:
+
+```ts
+timeline.setInstrument('beat', {
+  id: 'drums',
+  state: { samples: { 36: { source: 'my-kick', name: '808 kick' } } },
+});
+timeline.setInstrument('keys', {
+  id: 'sampler',
+  state: { samples: [{ source: 'piano-c3', name: 'Piano', root: 48 }, { source: 'piano-c5', name: 'Piano', root: 72 }] },
+});
+engine.setBuffer('my-kick', kickBuffer); // the audio, by source id, as for clips
+```
+
+A sample is `{ source, name?, root?, tune?, gain? }`. The engine looks each one up by `source` as it plays, so set its buffer before or after. App projects save the samples' audio with the clips', and `sourcesInUse(state)` lists every source a session needs. Pass `onSource` to the piano roll to get each loaded sample's audio, for example to upload it.
+
 ## Built-in instruments
 
 | Id | Instrument | Settings (`state`) |
 | --- | --- | --- |
 | `synth` | Polyphonic subtractive synth: two detuned oscillators, a low-pass filter and an envelope | `wave`, `detune`, `attack`, `decay`, `sustain`, `release`, `cutoff`, `resonance`, `envelope`, `volume` |
-| `drums` | Drum machine made of oscillators and noise, on General MIDI drum notes: kick 36, snare 38, clap 39, closed hat 42, open hat 46, toms 45, 47 and 50, crash 49, ride 51, cowbell 56 | `volume`, `tune`, `decay` |
+| `drums` | Drum machine made of oscillators and noise, on General MIDI drum notes: kick 36, snare 38, clap 39, closed hat 42, open hat 46, toms 45, 47 and 50, crash 49, ride 51, cowbell 56. A note with a sample plays the sample | `volume`, `tune`, `decay`, `samples` (by note number) |
+| `sampler` | Plays samples repitched from their root notes, the nearest root for each note | `samples` (a list), `attack`, `release`, `volume` |
 
 ## WAM instruments
 
@@ -102,4 +127,4 @@ timeline.setInstrument('lead', { id: 'https://example.com/wams/synth/index.js' }
 
 `engine.instrument(track)` gives a track's instrument once it has loaded, with `noteOn` and `noteOff` for keys played live. Some WAM instruments play only live and stay silent in offline renders like Export mix, so test one in an export before you offer it. The built-in instruments render either way.
 
-To make your own instrument, implement `Instrument` (`output`, `play`, `noteOn`, `noteOff`, `stopAll`, `destroy`) and pass an `InstrumentFactory` to `engine.setInstruments`.
+To make your own instrument, implement `Instrument` (`output`, `play`, `noteOn`, `noteOff`, `stopAll`, `destroy`) and pass an `InstrumentFactory` to `engine.setInstruments`. Its fourth argument looks up a sample's audio by source id.

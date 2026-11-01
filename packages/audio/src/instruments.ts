@@ -1,4 +1,4 @@
-import type { InstrumentChoice, Track } from '@toneflix/studio-core';
+import type { InstrumentChoice, SampleRef, Track } from '@toneflix/studio-core';
 
 /** Something that turns notes into sound, like the built-in synth or a WAM instrument. */
 export interface Instrument {
@@ -17,8 +17,24 @@ export interface Instrument {
   destroy(): void;
 }
 
-/** Makes the instrument a track asks for in a context, or null for one it doesn't know. */
-export type InstrumentFactory = (choice: InstrumentChoice, context: BaseAudioContext, track: Track) => Instrument | Promise<Instrument> | null;
+/** The decoded audio of a source, if the engine has it. Instruments look samples up as they play. */
+export type SampleLookup = (source: string) => AudioBuffer | undefined;
+
+/**
+ * Makes the instrument a track asks for in a context, or null for one it doesn't know.
+ * `samples` finds the audio of the samples in the instrument's state.
+ */
+export type InstrumentFactory = (
+  choice: InstrumentChoice,
+  context: BaseAudioContext,
+  track: Track,
+  samples: SampleLookup,
+) => Instrument | Promise<Instrument> | null;
+
+const noSamples: SampleLookup = () => undefined;
+
+/** Semitones as a playback rate. */
+const rate = (semitones: number) => 2 ** (semitones / 12);
 
 /** The note number's frequency, with A4 (69) at 440 Hz. */
 export const noteFrequency = (pitch: number) => 440 * 2 ** ((pitch - 69) / 12);
@@ -39,7 +55,7 @@ class Sounds {
   private list: Sound[] = [];
 
   add(sound: Sound) {
-    this.list = this.list.filter((s) => s.until > sound.until - 60);
+    this.list = this.list.filter((s) => s.until > sound.from - 60);
     this.list.push(sound);
   }
 
@@ -246,20 +262,27 @@ export interface DrumKitState {
   tune: number;
   /** Longer or shorter decays, 1 is as made */
   decay: number;
+  /** Sounds that replace the built-in ones or add pads, by note number */
+  samples: Record<number, SampleRef>;
 }
 
-export const DEFAULT_DRUMS: DrumKitState = { volume: 0.7, tune: 0, decay: 1 };
+export const DEFAULT_DRUMS: DrumKitState = { volume: 0.7, tune: 0, decay: 1, samples: {} };
 
-/** A drum machine made of oscillators and noise, on General MIDI drum notes. */
+/**
+ * A drum machine made of oscillators and noise, on General MIDI drum notes.
+ * A note with a sample plays the sample instead, so any pad can be a custom sound.
+ */
 export class DrumKit implements Instrument {
   readonly output: GainNode;
   private state: DrumKitState;
   private readonly sounds = new Sounds();
 
   private readonly context: BaseAudioContext;
+  private readonly samples: SampleLookup;
 
-  constructor(context: BaseAudioContext, state: Partial<DrumKitState> = {}) {
+  constructor(context: BaseAudioContext, state: Partial<DrumKitState> = {}, samples: SampleLookup = noSamples) {
     this.context = context;
+    this.samples = samples;
     this.state = { ...DEFAULT_DRUMS, ...state };
     this.output = new GainNode(context, { gain: this.state.volume });
   }
@@ -300,6 +323,11 @@ export class DrumKit implements Instrument {
 
     // A closed or pedal hat chokes an open one
     if (pitch === n.closedHat || pitch === n.pedalHat) this.sounds.release(n.openHat, when, true);
+
+    const sample = this.state.samples[pitch];
+    const buffer = sample && this.samples(sample.source);
+
+    if (sample && buffer) return this.sample(pitch, when, level, sample, buffer);
 
     switch (pitch) {
       case 35:
@@ -376,6 +404,18 @@ export class DrumKit implements Instrument {
     this.track(pitch, amp, source, when, when + o.decay * 4);
   }
 
+  /** A sample played to its end, at its own pitch plus the kit's tune. */
+  private sample(pitch: number, when: number, level: number, sample: SampleRef, buffer: AudioBuffer) {
+    const source = new AudioBufferSourceNode(this.context, { buffer, playbackRate: rate(this.state.tune + (sample.tune ?? 0)) });
+    const amp = new GainNode(this.context, { gain: level * (sample.gain ?? 1) });
+    const length = buffer.duration / source.playbackRate.value;
+
+    source.connect(amp).connect(this.output);
+    source.start(when);
+    source.onended = () => amp.disconnect();
+    this.track(pitch, amp, source, when, when + length);
+  }
+
   private envelope(amp: GainNode, when: number, level: number, decay: number) {
     amp.gain.setValueAtTime(0, when);
     amp.gain.linearRampToValueAtTime(level, when + 0.002);
@@ -401,10 +441,123 @@ export class DrumKit implements Instrument {
   }
 }
 
-/** The built-in instruments: `synth` and `drums`. */
-export const builtInInstruments: InstrumentFactory = (choice, context) => {
+export interface SamplerState {
+  /** The samples it plays; each note uses the one whose root is nearest */
+  samples: SampleRef[];
+  /** Fade in and out, in seconds */
+  attack: number;
+  release: number;
+  /** 0 to 1 */
+  volume: number;
+}
+
+export const DEFAULT_SAMPLER: SamplerState = { samples: [], attack: 0.002, release: 0.15, volume: 0.8 };
+
+/** The sample nearest a note: the closest root, the lower one on a tie. Samples without a root sit on C4. */
+export const sampleFor = (samples: readonly SampleRef[], pitch: number) => {
+  let best: SampleRef | undefined;
+
+  for (const sample of samples) {
+    const distance = Math.abs(pitch - (sample.root ?? 60));
+    const bestDistance = best ? Math.abs(pitch - (best.root ?? 60)) : Infinity;
+
+    if (distance < bestDistance || (distance === bestDistance && (sample.root ?? 60) < (best!.root ?? 60))) best = sample;
+  }
+
+  return best;
+};
+
+/**
+ * Plays audio samples on notes, repitched from each sample's root note. Notes are
+ * held for their length and fade out, or end sooner when the sample does.
+ */
+export class Sampler implements Instrument {
+  readonly output: GainNode;
+  private state: SamplerState;
+  private readonly sounds = new Sounds();
+  private readonly context: BaseAudioContext;
+  private readonly samples: SampleLookup;
+
+  constructor(context: BaseAudioContext, state: Partial<SamplerState> = {}, samples: SampleLookup = noSamples) {
+    this.context = context;
+    this.samples = samples;
+    this.state = { ...DEFAULT_SAMPLER, ...state };
+    this.output = new GainNode(context, { gain: this.state.volume });
+  }
+
+  play(pitch: number, velocity: number, when: number, duration: number) {
+    this.voice(pitch, velocity, when, when + Math.max(0.01, duration));
+  }
+
+  noteOn(pitch: number, velocity: number) {
+    this.voice(pitch, velocity, this.context.currentTime, Infinity);
+  }
+
+  noteOff(pitch: number) {
+    this.sounds.release(pitch, this.context.currentTime);
+  }
+
+  stopAll(when: number) {
+    this.sounds.stopAll(when);
+  }
+
+  getState() {
+    return { ...this.state };
+  }
+
+  setState(state: unknown) {
+    this.state = { ...this.state, ...(state as Partial<SamplerState>) };
+    this.output.gain.setTargetAtTime(this.state.volume, this.context.currentTime, 0.02);
+  }
+
+  destroy() {
+    this.stopAll(this.context.currentTime);
+    this.output.disconnect();
+  }
+
+  private voice(pitch: number, velocity: number, when: number, off: number) {
+    const sample = sampleFor(this.state.samples, pitch);
+    const buffer = sample && this.samples(sample.source);
+    if (!sample || !buffer) return;
+
+    const { attack, release } = this.state;
+    const source = new AudioBufferSourceNode(this.context, { buffer, playbackRate: rate(pitch - (sample.root ?? 60) + (sample.tune ?? 0)) });
+    const amp = new GainNode(this.context, { gain: 0 });
+    const level = Math.max(0.0001, velocity) * (sample.gain ?? 1);
+    const ends = when + buffer.duration / source.playbackRate.value;
+
+    amp.gain.setValueAtTime(0, when);
+    amp.gain.linearRampToValueAtTime(level, when + attack);
+    source.connect(amp).connect(this.output);
+    source.start(when);
+    source.onended = () => amp.disconnect();
+
+    let stopped = false;
+    const end = (at: number) => {
+      if (stopped) return;
+      stopped = true;
+
+      const from = Math.max(at, when);
+
+      amp.gain.cancelScheduledValues(from);
+      amp.gain.setTargetAtTime(0, from, Math.max(0.005, release / 4));
+      try {
+        source.stop(from + release + 0.05);
+      } catch {
+        // Already stopping sooner
+      }
+    };
+
+    if (off !== Infinity && off < ends) end(off);
+    this.sounds.add({ pitch, from: when, end, until: off === Infinity ? Infinity : Math.min(ends, off + release) });
+  }
+}
+
+/** The built-in instruments: `synth`, `drums` and `sampler`. */
+export const builtInInstruments: InstrumentFactory = (choice, context, _track, samples) => {
   if (choice.id === 'synth') return new Synth(context, (choice.state ?? {}) as Partial<SynthState>);
-  if (choice.id === 'drums') return new DrumKit(context, (choice.state ?? {}) as Partial<DrumKitState>);
+  if (choice.id === 'drums') return new DrumKit(context, (choice.state ?? {}) as Partial<DrumKitState>, samples);
+  if (choice.id === 'sampler') return new Sampler(context, (choice.state ?? {}) as Partial<SamplerState>, samples);
 
   return null;
 };

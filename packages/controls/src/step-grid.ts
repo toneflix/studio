@@ -1,12 +1,48 @@
 import { DRUM_NAMES } from '@toneflix/studio-audio';
-import { noteName, notesOnStep, setSwing, swingOf, toggleStep, type Clip, type Note } from '@toneflix/studio-core';
+import { noteName, notesOnStep, setSwing, swingOf, toggleStep, type Clip, type Note, type SampleRef } from '@toneflix/studio-core';
+import { openMenu, type MenuItem } from '@toneflix/studio-timeline';
+import { DRAG_TYPE, draggedSound, type DraggedSound } from './browser.ts';
 
 export interface StepGridLabels {
   /** The pattern length menu, in bars */
   length: string;
   swing: string;
   accent: string;
+  /** A row's menu: pick an audio file for it */
+  loadSample: string;
+  /** A drum row's menu: go back to the kit's own sound */
+  builtInSound: string;
+  removeSample: string;
+  /** Removes a pad that has no built-in sound, with its notes */
+  removePad: string;
+  /** Adds a row for a new sample */
+  addPad: string;
 }
+
+/** Audio for a sample: a file from the device or a sound dragged from a library. */
+export type SampleInput = File | DraggedSound;
+
+/** A drop's audio: the first audio file, or the library sound being dragged. */
+export const sampleInputOf = (e: DragEvent): SampleInput | null => {
+  const file = [...(e.dataTransfer?.files ?? [])].find((f) => f.type.startsWith('audio/') || /\.(wav|mp3|ogg|oga|flac|m4a|aac|aiff?|webm|opus)$/i.test(f.name));
+
+  return file ?? (e.dataTransfer?.types.includes(DRAG_TYPE) ? draggedSound() : null);
+};
+
+/** Whether a drag may carry audio for a sample. */
+export const mayCarrySample = (e: DragEvent) => !!e.dataTransfer?.types.some((type) => type === 'Files' || (type === DRAG_TYPE && !!draggedSound()));
+
+/** Ask for one audio file from the device. */
+export const pickAudioFile = (doc: Document) =>
+  new Promise<File | null>((resolve) => {
+    const input = doc.createElement('input');
+
+    input.type = 'file';
+    input.accept = 'audio/*';
+    input.addEventListener('change', () => resolve(input.files?.[0] ?? null), { once: true });
+    input.addEventListener('cancel', () => resolve(null), { once: true });
+    input.click();
+  });
 
 /** What the step grid needs from the editor around it. */
 export interface StepGridHost {
@@ -21,6 +57,17 @@ export interface StepGridHost {
   cancel(): void;
   setLength(duration: number): void;
   audition(pitch: number, velocity: number): void;
+  /**
+   * How the track's instrument takes samples: one per drum pad, one per root note
+   * on a sampler, or none.
+   */
+  sampling(): 'pads' | 'zones' | null;
+  /** The samples on the track's instrument, by note number */
+  samples(): ReadonlyMap<number, SampleRef>;
+  /** Put a sample on a note, or take it off with null */
+  useSample(pitch: number, input: SampleInput | null): void;
+  /** Take a pad's sample off and delete its notes, as one undo step */
+  removePad(pitch: number): void;
 }
 
 /** The kit pieces in the order the grid lists them. */
@@ -55,6 +102,7 @@ export class StepGrid {
   private readonly swings = new Map<string, number>();
   private key = '';
   private playing = -1;
+  private readonly addPadButton: HTMLButtonElement;
 
   constructor(doc: Document, host: StepGridHost, labels: StepGridLabels) {
     const el = <K extends keyof HTMLElementTagNameMap>(tag: K, className: string, parent?: HTMLElement) => {
@@ -91,6 +139,21 @@ export class StepGrid {
     this.scroller = el('div', 'tfs-steps-scroller', this.root);
     this.table = el('div', 'tfs-steps-table', this.scroller);
     this.table.setAttribute('role', 'grid');
+    this.addPadButton = el('button', 'tfs-steps-add', this.scroller);
+    this.addPadButton.type = 'button';
+    this.addPadButton.textContent = `+ ${labels.addPad}`;
+    this.addPadButton.addEventListener('click', () => void this.pick(this.freePad()));
+    this.listenForDrops(this.addPadButton, () => this.freePad());
+    this.table.addEventListener('click', (e) => {
+      const name = (e.target as HTMLElement).closest<HTMLElement>('.tfs-steps-name');
+
+      if (name?.dataset.pitch) this.openRowMenu(Number(name.dataset.pitch), name);
+    });
+    this.listenForDrops(this.table, (e) => {
+      const row = (e.target as HTMLElement).closest<HTMLElement>('.tfs-steps-row');
+
+      return row?.dataset.pitch ? Number(row.dataset.pitch) : null;
+    });
 
     this.lengthSelect.addEventListener('change', () => this.host.setLength(Number(this.lengthSelect.value) * this.host.bar()));
     this.swingInput.addEventListener('input', () => this.onSwing(false));
@@ -116,9 +179,15 @@ export class StepGrid {
     const swing = this.swingBase ? Number(this.swingInput.value) : this.swingFor(clip, step);
     const count = Math.max(1, Math.round((clip.offset + clip.duration) / step));
     const used = notes.map((note) => note.pitch);
-    const rows = drums ? [...new Set([...DRUM_ROWS, ...used])] : [...new Set([...SCALE, ...used])].sort((a, b) => b - a);
+    const sampling = this.host.sampling();
+    const samples = this.host.samples();
+    const sampled = [...samples.keys()];
+    const rows = drums ? [...new Set([...DRUM_ROWS, ...used, ...sampled])] : [...new Set([...SCALE, ...used, ...sampled])].sort((a, b) => b - a);
     const perBeat = Math.max(1, Math.round(this.host.bar() / step / 4));
-    const key = [count, rows.join(','), perBeat].join('|');
+    const names = rows.map((pitch) => samples.get(pitch)?.name ?? (drums ? (DRUM_NAMES[pitch] ?? noteName(pitch)) : noteName(pitch)));
+    const key = [count, rows.join(','), perBeat, names.join('\n'), sampling, this.host.editable()].join('|');
+
+    this.addPadButton.hidden = sampling !== 'pads' || !this.host.editable();
 
     if (!this.swingBase) {
       this.swingInput.value = String(swing);
@@ -132,14 +201,22 @@ export class StepGrid {
       this.key = key;
       this.table.style.setProperty('--tfs-steps', String(count));
       this.table.replaceChildren(
-        ...rows.map((pitch) => {
+        ...rows.map((pitch, i) => {
           const row = this.doc.createElement('div');
-          const name = this.doc.createElement('div');
+          const menu = !!sampling && this.host.editable();
+          const name = this.doc.createElement(menu ? 'button' : 'div');
 
-          row.className = 'tfs-steps-row';
+          row.className = `tfs-steps-row${samples.has(pitch) ? ' tfs-steps-row--sample' : ''}`;
           row.setAttribute('role', 'row');
+          row.dataset.pitch = String(pitch);
           name.className = 'tfs-steps-name';
-          name.textContent = drums ? (DRUM_NAMES[pitch] ?? noteName(pitch)) : noteName(pitch);
+          name.textContent = names[i]!;
+          name.title = samples.has(pitch) ? `${names[i]} (${noteName(pitch)})` : names[i]!;
+          name.dataset.pitch = String(pitch);
+          if (name instanceof HTMLButtonElement) {
+            name.type = 'button';
+            name.setAttribute('aria-haspopup', 'menu');
+          }
           row.append(name);
 
           for (let index = 0; index < count; index++) {
@@ -179,6 +256,57 @@ export class StepGrid {
     for (const cell of this.table.querySelectorAll(`[data-step="${index}"]`)) cell.classList.add('tfs-step--playing');
 
     this.playing = index;
+  }
+
+  /** A row's sample menu: load a file, or go back to no sample. */
+  private openRowMenu(pitch: number, anchor: HTMLElement) {
+    const sampling = this.host.sampling();
+    if (!sampling || !this.host.editable()) return;
+
+    const box = anchor.getBoundingClientRect();
+    const sample = this.host.samples().get(pitch);
+    const builtIn = sampling === 'pads' && pitch in DRUM_NAMES;
+    const items: MenuItem[] = [{ label: this.labels.loadSample, onSelect: () => void this.pick(pitch) }];
+
+    if (sampling === 'pads' && !builtIn) items.push({ label: this.labels.removePad, onSelect: () => this.host.removePad(pitch) });
+    else if (sample) items.push({ label: builtIn ? this.labels.builtInSound : this.labels.removeSample, onSelect: () => this.host.useSample(pitch, null) });
+
+    openMenu(this.doc, { x: box.left, y: box.bottom + 2 }, items, sample?.name ?? anchor.textContent ?? '');
+  }
+
+  private async pick(pitch: number) {
+    const file = await pickAudioFile(this.doc);
+
+    if (file) this.host.useSample(pitch, file);
+  }
+
+  /** The first note from C4 up with no row yet, for a new pad. */
+  private freePad() {
+    const taken = new Set([...DRUM_ROWS, ...(this.host.clip()?.clip.notes ?? []).map((note) => note.pitch), ...this.host.samples().keys()]);
+    let pitch = 60;
+
+    while (taken.has(pitch) && pitch < 127) pitch++;
+
+    return pitch;
+  }
+
+  /** Dropping an audio file or a library sound on a target puts it on the note `pitchOf` gives. */
+  private listenForDrops(target: HTMLElement, pitchOf: (e: DragEvent) => number | null) {
+    target.addEventListener('dragover', (e) => {
+      if (!this.host.sampling() || !this.host.editable() || !mayCarrySample(e) || pitchOf(e) === null) return;
+
+      e.preventDefault();
+      e.dataTransfer!.dropEffect = 'copy';
+    });
+    target.addEventListener('drop', (e) => {
+      const pitch = pitchOf(e);
+      const input = sampleInputOf(e);
+      if (!this.host.sampling() || !this.host.editable() || pitch === null || !input) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      this.host.useSample(pitch, input);
+    });
   }
 
   private renderLength(clip: Clip) {
@@ -238,6 +366,9 @@ export class StepGrid {
   }
 
   private onDown(e: PointerEvent) {
+    // Focusing a row name would scroll the grid, which closes the menu it opens
+    if ((e.target as HTMLElement).closest('button.tfs-steps-name')) e.preventDefault();
+
     const cell = (e.target as HTMLElement).closest<HTMLElement>('.tfs-step');
     const notes = this.host.clip()?.clip.notes;
     if (!cell || !notes || e.button !== 0 || this.paint || !this.host.editable()) return;
