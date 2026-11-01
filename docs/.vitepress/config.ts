@@ -1,12 +1,13 @@
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
-  title: '@toneflix/studio',
+  title: 'Toneflix Studio',
   description: 'The studio engine for the web: multitrack audio editing that feels like a desktop DAW, in any browser app.',
   base: process.env.DOCS_BASE || '/',
   cleanUrls: true,
+  appearance: 'dark',
   lastUpdated: true,
-  head: [['meta', { name: 'theme-color', content: '#4f9cf9' }]],
+  head: [['meta', { name: 'theme-color', content: '#0a0c10' }]],
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },

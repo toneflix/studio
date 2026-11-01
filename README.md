@@ -1,4 +1,4 @@
-# @toneflix/studio
+# Toneflix Studio
 
 ![A multitrack timeline with drums, bass, keys and vocal clips](https://raw.githubusercontent.com/toneflix/studio/main/docs/public/screenshot.png)
 
