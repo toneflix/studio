@@ -14,7 +14,7 @@ new StudioToolbar('#toolbar', { timeline, engine });
 linkPlayback(timeline, engine);
 ```
 
-The default toolbar has play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, export and the output meter. Undo, redo, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
+The default toolbar has play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, export, the output meter and info. Undo, redo, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
 
 Pick the buttons and their order with `items`. `'|'` adds a divider:
 
@@ -32,6 +32,20 @@ Without an `engine`, the playback buttons and the meter are left out.
 
 The `display` item shows where the playhead is in bars, beats and sixteenths (`3.2.1`) and in minutes and seconds, with the tempo and time signature beside them. Type a new tempo or pick a time signature there to change the timeline's grid and the metronome together.
 
+### Session info
+
+The `info` item opens a dialog with the number of tracks, clips and selected clips, the playhead, the length, the tempo and the time signature. It stays up to date while open. Add your own rows, or replace them, with `info`:
+
+```ts
+new StudioToolbar('#toolbar', {
+  timeline,
+  engine,
+  info: (rows) => [...rows, ['Project', song.title]],
+});
+```
+
+Open it from your own UI with `toolbar.showInfo()`.
+
 ### Output meter
 
 The `meter` item shows the master output level for the left and right sides, from -60 dB to 0 dB. It only does work while something plays.
@@ -43,6 +57,47 @@ new StudioToolbar('#toolbar', { timeline, engine, labels: { play: 'Lecture', pau
 ```
 
 Loop repeats the selected range, or four bars from the playhead when nothing is selected. Export mixes the timeline and downloads it as `mix.wav`. Set `exportName` to change the file name.
+
+## Your own buttons
+
+Add buttons with `actions`. Each one names the item it goes `before` or `after`, or goes at the end. You can also put its `id` in `items`:
+
+```ts
+const toolbar = new StudioToolbar('#toolbar', {
+  timeline,
+  engine,
+  actions: [
+    {
+      id: 'share',
+      label: 'Share',
+      icon: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>',
+      after: 'export',
+      onClick: ({ timeline }) => share(timeline.state),
+    },
+  ],
+});
+
+const remove = toolbar.addAction({ id: 'publish', label: 'Publish', icon: publishSvg, before: 'info', onClick: publish });
+```
+
+`onClick` gets the timeline, the engine, the toolbar, `mix()` (the mix as a WAV `Blob`) and `download()`. While a returned promise runs, the button is disabled so it can't start twice. Give an action `pressed` or `disabled` functions to show its state; they're read whenever the toolbar refreshes.
+
+## Saving
+
+Pass `onSave` to turn the export button into Save. It's called instead of downloading, for example to upload the mix or store the project, and the button waits until it finishes:
+
+```ts
+new StudioToolbar('#toolbar', {
+  timeline,
+  engine,
+  onSave: async ({ timeline, mix }) => {
+    await api.saveProject(timeline.state);
+    await api.uploadMix(await mix());
+  },
+});
+```
+
+The save button shows even without an engine; `mix()` needs one.
 
 ## Track strips
 
@@ -88,7 +143,7 @@ setDefaultIcons({ play: playSvg, pause: pauseSvg, stop: stopSvg });
 
 Mute and solo show the letters M and S unless you give them icons.
 
-Icon names: `play`, `pause`, `stop`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute` and `solo`. Icons use `currentColor`, so they take the button's text colour.
+Icon names: `play`, `pause`, `stop`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute`, `solo`, `info`, `save` and `close`. Icons use `currentColor`, so they take the button's text colour. Play, pause and stop are solid shapes; the rest are outlines.
 
 ## Styling
 
