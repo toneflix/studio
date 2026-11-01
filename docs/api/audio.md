@@ -1,4 +1,4 @@
-# Playback and mixer
+# Playback, mixer and controls
 
 From `@toneflix/studio-audio`, also exported by `@toneflix/studio`.
 
@@ -51,3 +51,16 @@ Event: `change` with `{ track, settings }`.
 | `encodeWav(audio, bitDepth = 16)` | PCM WAV bytes from an `AudioBuffer` or anything shaped like one |
 | `heardRanges(state)` | The heard part of every clip on every track |
 | `timelineAt(origin, loop, elapsed)` | Where playback is after some seconds, with a loop |
+
+## Controls
+
+From `@toneflix/studio-controls`, also exported by `@toneflix/studio`. See [Toolbar and track controls](../guide/controls).
+
+| | |
+| --- | --- |
+| `new StudioToolbar(container, options)` | `timeline`, `engine?`, `items?`, `icons?`, `labels?`, `exportName?`; `refresh()`, `destroy()` |
+| `DEFAULT_TOOLBAR`, `DEFAULT_LABELS` | The default buttons and their names |
+| `trackStrip(engine, options?)` | A `renderHeader` for the timeline; `icons?`, `labels?`, `maxVolume?` (1.5) |
+| `setDefaultIcons(icons)` | Replace icons for every control made afterwards |
+| `renderIcon(document, name, icons?)` | An icon element, to use the same icons in your own UI |
+| `lucideIcons` | The default icons, as SVG shapes |

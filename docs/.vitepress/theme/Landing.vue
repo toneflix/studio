@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import { withBase } from 'vitepress';
-import type { AudioEngine, StudioTimeline } from '@toneflix/studio';
+import type { AudioEngine, StudioTimeline, StudioToolbar } from '@toneflix/studio';
 
 const host = ref<HTMLElement>();
 const timeline = shallowRef<StudioTimeline>();
 const engine = shallowRef<AudioEngine>();
-const playing = ref(false);
+const toolbar = shallowRef<StudioToolbar>();
+const actions = ref<HTMLElement>();
 let unlink = () => {};
 const copied = ref(false);
 const install = 'pnpm add @toneflix/studio';
@@ -24,7 +25,7 @@ const features = [
   },
   {
     title: 'Fits any stack',
-    text: 'No framework and no dependencies. Restyle it with CSS variables and drop in your own track controls.',
+    text: 'No framework and no dependencies. Use the built-in toolbar and track controls with your own icons, or build your own UI.',
     icon: 'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
   },
   {
@@ -53,7 +54,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, StudioTimeline, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, StudioTimeline, StudioToolbar, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const view = new StudioTimeline(host.value!, {
@@ -67,9 +68,7 @@ onMounted(async () => {
 
   const audio = new AudioEngine();
 
-  audio.on('play', () => (playing.value = true));
-  audio.on('pause', () => (playing.value = false));
-  audio.on('end', () => (playing.value = false));
+  toolbar.value = new StudioToolbar(actions.value!, { timeline: view, engine: audio, items: ['play', 'stop', 'loop', '|', 'split', 'undo', 'fit'] });
   loadSample(view, { engine: audio });
   unlink = linkPlayback(view, audio);
   timeline.value = view;
@@ -78,6 +77,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   unlink();
+  toolbar.value?.destroy();
   engine.value?.destroy();
   timeline.value?.destroy();
 });
@@ -117,15 +117,7 @@ onBeforeUnmount(() => {
       <div class="window-bar">
         <span class="dots" aria-hidden="true"><i /><i /><i /></span>
         <span class="window-title">Untitled session · 120 BPM · 4/4</span>
-        <span class="window-actions">
-          <button type="button" class="play" :aria-label="playing ? 'Pause' : 'Play'" @click="engine?.toggle()">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path v-if="playing" d="M7 5h3v14H7zM14 5h3v14h-3z" /><path v-else d="M8 5v14l11-7z" /></svg>
-            {{ playing ? 'Pause' : 'Play' }}
-          </button>
-          <button type="button" @click="timeline?.split()">Split</button>
-          <button type="button" @click="timeline?.undo()">Undo</button>
-          <button type="button" @click="timeline?.fit()">Fit</button>
-        </span>
+        <span ref="actions" class="window-actions" />
       </div>
       <div ref="host" class="window-body" />
       <p class="window-hint">It's live. Press play, drag a clip while it plays, or click the ruler and press S to split.</p>
@@ -399,33 +391,17 @@ studio.<span class="f">on</span>(<span class="s">'change'</span>, ({ state }) =&
 }
 .window-actions {
   display: inline-flex;
-  gap: 6px;
+  margin-left: auto;
+  --tfs-toolbar-bg: transparent;
+  --tfs-toolbar-text: var(--tf-text);
+  --tfs-toolbar-hover: var(--tf-surface-3);
+  --tfs-toolbar-line: var(--tf-border-strong);
+  --tfs-toolbar-active: var(--tf-primary);
+  --tfs-toolbar-active-text: var(--tf-on-primary);
+  --tfs-toolbar-size: 30px;
 }
-.window-actions button {
-  padding: 4px 12px;
-  border-radius: 8px;
-  background: var(--tf-surface-3);
-  color: var(--tf-text);
-  font-size: 12px;
-  font-weight: 600;
-}
-.window-actions button.play {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: var(--tf-primary);
-  color: var(--tf-on-primary);
-}
-.window-actions button.play svg {
-  width: 12px;
-  height: 12px;
-  fill: currentColor;
-}
-.window-actions button.play:hover {
-  background: var(--tf-primary-hover);
-}
-.window-actions button:hover {
-  background: var(--tf-border-strong);
+.window-actions :deep(.tfs-toolbar) {
+  padding: 0;
 }
 .window-body {
   height: 380px;

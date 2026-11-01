@@ -7,7 +7,7 @@
 - **Edit without limits.** Split anything, drag clips anywhere, layer them and move them between tracks. Nothing snaps back unless you ask it to.
 - **Hear every edit.** Playback follows the timeline as you work, with a mixer, effects, loops, a metronome and mixdown to WAV.
 - **Fast with big sessions.** Waveforms are drawn in the background and cached on the device, so long recordings open instantly the next time.
-- **Fits any stack.** No framework and no dependencies. Restyle it with CSS variables and drop in your own track controls.
+- **Fits any stack.** No framework and no dependencies. Use the built-in toolbar and track controls, swap their icons for your own, or build your own UI on the same API.
 - **Open by design.** MIT licensed. Project exchange with the desktop DAWs musicians already use is on the roadmap.
 
 Read the docs and try the playground at **[toneflix.github.io/studio](https://toneflix.github.io/studio/)**.
@@ -71,6 +71,7 @@ Install `@toneflix/studio` for everything, or only the parts your app uses. Ever
 | [`@toneflix/studio-core`](packages/core) | Tracks, clips, pure edits (`splitClips`, `moveClips`, `trimStart`, `setFades`…), snapping, `TimelineModel` and `History`. No DOM or audio, so it also runs on servers and in tests |
 | [`@toneflix/studio-waveforms`](packages/waveforms) | `Waveforms`, `PeaksWorker`, `PeaksCache` and `drawWaveform`: peaks off the main thread, cached on the device |
 | [`@toneflix/studio-audio`](packages/audio) | `AudioEngine`: playback with a mixer, effects, loops, a metronome and offline mixdown |
+| [`@toneflix/studio-controls`](packages/controls) | `StudioToolbar` and `trackStrip`: playback and editing buttons and track mute, solo and volume, with Lucide icons you can replace |
 | [`@toneflix/studio-timeline`](packages/timeline) | `StudioTimeline`, the editor view. Restyle it with the `--tfs-*` CSS variables or fill track headers with `renderHeader` |
 
 Recording will arrive as its own package.
