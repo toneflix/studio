@@ -10,6 +10,7 @@
       header strong { margin-right: 8px; }
       button, select { background: #222228; color: inherit; border: 1px solid #33333a; border-radius: 6px; padding: 5px 10px; font: inherit; }
       button:disabled { opacity: 0.4; }
+      button[aria-pressed='true'] { background: #03bfff; border-color: #03bfff; color: #03141c; }
       #info { margin-left: auto; color: #9a9aa2; }
       #timeline { height: calc(100vh - 54px); }
     </style>
@@ -17,6 +18,11 @@
   <body>
     <header>
       <strong>Toneflix Studio</strong>
+      <button id="play">Play</button>
+      <button id="stop">Stop</button>
+      <button id="loop" aria-pressed="false" title="Loops the selected range, or the first 4 bars">Loop</button>
+      <button id="click" aria-pressed="false">Click</button>
+      <button id="export">Export WAV</button>
       <button id="split">Split (S)</button>
       <button id="duplicate">Duplicate</button>
       <button id="delete">Delete</button>

@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 import { withBase } from 'vitepress';
-import type { StudioTimeline } from '@toneflix/studio';
+import type { AudioEngine, StudioTimeline } from '@toneflix/studio';
 
 const host = ref<HTMLElement>();
 const timeline = shallowRef<StudioTimeline>();
+const engine = shallowRef<AudioEngine>();
+const playing = ref(false);
+let unlink = () => {};
 const copied = ref(false);
 const install = 'pnpm add @toneflix/studio';
 
@@ -34,8 +37,8 @@ const features = [
 const uses = ['Music apps', 'Podcast editors', 'Classrooms', 'AI audio tools', 'Games', 'Sample libraries'];
 
 const roadmap = [
-  { stage: 'Available', title: 'Timeline and waveforms', text: 'Free clip editing, snapping, multi-select, one undo history, cached waveforms.' },
-  { stage: 'Next', title: 'Playback and recording', text: 'A Web Audio engine with effects, metronome, loops and overdub recording.' },
+  { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, effects, loops and a metronome.' },
+  { stage: 'Next', title: 'Recording', text: 'Record over the mix with latency compensation and overdub, with waveforms drawn live.' },
   { stage: 'Planned', title: 'DAW project exchange', text: 'Open and save sessions that travel to and from desktop studios.' },
 ];
 
@@ -50,7 +53,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { StudioTimeline, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, StudioTimeline, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const view = new StudioTimeline(host.value!, {
@@ -62,12 +65,22 @@ onMounted(async () => {
     createTrack: () => ({ id: uid('t'), name: 'New track' }),
   });
 
-  loadSample(view);
-  view.setTime(5);
+  const audio = new AudioEngine();
+
+  audio.on('play', () => (playing.value = true));
+  audio.on('pause', () => (playing.value = false));
+  audio.on('end', () => (playing.value = false));
+  loadSample(view, { engine: audio });
+  unlink = linkPlayback(view, audio);
   timeline.value = view;
+  engine.value = audio;
 });
 
-onBeforeUnmount(() => timeline.value?.destroy());
+onBeforeUnmount(() => {
+  unlink();
+  engine.value?.destroy();
+  timeline.value?.destroy();
+});
 </script>
 
 <template>
@@ -105,13 +118,17 @@ onBeforeUnmount(() => timeline.value?.destroy());
         <span class="dots" aria-hidden="true"><i /><i /><i /></span>
         <span class="window-title">Untitled session · 120 BPM · 4/4</span>
         <span class="window-actions">
+          <button type="button" class="play" :aria-label="playing ? 'Pause' : 'Play'" @click="engine?.toggle()">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path v-if="playing" d="M7 5h3v14H7zM14 5h3v14h-3z" /><path v-else d="M8 5v14l11-7z" /></svg>
+            {{ playing ? 'Pause' : 'Play' }}
+          </button>
           <button type="button" @click="timeline?.split()">Split</button>
           <button type="button" @click="timeline?.undo()">Undo</button>
           <button type="button" @click="timeline?.fit()">Fit</button>
         </span>
       </div>
       <div ref="host" class="window-body" />
-      <p class="window-hint">It's live. Drag a clip, pull its edges, or click the ruler and press S to split.</p>
+      <p class="window-hint">It's live. Press play, drag a clip while it plays, or click the ruler and press S to split.</p>
     </section>
 
     <section class="features">
@@ -391,6 +408,21 @@ studio.<span class="f">on</span>(<span class="s">'change'</span>, ({ state }) =&
   color: var(--tf-text);
   font-size: 12px;
   font-weight: 600;
+}
+.window-actions button.play {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--tf-primary);
+  color: var(--tf-on-primary);
+}
+.window-actions button.play svg {
+  width: 12px;
+  height: 12px;
+  fill: currentColor;
+}
+.window-actions button.play:hover {
+  background: var(--tf-primary-hover);
 }
 .window-actions button:hover {
   background: var(--tf-border-strong);
