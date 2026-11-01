@@ -15,6 +15,13 @@ Each `index.js` is a bundle that also contains the code below.
 
 The MPL-2.0 code is distributed unchanged; its source form is available at the link above.
 
+Two plugins in `plugins/toneflix` are JavaScript ports of Faust code:
+
+| Plugin | Ported from | Licence | Source |
+| --- | --- | --- | --- |
+| `kbverb.js` | KBVerb, Copyright (c) Corey Kereliuk | MIT | `kbverb.dsp` in [wam-community](https://www.npmjs.com/package/wam-community) 0.4.9, `plugins/wimmics/kbverb` |
+| `stone-phaser.js` | Stone Phaser 1.2.2 by Jean Pierre Cimalando | CC0-1.0 (offered as CC0-1.0 or BSL-1.0) | https://github.com/jpcima/stone-phaser |
+
 ## MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy

@@ -79,7 +79,7 @@ Any WAM 2 plugin works: a JavaScript module whose default export has `createInst
 
 ## Curated plugins
 
-`@toneflix/studio-wams` holds reviewed effects whose licences allow passing them on: Toneflix's Echo, Drive, Reverb, Compressor, Limiter, Gate, EQ, Chorus and Phaser, and Simple Delay, Simple Distortion and Simple EQ by Sequencer Party. They load from jsDelivr, pinned to the package's version, so the code you reviewed is the code that runs.
+`@toneflix/studio-wams` holds reviewed effects whose licences allow passing them on: Toneflix's Echo, Drive, Reverb, Compressor, Limiter, Gate, EQ, Chorus and Phaser, ports of KBVerb and Stone Phaser, and Simple Delay, Simple Distortion and Simple EQ by Sequencer Party. They load from jsDelivr, pinned to the package's version, so the code you reviewed is the code that runs.
 
 ```ts
 import { curatedWams, curatedWamSource } from '@toneflix/studio';

@@ -15,6 +15,8 @@ A plugin runs as code in your page, so this package only holds plugins that were
 | EQ | Toneflix | MIT |
 | Chorus | Toneflix | MIT |
 | Phaser | Toneflix | MIT |
+| KB Verb | Toneflix, a port of KBVerb by Corey Kereliuk | MIT |
+| Stone Phaser | Toneflix, a port of Stone Phaser by Jean Pierre Cimalando | MIT (original CC0-1.0) |
 | Simple Delay | Sequencer Party (Tom Burns) | MIT |
 | Simple Distortion | Sequencer Party (Tom Burns) | MIT |
 | Simple EQ | Sequencer Party (Tom Burns) | MIT |
