@@ -1,4 +1,5 @@
 import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
+import { openReaperProject, saveReaperProject } from '@toneflix/studio-exchange';
 import type { SnapTo } from '@toneflix/studio-core';
 import type { PluginRack } from '@toneflix/studio-plugins';
 import type { Recorder } from '@toneflix/studio-recorder';
@@ -71,6 +72,12 @@ export interface ToolbarOptions {
   mixer?: StudioMixer;
   /** Rows for the info dialog; gets the default rows to extend or replace */
   info?: (rows: InfoRow[], context: ToolbarContext) => InfoRow[];
+  /** Name of a saved REAPER project, without the extension */
+  projectName?: string;
+  /** Gets each source's audio after a project opens, for example to draw its waveform */
+  onProjectSource?: (id: string, buffer: AudioBuffer) => void;
+  /** Called after a project opens, with the audio files it could not find */
+  onProjectOpen?: (result: { missing: string[] }) => void;
 }
 
 export const DEFAULT_TOOLBAR: ToolbarItem[] = [
@@ -96,6 +103,8 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'snap',
   '|',
   'mixer',
+  'openProject',
+  'saveProject',
   'export',
   'meter',
   'info',
@@ -124,11 +133,13 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   meter: 'Output level',
   info: 'Session info',
   mixer: 'Mixer',
+  saveProject: 'Save as a REAPER project (.zip)',
+  openProject: 'Open a REAPER project (.zip or .rpp with its audio)',
   save: 'Save',
   close: 'Close',
 };
 
-const AUDIO: ToolbarItem[] = ['play', 'stop', 'record', 'loop', 'metronome', 'export', 'meter'];
+const AUDIO: ToolbarItem[] = ['play', 'stop', 'record', 'loop', 'metronome', 'export', 'meter', 'saveProject', 'openProject'];
 const SNAPS: [SnapTo, string][] = [
   ['off', 'Off'],
   ['bar', 'Bar'],
@@ -152,6 +163,7 @@ export class StudioToolbar {
   private readonly actions = new Map<string, { action: ToolbarAction; button: HTMLButtonElement }>();
   private readonly unsubscribe: (() => void)[] = [];
   private readonly onSave?: ToolbarOptions['onSave'];
+  private readonly project: Pick<ToolbarOptions, 'projectName' | 'onProjectSource' | 'onProjectOpen'>;
   private readonly infoRows?: ToolbarOptions['info'];
   private readonly mixer?: StudioMixer;
   private readonly plugins?: PluginRack;
@@ -168,6 +180,7 @@ export class StudioToolbar {
     this.labels = { ...DEFAULT_LABELS, ...options.labels };
     this.exportName = options.exportName ?? 'mix.wav';
     this.onSave = options.onSave;
+    this.project = { projectName: options.projectName, onProjectSource: options.onProjectSource, onProjectOpen: options.onProjectOpen };
     this.infoRows = options.info;
     this.mixer = options.mixer;
     this.plugins = options.plugins;
@@ -352,6 +365,12 @@ export class StudioToolbar {
       case 'export':
         void this.busy(this.buttons.get('export'), () => (this.onSave ? this.onSave(this.context) : this.download()));
         break;
+      case 'saveProject':
+        void this.busy(this.buttons.get('saveProject'), () => this.saveProject());
+        break;
+      case 'openProject':
+        this.openProject();
+        break;
       case 'info':
         this.showInfo();
         break;
@@ -396,6 +415,42 @@ export class StudioToolbar {
     const audio = await this.engine.render({ effects: this.plugins?.renderEffects });
 
     return new Blob([encodeWav(audio)], { type: 'audio/wav' });
+  }
+
+  /** Download the session as a zipped REAPER project. */
+  private async saveProject() {
+    if (!this.engine) return;
+
+    const name = this.project.projectName ?? 'Toneflix Studio';
+    const link = this.doc.createElement('a');
+
+    link.href = URL.createObjectURL(await saveReaperProject(this.timeline, this.engine, { name }));
+    link.download = `${name}.zip`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  /** Pick a zipped project, or an .rpp with its audio files, and open it. */
+  private openProject() {
+    const engine = this.engine;
+    if (!engine) return;
+
+    const input = this.doc.createElement('input');
+
+    input.type = 'file';
+    input.accept = '.zip,.rpp,audio/*';
+    input.multiple = true;
+    input.addEventListener('change', () => {
+      const files = [...(input.files ?? [])];
+      if (!files.length) return;
+
+      void this.busy(this.buttons.get('openProject'), async () => {
+        const result = await openReaperProject(files.length === 1 ? files[0]! : files, this.timeline, engine, { onSource: this.project.onProjectSource });
+
+        this.project.onProjectOpen?.(result);
+      });
+    });
+    input.click();
   }
 
   private async download() {
