@@ -9,7 +9,7 @@ const timeline = new StudioTimeline('#timeline', {
   renderHeader: trackStrip(engine),
 });
 
-const mixer = new StudioMixer('#mixer', { timeline, engine, hidden: true });
+const mixer = new StudioMixer('#timeline', { timeline, engine, hidden: true });
 const toolbar = new StudioToolbar('#toolbar', { timeline, engine, mixer });
 loadSample(timeline, { engine });
 linkPlayback(timeline, engine);

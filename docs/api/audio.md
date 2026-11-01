@@ -61,7 +61,7 @@ From `@toneflix/studio-controls`, also exported by `@toneflix/studio`. See [Tool
 | --- | --- |
 | `new StudioToolbar(container, options)` | `timeline`, `engine?`, `items?`, `icons?`, `labels?`, `exportName?`, `actions?`, `onSave?`, `info?`; `addAction()`, `removeAction()`, `showInfo()`, `refresh()`, `destroy()` |
 | `sessionInfo(timeline)` | The info dialog's default rows |
-| `new StudioMixer(container, options)` | `timeline`, `engine`, `icons?`, `labels?`, `maxVolume?` (2), `hidden?`; `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; event `toggle` |
+| `new StudioMixer(container, options)` | `timeline`, `engine`, `icons?`, `labels?`, `maxVolume?` (2), `hidden?`, `docked?`; `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; event `toggle` |
 | `faderToGain(position, max?)` / `gainToFader(gain, max?)` | The fader curve |
 | `formatDb(gain)` / `formatPan(pan)` | Readouts like `-3.5` and `L 40` |
 | `createKnob(document, options)` | The rotary knob the mixer uses for pan |
