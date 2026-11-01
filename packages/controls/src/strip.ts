@@ -1,6 +1,7 @@
 import type { AudioEngine } from '@toneflix/studio-audio';
 import type { Track } from '@toneflix/studio-core';
 import type { Recorder } from '@toneflix/studio-recorder';
+import { TRACK_MENU_EVENT } from '@toneflix/studio-timeline';
 import { renderIcon, type IconSet } from './icons.ts';
 import { createMeter } from './meter.ts';
 import { injectControlStyles } from './styles.ts';
@@ -65,8 +66,11 @@ export const trackStrip = (engine: AudioEngine, options: TrackStripOptions = {})
     injectControlStyles(doc);
     strip.className = 'tfs-strip';
     top.className = 'tfs-strip-top';
-    name.className = 'tfs-strip-name';
+    // Clicking the name opens the timeline's track menu; double-clicking renames
+    name.className = 'tfs-strip-name tfs-track-name';
     name.textContent = track.name;
+    name.title = track.name;
+    name.addEventListener('click', () => name.dispatchEvent(new CustomEvent(TRACK_MENU_EVENT, { bubbles: true })));
     volume.type = 'range';
     volume.min = '0';
     volume.max = String(options.maxVolume ?? 1.5);

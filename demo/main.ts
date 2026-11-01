@@ -8,7 +8,7 @@ const waveforms = new Waveforms();
 const timeline = new StudioTimeline('#timeline', {
   grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
   headerWidth: innerWidth < 600 ? 120 : 180,
-  createTrack: () => ({ id: uid('t'), name: 'New stem' }),
+  createTrack: () => ({ id: uid('t'), name: `Track ${timeline.state.tracks.length + 1}` }),
   renderHeader: trackStrip(engine, { recorder }),
 });
 

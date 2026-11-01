@@ -30,7 +30,19 @@ export const STYLES = `
 .tfs-scroll { position: absolute; inset: 0; overflow: auto; overscroll-behavior: contain; }
 .tfs-content { position: relative; min-height: 100%; }
 .tfs-ruler-row { position: sticky; top: 0; z-index: 6; display: flex; height: var(--tfs-ruler-height); }
-.tfs-corner { position: sticky; left: 0; z-index: 7; flex: none; background: var(--tfs-header); border-bottom: 1px solid var(--tfs-line); border-right: 1px solid var(--tfs-line); }
+.tfs-corner { position: sticky; left: 0; z-index: 7; display: flex; align-items: center; justify-content: flex-end; padding: 0 6px; box-sizing: border-box; flex: none; background: var(--tfs-header); border-bottom: 1px solid var(--tfs-line); border-right: 1px solid var(--tfs-line); }
+.tfs-add-track { display: grid; place-items: center; width: 22px; height: 20px; padding: 0; border: 1px solid var(--tfs-line); border-radius: 4px; background: transparent; color: var(--tfs-muted); font: 600 15px/1 system-ui, sans-serif; cursor: pointer; }
+.tfs-add-track:hover { background: rgba(255, 255, 255, 0.08); color: var(--tfs-text); }
+.tfs-add-track[hidden] { display: none; }
+.tfs-track-name { cursor: pointer; }
+.tfs-track-name:hover { text-decoration: underline; text-underline-offset: 2px; }
+.tfs--readonly .tfs-track-name { cursor: default; text-decoration: none; }
+.tfs-rename { position: absolute; z-index: 2; top: 6px; left: 10px; right: 10px; height: 24px; box-sizing: border-box; padding: 0 6px; border: 1px solid var(--tfs-select); border-radius: 4px; background: var(--tfs-bg); color: var(--tfs-text); font: 600 13px/1 system-ui, sans-serif; outline: none; }
+.tfs-menu { position: fixed; z-index: 1000; display: flex; flex-direction: column; min-width: 160px; padding: 4px; border: 1px solid var(--tfs-menu-line, rgba(255, 255, 255, 0.12)); border-radius: 6px; background: var(--tfs-menu-bg, #1f1f24); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45); font: 13px/1.3 system-ui, sans-serif; }
+.tfs-menu button { padding: 6px 10px; border: 0; border-radius: 4px; background: none; color: var(--tfs-menu-text, #e8e8ea); font: inherit; text-align: left; cursor: pointer; }
+.tfs-menu button:hover:not(:disabled), .tfs-menu button:focus-visible { background: rgba(255, 255, 255, 0.08); outline: none; }
+.tfs-menu button:disabled { opacity: 0.4; cursor: default; }
+.tfs-menu .tfs-menu-danger { color: var(--tfs-menu-danger, #ff6b7a); }
 .tfs-ruler { position: relative; flex: none; background: var(--tfs-header); border-bottom: 1px solid var(--tfs-line); cursor: text; overflow: hidden; }
 .tfs-ruler-label { position: absolute; top: 4px; padding-left: 4px; color: var(--tfs-muted); font-size: 11px; white-space: nowrap; border-left: 1px solid var(--tfs-bar); height: calc(var(--tfs-ruler-height) - 4px); pointer-events: none; }
 .tfs-row { position: relative; display: flex; border-bottom: 1px solid var(--tfs-line); }

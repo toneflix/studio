@@ -18,7 +18,7 @@ onMounted(async () => {
   const timeline = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: host.value!.clientWidth < 600 ? 120 : 160,
-    createTrack: () => ({ id: uid('t'), name: 'New stem' }),
+    createTrack: () => ({ id: uid('t'), name: `Track ${timeline.state.tracks.length + 1}` }),
     renderHeader: trackStrip(engine, { recorder }),
   });
   const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog: [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')], hidden: true });

@@ -17,7 +17,8 @@ const LIVE_PEAK = 256;
 
 /**
  * Shows recording on a timeline: the take grows as a clip with its waveform while
- * recording, and lands as one undo step. Editing is paused while recording.
+ * recording, and lands as one undo step. Editing is paused while recording, and
+ * a deleted track is disarmed.
  * Returns a function that unlinks them.
  */
 export const linkRecorder = (timeline: StudioTimeline, recorder: Recorder, options: LinkRecorderOptions = {}) => {
@@ -45,6 +46,10 @@ export const linkRecorder = (timeline: StudioTimeline, recorder: Recorder, optio
   };
 
   const unlisten = [
+    timeline.on('change', ({ state, final }) => {
+      // A deleted track can't stay armed
+      if (final && recorder.armed && !state.tracks.some((track) => track.id === recorder.armed)) recorder.arm(null);
+    }),
     recorder.on('start', ({ id, track }) => {
       count++;
       live = { id, clip: `${id}-clip`, track, start: 0, duration: 0, sampleRate: 0, data: new Int16Array(4096), peaks: 0, readonly: timeline.readonly };
