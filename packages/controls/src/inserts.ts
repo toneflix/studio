@@ -36,6 +36,9 @@ export interface InsertsOptions {
 
 const editors = new WeakMap<PluginSlot, { close: () => void }>();
 
+/** Stacking order of editor windows; the last one touched is on top. */
+let topLayer = 1000;
+
 /** A floating window with a plugin's own editor in it. Opening it again brings it forward. */
 export const openPluginEditor = async (doc: Document, rack: PluginRack, slot: PluginSlot, options: Pick<InsertsOptions, 'labels' | 'icons'> = {}) => {
   const open = editors.get(slot);
@@ -89,7 +92,11 @@ export const openPluginEditor = async (doc: Document, rack: PluginRack, slot: Pl
     bar.addEventListener('pointermove', move);
     bar.addEventListener('pointerup', up);
   });
-  win.addEventListener('pointerdown', () => doc.body.append(win));
+  // Raise without moving the node, so clicks and slider drags inside keep working
+  win.style.zIndex = String(++topLayer);
+  win.addEventListener('pointerdown', () => {
+    if (Number(win.style.zIndex) < topLayer) win.style.zIndex = String(++topLayer);
+  });
 
   const handle = {
     close: () => {
