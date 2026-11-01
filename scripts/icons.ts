@@ -24,6 +24,7 @@ const icons: Record<string, string> = {
   info: 'info',
   save: 'save',
   close: 'x',
+  mixer: 'sliders-vertical',
 };
 
 /** Icons drawn as solid shapes, like the transport buttons on hardware. */

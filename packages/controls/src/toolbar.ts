@@ -5,6 +5,7 @@ import { createDisplay } from './display.ts';
 import { renderIcon, type Icon, type IconName, type IconSet } from './icons.ts';
 import { createInfoDialog, sessionInfo, type InfoRow } from './info.ts';
 import { createMeter } from './meter.ts';
+import type { StudioMixer } from './mixer-view.ts';
 import { injectControlStyles } from './styles.ts';
 
 /** A toolbar button, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
@@ -59,6 +60,8 @@ export interface ToolbarOptions {
    * for example to upload the mix or store the project. The button waits while it runs.
    */
   onSave?: (context: ToolbarContext) => void | Promise<void>;
+  /** A mixer view for the mixer button to show and hide; the button is left out without one */
+  mixer?: StudioMixer;
   /** Rows for the info dialog; gets the default rows to extend or replace */
   info?: (rows: InfoRow[], context: ToolbarContext) => InfoRow[];
 }
@@ -84,6 +87,7 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   '|',
   'snap',
   '|',
+  'mixer',
   'export',
   'meter',
   'info',
@@ -110,6 +114,7 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   timeSignature: 'Time signature',
   meter: 'Output level',
   info: 'Session info',
+  mixer: 'Mixer',
   save: 'Save',
   close: 'Close',
 };
@@ -139,6 +144,7 @@ export class StudioToolbar {
   private readonly unsubscribe: (() => void)[] = [];
   private readonly onSave?: ToolbarOptions['onSave'];
   private readonly infoRows?: ToolbarOptions['info'];
+  private readonly mixer?: StudioMixer;
   private infoDialog?: ReturnType<typeof createInfoDialog>;
 
   constructor(target: ContainerTarget, options: ToolbarOptions) {
@@ -152,6 +158,7 @@ export class StudioToolbar {
     this.exportName = options.exportName ?? 'mix.wav';
     this.onSave = options.onSave;
     this.infoRows = options.info;
+    this.mixer = options.mixer;
     this.root = this.doc.createElement('div');
     this.root.className = 'tfs-toolbar';
     this.root.setAttribute('role', 'toolbar');
@@ -159,7 +166,9 @@ export class StudioToolbar {
 
     const actions = new Map((options.actions ?? []).map((action) => [action.id, action]));
     const items = (options.items ?? DEFAULT_TOOLBAR).filter(
-      (item) => actions.has(item) || this.engine || !AUDIO.includes(item as ToolbarItem) || (item === 'export' && this.onSave),
+      (item) =>
+        actions.has(item) ||
+        (item === 'mixer' ? !!this.mixer : this.engine || !AUDIO.includes(item as ToolbarItem) || (item === 'export' && this.onSave)),
     );
 
     for (const [i, item] of items.entries()) {
@@ -249,6 +258,7 @@ export class StudioToolbar {
     set('redo', (b) => (b.disabled = !timeline.history.canRedo));
     set('duplicate', (b) => (b.disabled = !timeline.selection.length));
     set('delete', (b) => (b.disabled = !timeline.selection.length));
+    set('mixer', (b) => b.setAttribute('aria-pressed', String(!!this.mixer?.visible)));
 
     for (const { action, button } of this.actions.values()) {
       const context = this.context;
@@ -322,6 +332,9 @@ export class StudioToolbar {
         break;
       case 'info':
         this.showInfo();
+        break;
+      case 'mixer':
+        this.mixer?.toggle();
         break;
     }
 
@@ -467,6 +480,8 @@ export class StudioToolbar {
     const refresh = () => this.refresh();
 
     this.unsubscribe.push(this.timeline.history.on('change', refresh), this.timeline.on('select', refresh), this.timeline.on('change', refresh));
+
+    if (this.mixer) this.unsubscribe.push(this.mixer.on('toggle', refresh));
 
     if (this.engine) {
       for (const event of ['play', 'pause', 'end', 'loop'] as const) this.unsubscribe.push(this.engine.on(event, refresh));

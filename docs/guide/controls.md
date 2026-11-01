@@ -112,6 +112,27 @@ const timeline = new StudioTimeline('#editor', {
 });
 ```
 
+## Mixer
+
+`StudioMixer` is a mixing desk view: a channel strip for each track with a pan knob, M and S, a fader with a dB scale and readout, a level meter and the track's name in its colour. A master strip sits at the end. Strips follow the timeline as tracks are added, renamed or moved, and stay in step with the track headers.
+
+```ts
+import { StudioMixer } from '@toneflix/studio';
+
+const mixer = new StudioMixer('#mixer', { timeline, engine, hidden: true });
+
+new StudioToolbar('#toolbar', { timeline, engine, mixer });
+```
+
+Given a `mixer`, the toolbar gets a mixer button that shows and hides it. You can also call `mixer.show()`, `hide()` and `toggle()`, and listen for `toggle`.
+
+| Control | |
+| --- | --- |
+| Fader | Drag, click or use the arrow keys. Double-click for 0 dB. The top is +6 dB; set `maxVolume` to change it |
+| Pan knob | Drag up or down, or use the arrow keys. Double-click to centre it |
+
+Set `--tfs-mixer-height` (320px) to size it, and `--tfs-channel-width` (84px) for the strips.
+
 ## Custom icons
 
 Pass `icons` to swap individual icons. An icon can be SVG markup, either a whole `<svg>` or only the shapes drawn in a 24×24 box, or a function that returns an element:
@@ -143,7 +164,7 @@ setDefaultIcons({ play: playSvg, pause: pauseSvg, stop: stopSvg });
 
 Mute and solo show the letters M and S unless you give them icons.
 
-Icon names: `play`, `pause`, `stop`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute`, `solo`, `info`, `save` and `close`. Icons use `currentColor`, so they take the button's text colour. Play, pause and stop are solid shapes; the rest are outlines.
+Icon names: `play`, `pause`, `stop`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute`, `solo`, `info`, `save`, `close` and `mixer`. Icons use `currentColor`, so they take the button's text colour. Play, pause and stop are solid shapes; the rest are outlines.
 
 ## Styling
 

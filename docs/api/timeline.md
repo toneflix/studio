@@ -61,6 +61,7 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `setGrid({ bpm?, meter?, snap?, show? })` | |
 | `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, resizeTracks?, keyboard? })` | |
 | `heightOf(track)` | The track's row height in pixels |
+| `colorOf(track)` | The track's colour, its own or from the palette |
 | `on(event, listener)` | Returns a function that removes the listener |
 | `destroy()` | Remove the timeline and its listeners |
 
