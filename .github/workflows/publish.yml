@@ -3,16 +3,48 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, like 0.2.0 (a leading v is dropped)
+        required: true
+        type: string
+      dist-tag:
+        description: npm dist-tag
+        required: true
+        default: latest
+        type: choice
+        options:
+          - latest
+          - next
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Work out the version and dist-tag
+        id: release
+        env:
+          RAW_VERSION: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.version }}
+          DIST_TAG: ${{ github.event_name == 'release' && (github.event.release.prerelease && 'next' || 'latest') || inputs.dist-tag }}
+        run: |
+          version="${RAW_VERSION#v}"
+          if ! echo "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'; then
+            echo "\"$RAW_VERSION\" is not a semantic version"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "dist-tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -23,14 +55,8 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
-      - name: Check the release tag matches the package version
-        run: |
-          version="$(node -p "require('./package.json').version")"
-          tag="${GITHUB_REF_NAME#v}"
-          if [ "$tag" != "$version" ]; then
-            echo "Release tag $GITHUB_REF_NAME does not match package.json version $version"
-            exit 1
-          fi
+      - name: Set the package version
+        run: npm version "${{ steps.release.outputs.version }}" --no-git-tag-version --allow-same-version
 
       - run: yarn lint
       - run: yarn typecheck
@@ -38,6 +64,28 @@ jobs:
       - run: yarn build
 
       - name: Publish
-        run: npm publish --provenance --access public --tag "${{ github.event.release.prerelease && 'next' || 'latest' }}"
+        run: npm publish --provenance --access public --tag "${{ steps.release.outputs.dist-tag }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Save the version in package.json
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$DEFAULT_BRANCH"
+          git checkout -f -B "$DEFAULT_BRANCH" FETCH_HEAD
+
+          current="$(node -p "require('./package.json').version")"
+          if [ "$current" = "$VERSION" ]; then
+            echo "package.json is already at $VERSION"
+            exit 0
+          fi
+
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          git add package.json
+          git commit -m "chore: release v$VERSION [skip ci]"
+          git pull --rebase origin "$DEFAULT_BRANCH"
+          git push origin "HEAD:$DEFAULT_BRANCH"
