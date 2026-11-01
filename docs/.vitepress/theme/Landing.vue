@@ -54,8 +54,10 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, linkRecorder, PluginRack, Recorder, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import('@toneflix/studio');
-  const { loadSample } = await import('../../../demo/sample.ts');
+  const { AudioEngine, linkPlayback, linkRecorder, listSource, PluginRack, pluginSource, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
+    '@toneflix/studio'
+  );
+  const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const audio = new AudioEngine();
   const recorder = new Recorder(audio);
@@ -71,15 +73,25 @@ onMounted(async () => {
     renderHeader: trackStrip(audio, { recorder }),
   });
 
-  const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog: [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')], hidden: true });
+  const catalog = [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')];
+  const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog, hidden: true });
+  const browser = new StudioBrowser(host.value!, {
+    timeline: view,
+    engine: audio,
+    plugins,
+    hidden: true,
+    onSource: (id, buffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
+    sources: [listSource('sounds', 'Sounds', demoSounds(audio)), sessionSource(view, audio), pluginSource(catalog)],
+  });
 
   toolbar.value = new StudioToolbar(actions.value!, {
     timeline: view,
     engine: audio,
     mixer,
+    browser,
     recorder,
     plugins,
-    items: ['file', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
+    items: ['file', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'browser', 'mixer', 'meter'],
     onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
   });
   loadSample(view, { engine: audio, waveforms });
@@ -93,6 +105,7 @@ onMounted(async () => {
     unlinkRecorder();
     recorder.destroy();
     mixer.destroy();
+    browser.destroy();
     plugins.destroy();
   };
   timeline.value = view;

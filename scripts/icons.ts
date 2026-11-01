@@ -29,6 +29,9 @@ const icons: Record<string, string> = {
   saveProject: 'folder-down',
   openProject: 'folder-open',
   chevron: 'chevron-down',
+  browser: 'library',
+  plugin: 'plug',
+  add: 'plus',
 };
 
 /** Shape attributes changed from Lucide's: the record dot is drawn smaller, as on hardware. */

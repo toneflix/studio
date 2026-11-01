@@ -489,6 +489,16 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     return Math.max(0, (clientX - this.ruler.getBoundingClientRect().left) / this.pps);
   }
 
+  /** The track under a point on the page, or null below the last track or outside the lanes. */
+  trackAt(clientY: number) {
+    return this.state.tracks[this.laneAt(clientY)] ?? null;
+  }
+
+  /** A time rounded to the snap setting when the grid shows, otherwise as is. */
+  snap(time: number) {
+    return this.snapToGrid(time);
+  }
+
   // ---- edits ----
 
   undo() {

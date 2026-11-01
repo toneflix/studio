@@ -9,7 +9,8 @@
       header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 4px 12px; background: #18181b; }
       header strong { margin-right: 4px; }
       body { display: flex; flex-direction: column; height: 100vh; }
-      #timeline { flex: 1; min-height: 0; }
+      main { display: flex; flex: 1; min-height: 0; }
+      #timeline { flex: 1; min-width: 0; }
     </style>
   </head>
   <body>
@@ -17,7 +18,9 @@
       <strong>Toneflix Studio</strong>
       <div id="toolbar"></div>
     </header>
-    <div id="timeline"></div>
+    <main id="workspace">
+      <div id="timeline"></div>
+    </main>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
