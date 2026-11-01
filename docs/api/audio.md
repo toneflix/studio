@@ -1,0 +1,53 @@
+# Playback and mixer
+
+From `@toneflix/studio-audio`, also exported by `@toneflix/studio`.
+
+## AudioEngine
+
+| | |
+| --- | --- |
+| `new AudioEngine(options?)` | `context`, `lookahead` (0.25 s), `interval` (25 ms), `stopAtEnd` (true) |
+| `engine.load(state)` | The timeline to play. While playing, the change is heard at once |
+| `engine.setBuffer(source, buffer)` | Decoded audio for a source id; `hasBuffer`, `deleteBuffer` |
+| `engine.play(from?)` | Start from the current position or a time. Resumes a suspended context |
+| `engine.pause()` / `engine.toggle()` | |
+| `engine.stop()` | Back to where playback began, or to 0 when already stopped |
+| `engine.seek(time)` | |
+| `engine.setLoop({ start, end } \| null)` | |
+| `engine.render(options?)` | Offline mix to an `AudioBuffer`: `from`, `to`, `sampleRate`, `channels`, `effects(track, context)` |
+| `engine.time`, `isPlaying`, `loop`, `state` | |
+| `engine.mixer`, `engine.metronome`, `engine.context` | |
+| `engine.destroy()` | Stops playback and closes the context it made |
+
+Events: `play`, `pause`, `seek` and `end` with `{ time }`, and `loop` with `{ loop }`.
+
+## Mixer
+
+| | |
+| --- | --- |
+| `mixer.set(track \| null, settings)` | `volume`, `pan`, `mute`, `solo`; `null` is the master |
+| `mixer.channel(track)` | The track's `Channel`, made on first use |
+| `mixer.master` | The master `Channel` |
+| `mixer.snapshot()` / `mixer.restore(snapshot)` | Every channel's settings, to save and load |
+| `channel.setEffects(effects)` | `AudioNode` or `{ input, output }`, in order |
+| `channel.settings`, `channel.effects`, `channel.input`, `channel.output` | |
+| `dbToGain(db)` / `gainToDb(gain)` | |
+
+Event: `change` with `{ track, settings }`.
+
+## Metronome
+
+| | |
+| --- | --- |
+| `metronome.enabled` | Off by default |
+| `metronome.volume` | 0.5 by default |
+| `metronome.grid` | A `Grid`: `set({ bpm, meter })` |
+
+## Helpers
+
+| | |
+| --- | --- |
+| `linkPlayback(timeline, engine, { space? })` | From `@toneflix/studio`. Keeps a timeline and an engine together; returns an unlink function |
+| `encodeWav(audio, bitDepth = 16)` | PCM WAV bytes from an `AudioBuffer` or anything shaped like one |
+| `heardRanges(state)` | The heard part of every clip on every track |
+| `timelineAt(origin, loop, elapsed)` | Where playback is after some seconds, with a loop |

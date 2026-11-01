@@ -8,8 +8,9 @@ Toneflix Studio is split into small packages, so an app installs only what it us
 | `@toneflix/studio-core` | The project model: tracks, clips, edits, snapping and undo history, without a view. Works on servers and in workers | nothing |
 | `@toneflix/studio-waveforms` | Waveform peaks worked out in a worker, cached on the device and drawn on a canvas | core |
 | `@toneflix/studio-timeline` | The multitrack editor view, `StudioTimeline` | core, waveforms |
+| `@toneflix/studio-audio` | Playback, mixer, effects, loops, metronome and mixdown, `AudioEngine` | core |
 
-Playback and recording will arrive as their own packages.
+Recording will arrive as its own package.
 
 ## Examples
 

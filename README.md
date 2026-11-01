@@ -5,18 +5,21 @@
 **The studio engine for the web.** Give any web app a real multitrack editor. Your users arrange, cut and shape audio as freely as in a desktop DAW, right in the browser.
 
 - **Edit without limits.** Split anything, drag clips anywhere, layer them and move them between tracks. Nothing snaps back unless you ask it to.
+- **Hear every edit.** Playback follows the timeline as you work, with a mixer, effects, loops, a metronome and mixdown to WAV.
 - **Fast with big sessions.** Waveforms are drawn in the background and cached on the device, so long recordings open instantly the next time.
 - **Fits any stack.** No framework and no dependencies. Restyle it with CSS variables and drop in your own track controls.
 - **Open by design.** MIT licensed. Project exchange with the desktop DAWs musicians already use is on the roadmap.
 
 Read the docs and try the playground at **[toneflix.github.io/studio](https://toneflix.github.io/studio/)**.
 
-> Status: early. This release has the timeline and waveforms. Playback and recording come next.
+> Status: early. The timeline, waveforms and playback are here. Recording comes next.
 
 ## Use
 
 ```ts
-import { StudioTimeline, Waveforms, makeClip, uid } from '@toneflix/studio';
+import { AudioEngine, StudioTimeline, Waveforms, linkPlayback, makeClip, uid } from '@toneflix/studio';
+
+const engine = new AudioEngine();
 
 const timeline = new StudioTimeline(document.getElementById('editor')!, {
   grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
@@ -30,8 +33,13 @@ timeline.load({
 
 // Peaks are worked out in a worker and kept in Cache Storage, so a stem is analysed once per device
 const waveforms = new Waveforms();
-const peaks = await waveforms.get('vox.wav:v1', () => audioContext.decodeAudioData(bytes));
-timeline.setSource({ id: 'vox.wav', duration: 12 }, peaks);
+const audio = await engine.context.decodeAudioData(bytes);
+const peaks = await waveforms.get('vox.wav:v1', () => audio);
+timeline.setSource({ id: 'vox.wav', duration: audio.duration }, peaks);
+
+// Play it: edits are heard at once, the playhead follows, Space plays and pauses
+engine.setBuffer('vox.wav', audio);
+linkPlayback(timeline, engine);
 
 timeline.on('change', ({ state, final }) => final && save(state));
 ```
@@ -62,9 +70,10 @@ Install `@toneflix/studio` for everything, or only the parts your app uses. Ever
 | [`@toneflix/studio`](packages/studio) | Everything below, from one import |
 | [`@toneflix/studio-core`](packages/core) | Tracks, clips, pure edits (`splitClips`, `moveClips`, `trimStart`, `setFades`…), snapping, `TimelineModel` and `History`. No DOM or audio, so it also runs on servers and in tests |
 | [`@toneflix/studio-waveforms`](packages/waveforms) | `Waveforms`, `PeaksWorker`, `PeaksCache` and `drawWaveform`: peaks off the main thread, cached on the device |
+| [`@toneflix/studio-audio`](packages/audio) | `AudioEngine`: playback with a mixer, effects, loops, a metronome and offline mixdown |
 | [`@toneflix/studio-timeline`](packages/timeline) | `StudioTimeline`, the editor view. Restyle it with the `--tfs-*` CSS variables or fill track headers with `renderHeader` |
 
-Playback and recording will arrive as their own packages.
+Recording will arrive as its own package.
 
 ## Develop
 
