@@ -10,6 +10,7 @@
       "echo"
     ],
     "path": "toneflix/echo.js",
+    "thumbnail": "toneflix/echo.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -26,6 +27,7 @@
       "saturation"
     ],
     "path": "toneflix/drive.js",
+    "thumbnail": "toneflix/drive.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",

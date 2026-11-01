@@ -404,6 +404,22 @@ export class StudioBrowser extends Emitter<BrowserEvents> {
       row.append(icon);
     }
 
+    if (item.image) {
+      const image = doc.createElement('img');
+      const kind = row.querySelector('.tfs-browser-kind');
+
+      image.className = 'tfs-browser-image';
+      image.src = item.image;
+      image.alt = '';
+      image.loading = 'lazy';
+      image.decoding = 'async';
+      image.draggable = false;
+      // Keep the icon if the picture can't load
+      image.addEventListener('error', () => image.replaceWith(...(kind ? [kind] : [])));
+      if (kind) kind.replaceWith(image);
+      else row.prepend(image);
+    }
+
     row.append(text);
 
     if (audio && item.duration) {
