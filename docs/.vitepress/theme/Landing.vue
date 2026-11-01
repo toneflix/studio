@@ -91,7 +91,7 @@ onMounted(async () => {
     browser,
     recorder,
     plugins,
-    items: ['file', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'browser', 'mixer', 'meter'],
+    items: ['file', 'browser', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
     onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
   });
   loadSample(view, { engine: audio, waveforms });

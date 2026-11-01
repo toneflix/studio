@@ -14,7 +14,7 @@ new StudioToolbar('#toolbar', { timeline, engine });
 linkPlayback(timeline, engine);
 ```
 
-The default toolbar has a File menu, play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, the browser, the mixer, the output meter and info. The File menu opens and saves a [project](./projects), in your app's format or REAPER's, and exports the mix as a WAV file (or calls `onSave`). `openProject`, `saveProject` and `export` are also items of their own, for toolbars that want them as buttons. Undo, redo, split, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
+The default toolbar has a File menu, the browser button beside it, play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, the mixer, the output meter and info. The File menu opens and saves a [project](./projects), in your app's format or REAPER's, and exports the mix as a WAV file (or calls `onSave`). `openProject`, `saveProject` and `export` are also items of their own, for toolbars that want them as buttons. Undo, redo, split, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
 
 Pick the buttons and their order with `items`. `'|'` adds a divider:
 
