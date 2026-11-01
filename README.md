@@ -18,7 +18,7 @@ Read the docs and try the playground at **[toneflix.github.io/studio](https://to
 ```ts
 import { StudioTimeline, Waveforms, makeClip, uid } from '@toneflix/studio';
 
-const timeline = new StudioTimeline(document.getElementById('editor')!, {
+const timeline = new StudioTimeline('#editor', {
   grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
   createTrack: () => ({ id: uid('t'), name: 'New stem' }),
 });
