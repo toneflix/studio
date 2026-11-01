@@ -7,24 +7,29 @@ const host = ref<HTMLElement>();
 let cleanup = () => {};
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, linkRecorder, Recorder, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const engine = new AudioEngine();
+  const recorder = new Recorder(engine);
+  const waveforms = new Waveforms();
   const timeline = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: host.value!.clientWidth < 600 ? 120 : 160,
     createTrack: () => ({ id: uid('t'), name: 'New stem' }),
-    renderHeader: trackStrip(engine),
+    renderHeader: trackStrip(engine, { recorder }),
   });
   const mixer = new StudioMixer(host.value!, { timeline, engine, hidden: true });
-  const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer });
+  const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer, recorder });
 
-  loadSample(timeline, { engine });
+  loadSample(timeline, { engine, waveforms });
 
   const unlink = linkPlayback(timeline, engine);
+  const unlinkRecorder = linkRecorder(timeline, recorder, { waveforms });
 
   cleanup = () => {
     unlink();
+    unlinkRecorder();
+    recorder.destroy();
     toolbar.destroy();
     mixer.destroy();
     engine.destroy();
@@ -39,7 +44,7 @@ onBeforeUnmount(() => cleanup());
   <div class="studio-playground">
     <div ref="bar" class="studio-playground__bar" />
     <div ref="host" class="studio-playground__timeline" :style="{ height: `${props.height}px` }" />
-    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. The sliders button opens the mixer.</p>
+    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. The sliders button opens the mixer. Arm a track with R and press the red button to record over the music.</p>
   </div>
 </template>
 

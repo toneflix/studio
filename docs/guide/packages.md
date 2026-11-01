@@ -9,9 +9,8 @@ Toneflix Studio is split into small packages, so an app installs only what it us
 | `@toneflix/studio-waveforms` | Waveform peaks worked out in a worker, cached on the device and drawn on a canvas | core |
 | `@toneflix/studio-timeline` | The multitrack editor view, `StudioTimeline` | core, waveforms |
 | `@toneflix/studio-audio` | Playback, mixer, effects, loops, metronome and mixdown, `AudioEngine` | core |
-| `@toneflix/studio-controls` | A toolbar and track strips with Lucide icons you can replace | core, timeline, audio |
-
-Recording will arrive as its own package.
+| `@toneflix/studio-recorder` | Recording a microphone or line input onto a track, lined up with playback, `Recorder` | core, audio |
+| `@toneflix/studio-controls` | A toolbar and track strips with Lucide icons you can replace | core, timeline, audio, recorder |
 
 ## Examples
 

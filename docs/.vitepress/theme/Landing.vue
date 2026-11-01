@@ -39,7 +39,7 @@ const uses = ['Music apps', 'Podcast editors', 'Classrooms', 'AI audio tools', '
 
 const roadmap = [
   { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, effects, loops and a metronome.' },
-  { stage: 'Next', title: 'Recording', text: 'Record over the mix with latency compensation and overdub, with waveforms drawn live.' },
+  { stage: 'Available', title: 'Recording', text: 'Record over the mix onto any track, lined up with what was heard, with the waveform drawn as you record.' },
   { stage: 'Planned', title: 'DAW project exchange', text: 'Open and save sessions that travel to and from desktop studios.' },
 ];
 
@@ -54,26 +54,37 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, linkRecorder, Recorder, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const audio = new AudioEngine();
+  const recorder = new Recorder(audio);
+  const waveforms = new Waveforms();
   const view = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: narrow ? 112 : 168,
     pxPerSecond: narrow ? 24 : 52,
     palette: ['#03bfff', '#8b7cff', '#ff5c8a', '#2fd07f', '#f5b53d'],
     createTrack: () => ({ id: uid('t'), name: 'New track' }),
-    renderHeader: trackStrip(audio),
+    renderHeader: trackStrip(audio, { recorder }),
   });
 
   toolbar.value = new StudioToolbar(actions.value!, {
     timeline: view,
     engine: audio,
-    items: ['play', 'stop', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'meter'],
+    recorder,
+    items: ['play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'meter'],
   });
-  loadSample(view, { engine: audio });
-  unlink = linkPlayback(view, audio);
+  loadSample(view, { engine: audio, waveforms });
+
+  const unlinkPlayback = linkPlayback(view, audio);
+  const unlinkRecorder = linkRecorder(view, recorder, { waveforms });
+
+  unlink = () => {
+    unlinkPlayback();
+    unlinkRecorder();
+    recorder.destroy();
+  };
   timeline.value = view;
   engine.value = audio;
 });
@@ -123,7 +134,7 @@ onBeforeUnmount(() => {
       </div>
       <div ref="actions" class="window-actions" />
       <div ref="host" class="window-body" />
-      <p class="window-hint">It's live. Press play, drag a clip while it plays, or click the ruler and press S to split.</p>
+      <p class="window-hint">It's live. Press play, drag a clip while it plays, click the ruler and press S to split, or arm a track with R and record.</p>
     </section>
 
     <section class="features">

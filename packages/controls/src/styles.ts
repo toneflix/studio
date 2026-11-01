@@ -48,6 +48,10 @@ export const CONTROL_STYLES = `
 .tfs-strip .tfs-tool .tfs-icon, .tfs-channel .tfs-tool .tfs-icon { width: 12px; height: 12px; }
 .tfs-strip .tfs-tool[aria-pressed='true'][data-tool='mute'], .tfs-channel .tfs-tool[aria-pressed='true'][data-tool='mute'] { border-color: transparent; background: var(--tfs-mute, #f5b53d); color: #1a1406; }
 .tfs-strip .tfs-tool[aria-pressed='true'][data-tool='solo'], .tfs-channel .tfs-tool[aria-pressed='true'][data-tool='solo'] { border-color: transparent; background: var(--tfs-solo, #03bfff); color: #03141c; }
+.tfs-strip .tfs-tool[aria-pressed='true'][data-tool='arm'] { border-color: transparent; background: var(--tfs-record, #ff4d5e); color: #fff; }
+.tfs-tool[data-tool='record'] { color: var(--tfs-record, #ff4d5e); }
+.tfs-tool[data-tool='record'][aria-pressed='true'], .tfs-tool[data-tool='record'][aria-pressed='true']:hover:not(:disabled) { background: var(--tfs-record, #ff4d5e); color: #fff; animation: tfs-recording 1.2s ease-in-out infinite; }
+@keyframes tfs-recording { 50% { filter: brightness(0.8); } }
 .tfs-strip input[type='range'] { width: 100%; height: 14px; margin: 0; accent-color: var(--clip, var(--tfs-clip)); }
 
 @container (max-height: 60px) { .tfs-strip input[type='range'] { display: none; } }

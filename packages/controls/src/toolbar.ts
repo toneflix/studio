@@ -1,5 +1,6 @@
 import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
 import type { SnapTo } from '@toneflix/studio-core';
+import type { Recorder } from '@toneflix/studio-recorder';
 import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { createDisplay } from './display.ts';
 import { renderIcon, type Icon, type IconName, type IconSet } from './icons.ts';
@@ -17,6 +18,7 @@ export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo'
 export interface ToolbarContext {
   timeline: StudioTimeline;
   engine?: AudioEngine;
+  recorder?: Recorder;
   toolbar: StudioToolbar;
   /** Render the mix as a WAV file; needs an engine */
   mix: () => Promise<Blob>;
@@ -60,6 +62,8 @@ export interface ToolbarOptions {
    * for example to upload the mix or store the project. The button waits while it runs.
    */
   onSave?: (context: ToolbarContext) => void | Promise<void>;
+  /** Records onto the armed track; the record button is left out without one */
+  recorder?: Recorder;
   /** A mixer view for the mixer button to show and hide; the button is left out without one */
   mixer?: StudioMixer;
   /** Rows for the info dialog; gets the default rows to extend or replace */
@@ -69,6 +73,7 @@ export interface ToolbarOptions {
 export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'play',
   'stop',
+  'record',
   'loop',
   'metronome',
   '|',
@@ -97,6 +102,7 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   play: 'Play (Space)',
   pause: 'Pause (Space)',
   stop: 'Stop',
+  record: 'Record onto the armed track',
   loop: 'Loop the selected range',
   metronome: 'Metronome',
   split: 'Split the selection at the playhead, or a range at its edges (S)',
@@ -119,7 +125,7 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   close: 'Close',
 };
 
-const AUDIO: ToolbarItem[] = ['play', 'stop', 'loop', 'metronome', 'export', 'meter'];
+const AUDIO: ToolbarItem[] = ['play', 'stop', 'record', 'loop', 'metronome', 'export', 'meter'];
 const SNAPS: [SnapTo, string][] = [
   ['off', 'Off'],
   ['bar', 'Bar'],
@@ -145,6 +151,7 @@ export class StudioToolbar {
   private readonly onSave?: ToolbarOptions['onSave'];
   private readonly infoRows?: ToolbarOptions['info'];
   private readonly mixer?: StudioMixer;
+  private readonly recorder?: Recorder;
   private infoDialog?: ReturnType<typeof createInfoDialog>;
 
   constructor(target: ContainerTarget, options: ToolbarOptions) {
@@ -159,6 +166,7 @@ export class StudioToolbar {
     this.onSave = options.onSave;
     this.infoRows = options.info;
     this.mixer = options.mixer;
+    this.recorder = options.engine ? options.recorder : undefined;
     this.root = this.doc.createElement('div');
     this.root.className = 'tfs-toolbar';
     this.root.setAttribute('role', 'toolbar');
@@ -168,7 +176,7 @@ export class StudioToolbar {
     const items = (options.items ?? DEFAULT_TOOLBAR).filter(
       (item) =>
         actions.has(item) ||
-        (item === 'mixer' ? !!this.mixer : this.engine || !AUDIO.includes(item as ToolbarItem) || (item === 'export' && this.onSave)),
+        (item === 'mixer' ? !!this.mixer : item === 'record' ? !!this.recorder : this.engine || !AUDIO.includes(item as ToolbarItem) || (item === 'export' && this.onSave)),
     );
 
     for (const [i, item] of items.entries()) {
@@ -197,6 +205,7 @@ export class StudioToolbar {
     return {
       timeline: this.timeline,
       engine: this.engine,
+      recorder: this.recorder,
       toolbar: this,
       mix: () => this.mix(),
       download: () => this.download(),
@@ -260,6 +269,10 @@ export class StudioToolbar {
     set('delete', (b) => (b.disabled = !timeline.selection.length));
     set('split', (b) => (b.disabled = !timeline.canSplit));
     set('mixer', (b) => b.setAttribute('aria-pressed', String(!!this.mixer?.visible)));
+    set('record', (b) => {
+      b.setAttribute('aria-pressed', String(!!this.recorder?.isRecording));
+      b.disabled = !timeline.state.tracks.length;
+    });
 
     for (const { action, button } of this.actions.values()) {
       const context = this.context;
@@ -297,6 +310,9 @@ export class StudioToolbar {
         break;
       case 'stop':
         engine?.stop();
+        break;
+      case 'record':
+        void this.record();
         break;
       case 'loop':
         engine?.setLoop(engine.loop ? null : this.loopRange());
@@ -340,6 +356,22 @@ export class StudioToolbar {
     }
 
     this.refresh();
+  }
+
+  /** Stop recording, or record onto the armed track, arming the selected clip's track or the first one if none is. */
+  private async record() {
+    const recorder = this.recorder;
+    if (!recorder) return;
+    if (recorder.isRecording) return void recorder.stop();
+
+    const state = this.timeline.state;
+    const selected = state.clips.find((clip) => this.timeline.selection.includes(clip.id));
+
+    if (!recorder.armed) recorder.arm(selected?.track ?? state.tracks[0]?.id ?? null);
+    if (!recorder.armed) return;
+
+    // Failures reach the app through the recorder's error event
+    await recorder.start().catch(() => undefined);
   }
 
   /** The selected range, or four bars from the bar under the playhead. */
@@ -483,6 +515,9 @@ export class StudioToolbar {
     this.unsubscribe.push(this.timeline.history.on('change', refresh), this.timeline.on('select', refresh), this.timeline.on('range', refresh), this.timeline.on('change', refresh));
 
     if (this.mixer) this.unsubscribe.push(this.mixer.on('toggle', refresh));
+    if (this.recorder) {
+      for (const event of ['arm', 'start', 'stop'] as const) this.unsubscribe.push(this.recorder.on(event, refresh));
+    }
 
     if (this.engine) {
       for (const event of ['play', 'pause', 'end', 'loop'] as const) this.unsubscribe.push(this.engine.on(event, refresh));

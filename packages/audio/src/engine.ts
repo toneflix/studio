@@ -90,6 +90,15 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     return this.playing;
   }
 
+  /** Pause after the last clip ends, unless looping */
+  get stopAtEnd() {
+    return this.options.stopAtEnd;
+  }
+
+  set stopAtEnd(stop: boolean) {
+    this.options.stopAtEnd = stop;
+  }
+
   get loop() {
     return this.loopRange;
   }
@@ -99,6 +108,14 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     if (!this.playing) return this.position;
 
     return timelineAt(this.origin, this.loopRange, Math.max(0, this.context.currentTime - this.clockStart));
+  }
+
+  /**
+   * The timeline time that plays at a context time, counted straight on from where
+   * playback began, without wrapping at the loop. Null while paused.
+   */
+  positionAt(contextTime: number) {
+    return this.playing ? this.origin + contextTime - this.clockStart : null;
   }
 
   /** Play this timeline from now on. While playing, what is heard follows the change at once. */

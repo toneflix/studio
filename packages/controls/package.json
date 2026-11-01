@@ -42,6 +42,7 @@
   "dependencies": {
     "@toneflix/studio-audio": "workspace:^",
     "@toneflix/studio-core": "workspace:^",
+    "@toneflix/studio-recorder": "workspace:^",
     "@toneflix/studio-timeline": "workspace:^"
   },
   "engines": {
