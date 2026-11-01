@@ -24,7 +24,39 @@ class CompositeNode extends GainNode {
   }
 }
 
-export const makePlugin = ({ identifier, name, params, build, apply }) => {
+/** AudioWorklet modules already added, per context. */
+const worklets = new WeakMap();
+
+/** Add a worklet's processor code to a context once. */
+const loadWorklet = (context, code) => {
+  let loaded = worklets.get(context);
+
+  if (!loaded) {
+    loaded = new Map();
+    worklets.set(context, loaded);
+  }
+
+  if (!loaded.has(code)) {
+    const url = URL.createObjectURL(new Blob([code], { type: 'text/javascript' }));
+
+    loaded.set(
+      code,
+      context.audioWorklet.addModule(url).finally(() => URL.revokeObjectURL(url)),
+    );
+  }
+
+  return loaded.get(code);
+};
+
+/** Decimals to show for a parameter's step. */
+const decimals = (step) => Math.min(2, String(step).split('.')[1]?.length ?? 0);
+
+/**
+ * `params` are the sliders, `build` makes the graph, `apply` sets it from the values.
+ * A `stop` function in the parts `build` returns runs when the plugin is destroyed.
+ * `worklet` is AudioWorklet processor code the graph needs, added before `build` runs.
+ */
+export const makePlugin = ({ identifier, name, params, build, apply, worklet }) => {
   class Node extends CompositeNode {
     constructor(context) {
       super(context);
@@ -71,12 +103,15 @@ export const makePlugin = ({ identifier, name, params, build, apply }) => {
     clearEvents() {}
 
     destroy() {
+      this.parts.stop?.();
       this.disconnect();
     }
   }
 
   return class Plugin {
     static async createInstance(groupId, audioContext, initialState) {
+      if (worklet) await loadWorklet(audioContext, worklet);
+
       const plugin = new Plugin(groupId, audioContext);
       if (initialState) await plugin.audioNode.setState(initialState);
       return plugin;
@@ -117,7 +152,7 @@ export const makePlugin = ({ identifier, name, params, build, apply }) => {
         const top = document.createElement('div');
         const value = document.createElement('span');
         const input = document.createElement('input');
-        const show = () => (value.textContent = `${(+node.values[id]).toFixed((p.step ?? 0.01) < 1 ? 2 : 0)}${p.units ? ` ${p.units}` : ''}`);
+        const show = () => (value.textContent = `${(+node.values[id]).toFixed(decimals(p.step ?? 0.01))}${p.units ? ` ${p.units}` : ''}`);
 
         top.style.cssText = 'display:flex;justify-content:space-between;margin-bottom:4px';
         top.append(p.label, value);
