@@ -23,6 +23,9 @@ const icons: Record<string, string> = {
   solo: 'headphones',
 };
 
+/** Icons drawn as solid shapes, like the transport buttons on hardware. */
+const filled = new Set(['play', 'pause', 'stop']);
+
 const root = dirname(createRequire(import.meta.url).resolve('lucide/package.json'));
 const { version } = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const attrs = (a: Record<string, string>) => Object.entries(a).map(([k, v]) => ` ${k}="${v}"`).join('');
@@ -30,7 +33,7 @@ const attrs = (a: Record<string, string>) => Object.entries(a).map(([k, v]) => `
 const lines = Object.entries(icons).map(([name, file]) => {
   const source = readFileSync(join(root, 'dist/esm/icons', `${file}.mjs`), 'utf8');
   const nodes = JSON.parse(source.slice(source.indexOf('['), source.lastIndexOf(']') + 1).replace(/(\w+):/g, '"$1":')) as [string, Record<string, string>][];
-  const body = nodes.map(([tag, a]) => `<${tag}${attrs(a)}/>`).join('');
+  const body = nodes.map(([tag, a]) => `<${tag}${attrs(filled.has(name) ? { ...a, fill: 'currentColor' } : a)}/>`).join('');
 
   return `  ${name}: '${body}',`;
 });
