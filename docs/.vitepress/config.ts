@@ -36,6 +36,7 @@ export default defineConfig({
           { text: 'Undo history', link: '/guide/history' },
           { text: 'Styling and headers', link: '/guide/styling' },
           { text: 'Saving projects', link: '/guide/saving' },
+          { text: 'Saving projects', link: '/guide/projects' },
         ],
       },
       {

@@ -18,7 +18,16 @@ const catalog = [
   { name: 'Drive', url: new URL('/plugins/drive.js', location.href).href },
 ];
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
-const toolbar = new StudioToolbar('#toolbar', { timeline, engine, mixer, recorder, plugins });
+const toolbar = new StudioToolbar('#toolbar', {
+  timeline,
+  engine,
+  mixer,
+  recorder,
+  plugins,
+  app: { name: 'Toneflix Studio', id: 'toneflix-studio-demo', version: '0.4', description: 'Demo session', copyright: '© Toneflix', extension: 'tfstudio' },
+  onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks)),
+  onProjectOpen: ({ missing }) => missing.length && console.warn('Audio not found:', missing),
+});
 loadSample(timeline, { engine, waveforms });
 timeline.showAutomation('keys', 'volume');
 linkPlayback(timeline, engine);

@@ -40,7 +40,7 @@ const uses = ['Music apps', 'Podcast editors', 'Classrooms', 'AI audio tools', '
 const roadmap = [
   { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, automation, markers, tempo changes, live plugins, loops and a metronome.' },
   { stage: 'Available', title: 'Recording', text: 'Record over the mix onto any track, lined up with what was heard, with the waveform drawn as you record.' },
-  { stage: 'Planned', title: 'DAW project exchange', text: 'Open and save sessions that travel to and from desktop studios.' },
+  { stage: 'Available', title: 'DAW project exchange', text: 'Save a session as a REAPER project with all its audio, finish it in a desktop studio, and open it again.' },
 ];
 
 const copy = async () => {
@@ -79,7 +79,8 @@ onMounted(async () => {
     mixer,
     recorder,
     plugins,
-    items: ['play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
+    items: ['file', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
+    onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
   });
   loadSample(view, { engine: audio, waveforms });
   view.showAutomation('keys', 'volume');

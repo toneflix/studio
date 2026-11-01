@@ -32,6 +32,8 @@ export const CONTROL_STYLES = `
 .tfs-tool[aria-pressed='true'], .tfs-tool--primary { background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
 .tfs-tool[aria-pressed='true']:hover:not(:disabled), .tfs-tool--primary:hover:not(:disabled) { background: var(--tfs-toolbar-active, #03bfff); filter: brightness(1.1); }
 .tfs-tool .tfs-icon { width: 18px; height: 18px; }
+.tfs-tool.tfs-tool--menu { width: auto; gap: 2px; padding: 0 6px 0 10px; font: 600 13px/1 system-ui, sans-serif; }
+.tfs-tool.tfs-tool--menu .tfs-icon { width: 14px; height: 14px; opacity: 0.7; }
 .tfs-toolbar-gap { width: 1px; height: 20px; margin: 0 4px; background: var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); }
 .tfs-snap-pick { display: inline-flex; align-items: center; gap: 4px; height: var(--tfs-toolbar-size, 32px); padding: 0 6px; border-radius: 8px; }
 .tfs-snap-pick .tfs-icon { width: 16px; height: 16px; }

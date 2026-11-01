@@ -22,7 +22,14 @@ onMounted(async () => {
     renderHeader: trackStrip(engine, { recorder }),
   });
   const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog: [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')], hidden: true });
-  const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer, recorder, plugins });
+  const toolbar = new StudioToolbar(bar.value!, {
+    timeline,
+    engine,
+    mixer,
+    recorder,
+    plugins,
+    onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks)),
+  });
 
   loadSample(timeline, { engine, waveforms });
   timeline.showAutomation('keys', 'volume');
