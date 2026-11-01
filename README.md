@@ -60,6 +60,10 @@ yarn demo        # the demo page with made-up audio
 yarn build       # dist/ with type declarations
 ```
 
+## Release
+
+Bump `version` in `package.json`, merge, then publish a GitHub release tagged `v<version>` (for example `v0.1.0`). The Publish workflow checks the tag, runs the checks and publishes to npm. A release marked as a pre-release goes out under the `next` tag.
+
 ## License
 
 MIT
