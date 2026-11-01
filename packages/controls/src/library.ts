@@ -10,6 +10,8 @@ export interface LibraryItem {
   kind: 'audio' | 'plugin';
   /** A second line, like the artist, vendor or tags */
   detail?: string;
+  /** A picture shown in place of the kind icon, like a plugin's editor */
+  image?: string;
   /** Length in seconds, shown beside audio */
   duration?: number;
   /** Audio: where to fetch the file. Plugin: the Web Audio Module's URL */
@@ -159,6 +161,7 @@ export interface WamListing {
   keywords?: string[];
   path?: string;
   url?: string;
+  thumbnail?: string;
   isInstrument?: boolean;
   [key: string]: unknown;
 }
@@ -166,6 +169,11 @@ export interface WamListing {
 export interface WamCommunityOptions {
   /** Another list in the same shape, for example a copy you host and review */
   url?: string;
+  /**
+   * Where the plugins' paths start, ending in a slash: by default the `plugins/`
+   * folder beside the list, as the community list is laid out
+   */
+  base?: string;
   /**
    * Which plugins to offer. Each one runs as code in your page, with the page's
    * access to cookies, storage and your API, so offer only plugins you trust.
@@ -182,6 +190,7 @@ export interface WamCommunityOptions {
  */
 export const wamCommunitySource = (options: WamCommunityOptions): LibrarySource => {
   const url = options.url ?? WAM_COMMUNITY_URL;
+  const base = new URL(options.base ?? 'plugins/', url).href;
   let listing: Promise<LibraryItem[]> | null = null;
 
   const load = async () => {
@@ -195,12 +204,14 @@ export const wamCommunitySource = (options: WamCommunityOptions): LibrarySource 
       const path = plugin.url ?? plugin.path;
       if (!path || !plugin.name || (options.effectsOnly !== false && plugin.isInstrument)) return [];
 
-      const module = new URL(path, url).href;
+      const module = new URL(path, base).href;
       if (!options.allow({ ...plugin, url: module })) return [];
 
       const detail = [plugin.vendor, plugin.description].filter(Boolean).join(' · ');
 
-      return [{ id: plugin.identifier ?? module, name: plugin.name, kind: 'plugin' as const, url: module, ...(detail && { detail }), data: plugin }];
+      const image = plugin.thumbnail && new URL(plugin.thumbnail, base).href;
+
+      return [{ id: plugin.identifier ?? module, name: plugin.name, kind: 'plugin' as const, url: module, ...(detail && { detail }), ...(image && { image }), data: plugin }];
     });
   };
 

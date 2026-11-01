@@ -25,10 +25,10 @@ test('a plugin source lists the catalog as plugins', async () => {
   assert.deepEqual(items, [{ id: 'https://example.com/echo.js', name: 'Echo', kind: 'plugin', url: 'https://example.com/echo.js' }]);
 });
 
-test('the WAM community source fetches once, resolves paths and shows only allowed effects', async (t) => {
+test('the WAM community source fetches once, resolves paths under plugins/ and shows only allowed effects', async (t) => {
   let calls = 0;
   const list = [
-    { identifier: 'com.a.delay', name: 'Delay', vendor: 'A', path: 'a/delay/index.js' },
+    { identifier: 'com.a.delay', name: 'Delay', vendor: 'A', path: 'a/delay/index.js', thumbnail: 'a/delay/screenshot.png' },
     { identifier: 'com.b.synth', name: 'Synth', vendor: 'B', path: 'b/synth/index.js', isInstrument: true },
     { identifier: 'com.c.fuzz', name: 'Fuzz', vendor: 'C', url: 'https://plugins.example.com/fuzz/index.js' },
   ];
@@ -45,9 +45,18 @@ test('the WAM community source fetches once, resolves paths and shows only allow
   await source.list({ search: 'delay', page: 1, signal });
   assert.equal(calls, 1);
   assert.deepEqual(
-    items.map((item) => [item.name, item.url, item.detail]),
-    [['Delay', 'https://example.com/community/a/delay/index.js', 'A']],
+    items.map((item) => [item.name, item.url, item.detail, item.image]),
+    [['Delay', 'https://example.com/community/plugins/a/delay/index.js', 'A', 'https://example.com/community/plugins/a/delay/screenshot.png']],
   );
+});
+
+test('the WAM community source takes another base for plugin paths', async (t) => {
+  t.mock.method(globalThis, 'fetch', async () => new Response(JSON.stringify([{ name: 'Delay', path: 'a/delay/index.js' }])));
+
+  const source = wamCommunitySource({ url: 'https://example.com/wams/plugins.json', base: './', allow: () => true });
+  const { items } = await source.list({ search: '', page: 1, signal });
+
+  assert.equal(items[0]!.url, 'https://example.com/wams/a/delay/index.js');
 });
 
 test('the WAM community source tries again after a failed fetch', async (t) => {

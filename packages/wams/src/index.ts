@@ -21,6 +21,8 @@ export interface CuratedWamItem {
   kind: 'plugin';
   url: string;
   detail: string;
+  /** A picture of its editor, when it has one */
+  image?: string;
   data: CuratedWam;
 }
 
@@ -37,6 +39,7 @@ export const curatedWams = (options: CuratedWamsOptions = {}): CuratedWamItem[] 
     kind: 'plugin',
     url: new URL(plugin.path, base).href,
     detail: `${plugin.vendor} · ${plugin.description}`,
+    ...(plugin.thumbnail && { image: new URL(plugin.thumbnail, base).href }),
     data: plugin,
   }));
 };
