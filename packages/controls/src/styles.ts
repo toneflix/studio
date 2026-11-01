@@ -27,10 +27,10 @@ export const CONTROL_STYLES = `
   cursor: pointer;
 }
 .tfs-tool:hover:not(:disabled) { background: var(--tfs-toolbar-hover, rgba(255, 255, 255, 0.08)); }
-.tfs-tool:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #4da3ff); outline-offset: 1px; }
+.tfs-tool:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #03bfff); outline-offset: 1px; }
 .tfs-tool:disabled { opacity: 0.35; cursor: default; }
-.tfs-tool[aria-pressed='true'], .tfs-tool--primary { background: var(--tfs-toolbar-active, #4da3ff); color: var(--tfs-toolbar-active-text, #08131f); }
-.tfs-tool[aria-pressed='true']:hover, .tfs-tool--primary:hover { background: var(--tfs-toolbar-active, #4da3ff); filter: brightness(1.1); }
+.tfs-tool[aria-pressed='true'], .tfs-tool--primary { background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
+.tfs-tool[aria-pressed='true']:hover:not(:disabled), .tfs-tool--primary:hover:not(:disabled) { background: var(--tfs-toolbar-active, #03bfff); filter: brightness(1.1); }
 .tfs-tool .tfs-icon { width: 18px; height: 18px; }
 .tfs-toolbar-gap { width: 1px; height: 20px; margin: 0 4px; background: var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); }
 .tfs-snap-pick { display: inline-flex; align-items: center; gap: 4px; height: var(--tfs-toolbar-size, 32px); padding: 0 6px; border-radius: 8px; }
@@ -47,7 +47,7 @@ export const CONTROL_STYLES = `
 .tfs-strip .tfs-tool:hover { background: rgba(255, 255, 255, 0.08); color: var(--tfs-text); }
 .tfs-strip .tfs-tool .tfs-icon { width: 12px; height: 12px; }
 .tfs-strip .tfs-tool[aria-pressed='true'][data-tool='mute'] { border-color: transparent; background: var(--tfs-mute, #f5b53d); color: #1a1406; }
-.tfs-strip .tfs-tool[aria-pressed='true'][data-tool='solo'] { border-color: transparent; background: var(--tfs-solo, #4da3ff); color: #08131f; }
+.tfs-strip .tfs-tool[aria-pressed='true'][data-tool='solo'] { border-color: transparent; background: var(--tfs-solo, #03bfff); color: #03141c; }
 .tfs-strip input[type='range'] { width: 100%; height: 14px; margin: 0; accent-color: var(--clip, var(--tfs-clip)); }
 
 @container (max-height: 60px) { .tfs-strip input[type='range'] { display: none; } }

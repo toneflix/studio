@@ -14,7 +14,7 @@ export const STYLES = `
   --tfs-select: #ffd34d;
   --tfs-playhead: #ff5a5f;
   --tfs-range: rgba(255, 211, 77, 0.16);
-  --tfs-loop: #4da3ff;
+  --tfs-loop: #03bfff;
   --tfs-ruler-height: 28px;
   position: relative;
   width: 100%;

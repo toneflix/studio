@@ -155,10 +155,10 @@ Set these CSS variables on the toolbar or any parent of it:
 | `--tfs-toolbar-text` | `#e8e8ea` | Icon colour |
 | `--tfs-toolbar-hover` | `rgba(255,255,255,.08)` | Button hover |
 | `--tfs-toolbar-line` | `rgba(255,255,255,.1)` | Dividers |
-| `--tfs-toolbar-active` | `#4da3ff` | Play, and buttons that are on |
-| `--tfs-toolbar-active-text` | `#08131f` | Icons on the active colour |
+| `--tfs-toolbar-active` | `#03bfff` | Play, and buttons that are on |
+| `--tfs-toolbar-active-text` | `#03141c` | Icons on the active colour |
 | `--tfs-toolbar-size` | `32px` | Button size |
-| `--tfs-mute` / `--tfs-solo` | `#f5b53d` / `#4da3ff` | Mute and solo when on |
+| `--tfs-mute` / `--tfs-solo` | `#f5b53d` / `#03bfff` | Mute and solo when on |
 | `--tfs-meter-off` | `rgba(255,255,255,.07)` | Unlit part of the meters |
 | `--tfs-display-bg` | `#0b0d10` | Transport display background |
 | `--tfs-display-text` / `--tfs-display-muted` | `#e8e8ea` / `#7d8590` | Display numbers and captions |

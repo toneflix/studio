@@ -50,3 +50,10 @@
 .landing-page .VPLocalNav {
   display: none;
 }
+
+/* The playground uses the full width beside the left sidebar. */
+.playground-page .VPDoc .container,
+.playground-page .VPDoc .content,
+.playground-page .VPDoc .content-container {
+  max-width: none !important;
+}
