@@ -79,7 +79,7 @@ Any WAM 2 plugin works: a JavaScript module whose default export has `createInst
 
 ## Curated plugins
 
-`@toneflix/studio-wams` holds reviewed effects whose licences allow passing them on: Toneflix's Echo and Drive, and Simple Delay, Simple Distortion and Simple EQ by Sequencer Party. They load from jsDelivr, pinned to the package's version, so the code you reviewed is the code that runs.
+`@toneflix/studio-wams` holds reviewed effects whose licences allow passing them on: Toneflix's Echo, Drive, Reverb, Compressor, Limiter, Gate, EQ, Chorus and Phaser, and Simple Delay, Simple Distortion and Simple EQ by Sequencer Party. They load from jsDelivr, pinned to the package's version, so the code you reviewed is the code that runs.
 
 ```ts
 import { curatedWams, curatedWamSource } from '@toneflix/studio';
@@ -90,4 +90,4 @@ new StudioBrowser('#editor', { timeline, engine, plugins, sources: [curatedWamSo
 
 Pass `base` to serve the package's `plugins` folder from your own storage instead, and `allow` to offer only some. `plugins/plugins.json` lists them in the WAM community list's shape.
 
-Echo and Drive are in the package's `plugins/toneflix` folder. They are short, so they're a good starting point for writing your own.
+The Toneflix plugins are in the package's `plugins/toneflix` folder, built on one small `base.js`. They are short, so they're a good starting point for writing your own; Gate shows how to add an AudioWorklet processor. It loads that processor from a `blob:` URL, so a Content Security Policy that offers Gate needs `blob:` in `script-src`.

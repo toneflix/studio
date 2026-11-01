@@ -31,7 +31,7 @@ test('module URLs pin the package version on jsDelivr by default', () => {
   assert.equal(WAMS_VERSION, pkg.version);
   assert.equal(wamsBase(), `https://cdn.jsdelivr.net/npm/@toneflix/studio-wams@${pkg.version}/plugins/`);
   assert.equal(curatedWams()[0]!.url, `${wamsBase()}toneflix/echo.js`);
-  assert.equal(curatedWams({ base: 'https://cdn.example.com/wams/' })[2]!.url, 'https://cdn.example.com/wams/sequencer-party/delay/index.js');
+  assert.equal(curatedWams({ base: 'https://cdn.example.com/wams/' }).find((wam) => wam.name === 'Simple Delay')!.url, 'https://cdn.example.com/wams/sequencer-party/delay/index.js');
 });
 
 test('the browser source filters by words in the name, vendor, description and keywords', () => {

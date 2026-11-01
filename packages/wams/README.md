@@ -8,6 +8,13 @@ A plugin runs as code in your page, so this package only holds plugins that were
 | --- | --- | --- |
 | Echo | Toneflix | MIT |
 | Drive | Toneflix | MIT |
+| Reverb | Toneflix | MIT |
+| Compressor | Toneflix | MIT |
+| Limiter | Toneflix | MIT |
+| Gate | Toneflix | MIT |
+| EQ | Toneflix | MIT |
+| Chorus | Toneflix | MIT |
+| Phaser | Toneflix | MIT |
 | Simple Delay | Sequencer Party (Tom Burns) | MIT |
 | Simple Distortion | Sequencer Party (Tom Burns) | MIT |
 | Simple EQ | Sequencer Party (Tom Burns) | MIT |
