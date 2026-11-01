@@ -149,6 +149,164 @@
     "homepage": "https://github.com/toneflix/studio"
   },
   {
+    "identifier": "net.toneflix.studio.reverb",
+    "name": "Reverb",
+    "vendor": "Toneflix",
+    "description": "Room-to-hall reverb with decay, pre-delay and tone",
+    "keywords": [
+      "effect",
+      "reverb",
+      "space"
+    ],
+    "path": "toneflix/reverb.js",
+    "thumbnail": "toneflix/reverb.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.compressor",
+    "name": "Compressor",
+    "vendor": "Toneflix",
+    "description": "Compressor with threshold, ratio, attack, release, knee and make-up gain",
+    "keywords": [
+      "effect",
+      "dynamics",
+      "compressor"
+    ],
+    "path": "toneflix/compressor.js",
+    "thumbnail": "toneflix/compressor.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.limiter",
+    "name": "Limiter",
+    "vendor": "Toneflix",
+    "description": "Peak limiter with gain and a hard ceiling",
+    "keywords": [
+      "effect",
+      "dynamics",
+      "limiter",
+      "master"
+    ],
+    "path": "toneflix/limiter.js",
+    "thumbnail": "toneflix/limiter.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.gate",
+    "name": "Gate",
+    "vendor": "Toneflix",
+    "description": "Noise gate with threshold, hold and range",
+    "keywords": [
+      "effect",
+      "dynamics",
+      "gate",
+      "noise"
+    ],
+    "path": "toneflix/gate.js",
+    "thumbnail": "toneflix/gate.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.eq",
+    "name": "EQ",
+    "vendor": "Toneflix",
+    "description": "Three-band equalizer with a sweepable mid",
+    "keywords": [
+      "effect",
+      "eq",
+      "equalizer",
+      "filter"
+    ],
+    "path": "toneflix/eq.js",
+    "thumbnail": "toneflix/eq.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.chorus",
+    "name": "Chorus",
+    "vendor": "Toneflix",
+    "description": "Stereo chorus with rate, depth and delay",
+    "keywords": [
+      "effect",
+      "modulation",
+      "chorus"
+    ],
+    "path": "toneflix/chorus.js",
+    "thumbnail": "toneflix/chorus.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.phaser",
+    "name": "Phaser",
+    "vendor": "Toneflix",
+    "description": "Six-stage phaser with feedback",
+    "keywords": [
+      "effect",
+      "modulation",
+      "phaser"
+    ],
+    "path": "toneflix/phaser.js",
+    "thumbnail": "toneflix/phaser.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.kbverb",
+    "name": "KB Verb",
+    "vendor": "Toneflix",
+    "description": "Lush allpass-loop reverb, a port of KBVerb by Corey Kereliuk",
+    "keywords": [
+      "effect",
+      "reverb",
+      "space",
+      "ambient"
+    ],
+    "path": "toneflix/kbverb.js",
+    "thumbnail": "toneflix/kbverb.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
+    "identifier": "net.toneflix.studio.stone-phaser",
+    "name": "Stone Phaser",
+    "vendor": "Toneflix",
+    "description": "Four-stage analog phaser model, a port of Stone Phaser by Jean Pierre Cimalando",
+    "keywords": [
+      "effect",
+      "modulation",
+      "phaser",
+      "analog"
+    ],
+    "path": "toneflix/stone-phaser.js",
+    "thumbnail": "toneflix/stone-phaser.png",
+    "version": "1.0.0",
+    "isInstrument": false,
+    "license": "MIT",
+    "homepage": "https://github.com/toneflix/studio"
+  },
+  {
     "identifier": "com.sequencerParty.simpleDelay",
     "name": "Simple Delay",
     "vendor": "Sequencer Party",
