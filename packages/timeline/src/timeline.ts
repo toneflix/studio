@@ -92,6 +92,12 @@ export interface TimelineOptions {
    * synth and drums by default; an empty list leaves only audio tracks.
    */
   instrumentTracks?: InstrumentTrackKind[];
+  /**
+   * Adds the add track menu's "Audio from a file" choice, which lets people pick audio
+   * files from their device and gets them here; `importAudioFiles` from `@toneflix/studio`
+   * puts each on a new track.
+   */
+  importAudio?: (files: File[]) => void | Promise<unknown>;
   /** Height in pixels of the automation lane under a track */
   automationHeight?: number;
   /** Show markers in the ruler, above the bar numbers */
@@ -156,8 +162,10 @@ export const DEFAULT_INSTRUMENT_TRACKS: InstrumentTrackKind[] = [
 
 export interface TrackLabels {
   add: string;
-  /** The add track menu's audio track, when it offers instrument tracks too */
+  /** The add track menu's empty audio track */
   audioTrack: string;
+  /** The add track menu's choice to pick audio files from the device */
+  audioFile: string;
   addBelow: string;
   rename: string;
   duplicate: string;
@@ -177,7 +185,8 @@ export interface TrackLabels {
 
 export const DEFAULT_TRACK_LABELS: TrackLabels = {
   add: 'Add track',
-  audioTrack: 'Audio track',
+  audioTrack: 'Empty audio track',
+  audioFile: 'Audio from a file…',
   addBelow: 'Add track below',
   rename: 'Rename',
   duplicate: 'Duplicate',
@@ -299,8 +308,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private frame = 0;
   private resize?: ResizeObserver;
   private unsubscribe: (() => void)[] = [];
-  private options: Required<Omit<TimelineOptions, 'model' | 'history' | 'grid' | 'renderHeader' | 'createTrack' | 'trackLabels' | 'rulerLabels'>> &
-    Pick<TimelineOptions, 'renderHeader' | 'createTrack'>;
+  private options: Required<Omit<TimelineOptions, 'model' | 'history' | 'grid' | 'renderHeader' | 'createTrack' | 'trackLabels' | 'rulerLabels' | 'importAudio'>> &
+    Pick<TimelineOptions, 'renderHeader' | 'createTrack' | 'importAudio'>;
   private readonly trackLabels: TrackLabels;
   private readonly rulerLabels: RulerLabels;
   private markerStrip!: HTMLDivElement;
@@ -336,6 +345,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       keyboard: options.keyboard ?? true,
       palette: options.palette ?? PALETTE,
       renderHeader: options.renderHeader,
+      importAudio: options.importAudio,
       createTrack: options.createTrack,
       editTracks: options.editTracks ?? true,
       automationHeight: options.automationHeight ?? 64,
@@ -379,14 +389,20 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         if (added) this.editTrackName(added.id);
       };
 
-      if (!kinds.length) return add();
+      const importAudio = this.options.importAudio;
+
+      if (!kinds.length && !importAudio) return add();
 
       const box = this.addButton.getBoundingClientRect();
 
       openMenu(
         this.doc,
         { x: box.left, y: box.bottom + 2 },
-        [{ label: this.trackLabels.audioTrack, onSelect: () => add() }, ...kinds.map((kind) => ({ label: kind.label, onSelect: () => add(this.makeInstrumentTrack(kind)) }))],
+        [
+          { label: this.trackLabels.audioTrack, onSelect: () => add() },
+          ...(importAudio ? [{ label: this.trackLabels.audioFile, onSelect: () => this.pickAudioFiles(importAudio) }] : []),
+          ...kinds.map((kind) => ({ label: kind.label, onSelect: () => add(this.makeInstrumentTrack(kind)) })),
+        ],
         this.trackLabels.add,
       );
     });
@@ -641,6 +657,21 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     while (names.has(kind.name.replace('{n}', String(n)))) n++;
 
     return { ...this.makeTrack(), name: kind.name.replace('{n}', String(n)), instrument: { ...kind.instrument } };
+  }
+
+  /** Let people pick audio files from their device, and pass them on. */
+  private pickAudioFiles(importAudio: (files: File[]) => void | Promise<unknown>) {
+    const input = this.doc.createElement('input');
+
+    input.type = 'file';
+    input.accept = 'audio/*';
+    input.multiple = true;
+    input.addEventListener('change', () => {
+      const files = [...(input.files ?? [])];
+
+      if (files.length) void Promise.resolve(importAudio(files)).catch((error: unknown) => console.error(error));
+    });
+    input.click();
   }
 
   /**

@@ -30,7 +30,7 @@ A note's `pitch` is a MIDI note number (60 is middle C), its `start` counts in s
 
 ## Adding tracks and clips
 
-The add track button offers an audio track, an instrument track and a drum track. Double-click an empty spot on an instrument track's lane to add a one-bar note clip there. Pass `instrumentTracks` to change the kinds on offer, or an empty list to offer only audio tracks.
+The add track button asks what to add: an empty audio track, audio from a file on the device (with the `importAudio` option, see [Editing](./editing)), an instrument track or a drum track. Double-click an empty spot on an instrument track's lane to add a one-bar note clip there. Pass `instrumentTracks` to change the kinds on offer, or an empty list to offer only audio tracks.
 
 | Method | What it does |
 | --- | --- |
@@ -42,14 +42,13 @@ Each one is a single undo step.
 
 ## Piano roll
 
-`StudioPianoRoll` edits a note clip's notes on a grid of keys and time. Double-click a note clip to open it, or use the toolbar's piano button, which opens the picked note clip. While it is open, picking another note clip on the timeline switches to it.
+`StudioPianoRoll` edits a note clip's notes on a grid of keys and time. Double-click or double-tap a note clip to open it. While it is open, picking another note clip on the timeline switches to it.
 
 ```ts
-import { StudioPianoRoll, StudioToolbar } from '@toneflix/studio';
+import { StudioPianoRoll } from '@toneflix/studio';
 
 const pianoRoll = new StudioPianoRoll('#editor', { timeline, engine, hidden: true });
 
-new StudioToolbar('#toolbar', { timeline, engine, pianoRoll });
 pianoRoll.edit(clip.id); // or open one yourself
 ```
 

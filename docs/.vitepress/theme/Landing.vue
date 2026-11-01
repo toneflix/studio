@@ -54,7 +54,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, curatedWams, curatedWamSource, linkPlayback, linkRecorder, listSource, PluginRack, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
+  const { AudioEngine, curatedWams, curatedWamSource, importAudioFiles, linkPlayback, linkRecorder, listSource, PluginRack, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
     '@toneflix/studio'
   );
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
@@ -73,6 +73,7 @@ onMounted(async () => {
     palette: ['#03bfff', '#8b7cff', '#ff5c8a', '#2fd07f', '#f5b53d'],
     createTrack: () => ({ id: uid('t'), name: `Track ${view.state.tracks.length + 1}` }),
     renderHeader: trackStrip(audio, { recorder }),
+    importAudio: (files) => importAudioFiles(view, audio, files, { onSource: (id, buffer) => void waveforms.get(`file:${id}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)) }),
   });
 
   const catalog = curatedWams(wams);
@@ -91,11 +92,10 @@ onMounted(async () => {
     timeline: view,
     engine: audio,
     mixer,
-    pianoRoll,
     browser,
     recorder,
     plugins,
-    items: ['file', 'browser', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'pianoRoll', 'meter'],
+    items: ['file', 'browser', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
     onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
   });
   loadSample(view, { engine: audio, waveforms });

@@ -61,7 +61,7 @@ timeline.on('change', ({ state, final }) => final && save(state));
 | Ctrl/Cmd + wheel | Zoom around the pointer |
 | S, Delete, Ctrl+D, Ctrl+A | Split at the playhead, delete, duplicate, select all |
 | Arrows | Nudge by the snap step, or move up and down a lane |
-| + above the headers, click a track name | Add an audio, instrument or drum track; rename, duplicate, move or delete one from its menu |
+| + above the headers, click a track name | Add an empty audio track, audio from a file, or an instrument or drum track; rename, duplicate, move or delete one from its menu |
 | Double-click an empty spot on an instrument track | Adds a one-bar note clip |
 | Double-click a note clip | Opens it in the piano roll: click to draw notes, drag to move or resize them |
 | Markers and tempo in the ruler | Right-click the ruler to add a marker or tempo change, or double-click above the bar numbers for a marker; drag to move, click a marker to jump there, click a tempo to set it or the meter |

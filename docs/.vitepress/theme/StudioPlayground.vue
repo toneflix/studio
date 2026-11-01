@@ -23,6 +23,7 @@ onMounted(async () => {
     headerWidth: host.value!.clientWidth < 600 ? 120 : 160,
     createTrack: () => ({ id: uid('t'), name: `Track ${timeline.state.tracks.length + 1}` }),
     renderHeader: trackStrip(engine, { recorder }),
+    importAudio: (files) => studio.importAudioFiles(timeline, engine, files, { onSource: (id, buffer) => void waveforms.get(`file:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks)) }),
   });
   const catalog = studio.curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog, hidden: true });
@@ -46,7 +47,6 @@ onMounted(async () => {
     timeline,
     engine,
     mixer,
-    pianoRoll,
     browser,
     recorder,
     plugins,

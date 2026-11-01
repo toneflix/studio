@@ -9,3 +9,4 @@ export * from '@toneflix/studio-controls';
 export * from '@toneflix/studio-wams';
 export * from './playback.ts';
 export * from './recording.ts';
+export * from './import.ts';

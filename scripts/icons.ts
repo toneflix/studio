@@ -32,7 +32,6 @@ const icons: Record<string, string> = {
   browser: 'library',
   plugin: 'plug',
   add: 'plus',
-  pianoRoll: 'piano',
 };
 
 /** Shape attributes changed from Lucide's: the record dot is drawn smaller, as on hardware. */

@@ -62,7 +62,7 @@ From `@toneflix/studio-controls`, also exported by `@toneflix/studio`. See [Tool
 
 | | |
 | --- | --- |
-| `new StudioToolbar(container, options)` | `timeline`, `engine?`, `recorder?`, `plugins?` (in the exported mix), `items?`, `icons?`, `labels?`, `exportName?`, `actions?`, `onSave?`, `info?`, `mixer?`, `browser?`, `pianoRoll?`; `addAction()`, `removeAction()`, `showInfo()`, `refresh()`, `destroy()` |
+| `new StudioToolbar(container, options)` | `timeline`, `engine?`, `recorder?`, `plugins?` (in the exported mix), `items?`, `icons?`, `labels?`, `exportName?`, `actions?`, `onSave?`, `info?`, `mixer?`, `browser?`; `addAction()`, `removeAction()`, `showInfo()`, `refresh()`, `destroy()` |
 | `sessionInfo(timeline)` | The info dialog's default rows |
 | `new StudioMixer(container, options)` | `timeline`, `engine`, `plugins?`, `catalog?`, `pickPlugin?`, `icons?`, `labels?`, `maxVolume?` (2), `hidden?`, `docked?`; `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; event `toggle` |
 | `new StudioPianoRoll(container, options)` | `timeline`, `engine`, `snap?` ('1/16'), `beatWidth?` (64), `icons?`, `labels?`, `hidden?`, `docked?`; `edit(clip \| null)`, `clip`, `select(indices)`, `selection`, `setSnap()`, `quantize()`, `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; events `toggle`, `open`, `select`. See [Instruments and notes](../guide/instruments#piano-roll) |

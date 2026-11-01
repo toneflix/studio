@@ -60,7 +60,7 @@ export interface PianoRollOptions {
   engine: AudioEngine;
   icons?: Partial<IconSet>;
   labels?: Partial<PianoRollLabels>;
-  /** Start hidden, to be opened with `show()`, `edit()`, a double-click on a note clip or the toolbar's button */
+  /** Start hidden, to be opened with `show()`, `edit()` or a double-click on a note clip */
   hidden?: boolean;
   /**
    * Sit in the page flow under whatever comes before it, taking its own height.

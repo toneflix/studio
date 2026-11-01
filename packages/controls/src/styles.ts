@@ -59,7 +59,7 @@ export const CONTROL_STYLES = `
 @container (max-height: 60px) { .tfs-strip input[type='range'] { display: none; } }
 .tfs-meter { display: flex; flex-direction: column; gap: 1px; width: 100%; background: linear-gradient(var(--tfs-meter-off, rgba(255, 255, 255, 0.07)) 3px, transparent 3px) 0 0 / 100% 4px; }
 .tfs-meter i { height: 3px; border-radius: 1px; background: linear-gradient(to right, #2fd07f 0%, #2fd07f 70%, #f5b53d 85%, #ff5a5f 100%); }
-.tfs-meter--output { width: 64px; padding: 0 6px; }
+.tfs-meter--output { width: 96px; padding: 0 6px; }
 .tfs-meter--output { background-size: 100% 6px; background-image: linear-gradient(var(--tfs-meter-off, rgba(255, 255, 255, 0.07)) 5px, transparent 5px); background-origin: content-box; background-clip: content-box; }
 .tfs-meter--output i { height: 5px; }
 
