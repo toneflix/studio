@@ -184,6 +184,9 @@ importers:
       globals:
         specifier: ^17.14.0
         version: 17.14.0
+      lucide:
+        specifier: ^1.66.0
+        version: 1.66.0
       typescript:
         specifier: npm:@typescript/typescript6@^6.0.2
         version: '@typescript/typescript6@6.0.2'
@@ -203,6 +206,18 @@ importers:
         specifier: workspace:^
         version: link:../core
 
+  packages/controls:
+    dependencies:
+      '@toneflix/studio-audio':
+        specifier: workspace:^
+        version: link:../audio
+      '@toneflix/studio-core':
+        specifier: workspace:^
+        version: link:../core
+      '@toneflix/studio-timeline':
+        specifier: workspace:^
+        version: link:../timeline
+
   packages/core: {}
 
   packages/studio:
@@ -210,6 +225,9 @@ importers:
       '@toneflix/studio-audio':
         specifier: workspace:^
         version: link:../audio
+      '@toneflix/studio-controls':
+        specifier: workspace:^
+        version: link:../controls
       '@toneflix/studio-core':
         specifier: workspace:^
         version: link:../core
@@ -1482,6 +1500,9 @@ packages:
   locate-path@6.0.0:
     resolution: {integrity: sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==}
     engines: {node: '>=10'}
+
+  lucide@1.66.0:
+    resolution: {integrity: sha512-Ngq8coV3XJ9S/DLTNnIWk9lmdJusoSnuuoO1rK7C0H9/VaV93LoWkv/u5GyUAJhL+rFesAd4gL3YG544bnH6gQ==}
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -2907,6 +2928,8 @@ snapshots:
   locate-path@6.0.0:
     dependencies:
       p-locate: 5.0.0
+
+  lucide@1.66.0: {}
 
   magic-string@0.30.21:
     dependencies:
