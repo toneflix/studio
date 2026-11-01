@@ -21,6 +21,9 @@ const icons: Record<string, string> = {
   snap: 'magnet',
   mute: 'volume-x',
   solo: 'headphones',
+  info: 'info',
+  save: 'save',
+  close: 'x',
 };
 
 /** Icons drawn as solid shapes, like the transport buttons on hardware. */

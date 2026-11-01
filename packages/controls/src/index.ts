@@ -5,3 +5,4 @@ export * from './styles.ts';
 export * from './toolbar.ts';
 export * from './display.ts';
 export * from './meter.ts';
+export * from './info.ts';

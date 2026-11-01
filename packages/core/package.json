@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The project model of Toneflix Studio: tracks, clips, edits, snapping and undo history. No DOM or audio, so it runs in browsers, workers and servers.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
