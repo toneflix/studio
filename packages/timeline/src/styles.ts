@@ -44,18 +44,20 @@ export const STYLES = `
   background-image: linear-gradient(to right, var(--tfs-bar) 1px, transparent 1px), linear-gradient(to right, var(--tfs-beat) 1px, transparent 1px);
   background-size: var(--tfs-bar-px) 100%, var(--tfs-beat-px) 100%;
 }
+.tfs-row-resize { position: absolute; left: 0; right: 0; bottom: -4px; height: 7px; z-index: 6; cursor: row-resize; touch-action: none; }
+.tfs-row-resize:hover, .tfs-row-resize:active { background: linear-gradient(transparent 3px, var(--tfs-select) 3px 4px, transparent 4px); }
 .tfs-row--new .tfs-lane { background: repeating-linear-gradient(45deg, transparent 0 8px, var(--tfs-line) 8px 16px); }
 .tfs-clip {
   position: absolute; top: 2px; bottom: 2px; box-sizing: border-box; overflow: hidden;
-  border-radius: 6px; border: 1px solid color-mix(in srgb, var(--clip, var(--tfs-clip)) 65%, transparent);
-  background: color-mix(in srgb, var(--clip, var(--tfs-clip)) 22%, var(--tfs-lane));
+  border-radius: 4px; border: 1px solid color-mix(in srgb, var(--clip, var(--tfs-clip)) 85%, #fff);
+  background: color-mix(in srgb, var(--clip, var(--tfs-clip)) 62%, #000);
   cursor: grab; touch-action: none;
 }
 .tfs-clip + .tfs-clip { box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.55); }
 .tfs-clip:focus-visible { outline: 2px solid var(--tfs-select); outline-offset: -2px; }
-.tfs-clip.tfs-clip--selected { border-color: var(--tfs-select); box-shadow: inset 0 0 0 1px var(--tfs-select), -3px 0 6px -2px rgba(0, 0, 0, 0.55); }
+.tfs-clip.tfs-clip--selected { border-color: var(--tfs-select); box-shadow: inset 0 0 0 1px var(--tfs-select), -3px 0 6px -2px rgba(0, 0, 0, 0.55); filter: brightness(1.12); }
 .tfs-clip--dragging { cursor: grabbing; opacity: 0.92; }
-.tfs-clip-head { position: absolute; left: 0; right: 0; top: 0; height: 16px; padding: 1px 8px; box-sizing: border-box; font-size: 11px; color: var(--tfs-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: color-mix(in srgb, var(--clip, var(--tfs-clip)) 35%, transparent); pointer-events: none; }
+.tfs-clip-head { position: absolute; left: 0; right: 0; top: 0; height: 16px; padding: 1px 8px; box-sizing: border-box; font-size: 11px; color: #fff; font-weight: 600; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--clip, var(--tfs-clip)); pointer-events: none; }
 .tfs-wave { position: absolute; left: 0; right: 0; top: 16px; bottom: 0; pointer-events: none; }
 .tfs-wave canvas { position: absolute; top: 0; height: 100%; }
 .tfs-trim { position: absolute; top: 0; bottom: 0; width: 8px; z-index: 2; cursor: ew-resize; }

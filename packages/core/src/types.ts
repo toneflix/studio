@@ -24,6 +24,8 @@ export interface Track {
   id: string;
   name: string;
   color?: string;
+  /** Row height in pixels; the timeline's `trackHeight` when left out */
+  height?: number;
   /** Anything the host app keeps with the track */
   data?: unknown;
 }

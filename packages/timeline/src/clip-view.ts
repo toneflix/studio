@@ -6,6 +6,33 @@ export const TILE = 1024;
 
 const HEAD = 16;
 
+const parsed = new Map<string, [number, number, number]>();
+let probe: CanvasRenderingContext2D | null = null;
+
+/** A colour mixed towards white, for waveforms drawn on a clip filled with that colour. */
+export const lighten = (color: string, amount: number, doc: Document) => {
+  let rgb = parsed.get(color);
+
+  if (!rgb) {
+    probe ??= doc.createElement('canvas').getContext('2d');
+    if (!probe) return color;
+
+    probe.fillStyle = '#000';
+    probe.fillStyle = color;
+
+    const value = String(probe.fillStyle);
+    const hex = /^#([0-9a-f]{6})$/i.exec(value);
+    const parts = hex ? [0, 2, 4].map((i) => parseInt(hex[1]!.slice(i, i + 2), 16)) : (value.match(/\d+(\.\d+)?/g) ?? []).slice(0, 3).map(Number);
+
+    rgb = [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
+    parsed.set(color, rgb);
+  }
+
+  const [red, green, blue] = rgb.map((c) => Math.round(c + (255 - c) * amount));
+
+  return `rgb(${red}, ${green}, ${blue})`;
+};
+
 /**
  * One clip on a lane: its box, trim and fade handles, and waveform canvases
  * drawn only for the part that is on screen.
@@ -19,6 +46,7 @@ export class ClipView {
   private tiles = new Map<number, HTMLCanvasElement>();
   private drawn = '';
   private colour = '';
+  private waveColour = '';
   clip: Clip;
 
   constructor(clip: Clip, doc: Document) {
@@ -59,6 +87,7 @@ export class ClipView {
   layout(clip: Clip, pxPerSecond: number, z: number, selected: boolean, color: string) {
     this.clip = clip;
     this.colour = color;
+    this.waveColour = lighten(color, 0.72, this.el.ownerDocument);
 
     const width = Math.max(2, clip.duration * pxPerSecond);
     const style = this.el.style;
@@ -80,7 +109,8 @@ export class ClipView {
   paint(from: number, to: number, pxPerSecond: number, peaks: Peaks | undefined, pixelRatio: number) {
     const clip = this.clip;
     const width = clip.duration * pxPerSecond;
-    const signature = [clip.offset, clip.duration, clip.gain, clip.fadeIn, clip.fadeOut, pxPerSecond, pixelRatio, peaks ? peaks.length : 0, this.colour].join();
+    const height = Math.max(1, this.el.clientHeight - HEAD - 2);
+    const signature = [height, clip.offset, clip.duration, clip.gain, clip.fadeIn, clip.fadeOut, pxPerSecond, pixelRatio, peaks ? peaks.length : 0, this.colour].join();
 
     if (signature !== this.drawn) {
       for (const canvas of this.tiles.values()) canvas.remove();
@@ -100,8 +130,6 @@ export class ClipView {
       }
     }
 
-    const height = Math.max(1, this.el.clientHeight - HEAD - 2);
-
     for (let index = first; index <= last; index++) {
       if (this.tiles.has(index)) continue;
 
@@ -115,7 +143,7 @@ export class ClipView {
       canvas.style.left = `${left}px`;
       canvas.style.width = `${tileWidth}px`;
 
-      drawWaveform(canvas, { clip, peaks, pxPerSecond, from: left, color: this.colour, pixelRatio });
+      drawWaveform(canvas, { clip, peaks, pxPerSecond, from: left, color: this.waveColour, pixelRatio });
       this.wave.append(canvas);
       this.tiles.set(index, canvas);
     }
