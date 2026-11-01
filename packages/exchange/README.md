@@ -14,6 +14,6 @@ const { blob, fileName } = await saveProject('app', timeline, engine, { app: { n
 const { format, missing } = await openProject(file, timeline, engine, { plugins });
 ```
 
-`toReaper(state)` and `fromReaper(text)` work on the project text alone, on servers too. It is one part of Toneflix Studio. Install [`@toneflix/studio`](https://www.npmjs.com/package/@toneflix/studio) to get every part from one import. See [Saving projects](https://toneflix.github.io/studio/guide/projects) for the full guide.
+`toReaper(state)` and `fromReaper(text)` work on the project text alone, on servers too. It is one part of Toneflix Studio. Install [`@toneflix/studio`](https://www.npmjs.com/package/@toneflix/studio) to get every part from one import. See [Project files and REAPER](https://toneflix.github.io/studio/guide/projects) for the full guide.
 
 MIT License.

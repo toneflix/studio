@@ -2,6 +2,8 @@
 
 The timeline's state is plain data, so you can save it as JSON, in a database or alongside your own project format.
 
+To save a whole session as one file, audio and plugins included, or to exchange it with REAPER, see [Project files and REAPER](./projects).
+
 ```ts
 interface TimelineState {
   tracks: Track[];

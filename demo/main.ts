@@ -1,5 +1,23 @@
-import { AudioEngine, linkPlayback, linkRecorder, PluginRack, Recorder, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } from '@toneflix/studio';
-import { loadSample } from './sample.ts';
+import {
+  AudioEngine,
+  filesSource,
+  linkPlayback,
+  linkRecorder,
+  listSource,
+  PluginRack,
+  pluginSource,
+  Recorder,
+  sessionSource,
+  StudioBrowser,
+  StudioMixer,
+  StudioTimeline,
+  StudioToolbar,
+  trackStrip,
+  uid,
+  wamCommunitySource,
+  Waveforms,
+} from '@toneflix/studio';
+import { demoSounds, loadSample } from './sample.ts';
 
 const engine = new AudioEngine();
 const recorder = new Recorder(engine);
@@ -18,10 +36,27 @@ const catalog = [
   { name: 'Drive', url: new URL('/plugins/drive.js', location.href).href },
 ];
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
+const drawWaveform = (id: string, buffer: AudioBuffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks));
+const browser = new StudioBrowser('#timeline', {
+  timeline,
+  engine,
+  plugins,
+  hidden: true,
+  onSource: drawWaveform,
+  sources: [
+    listSource('sounds', 'Sounds', demoSounds(engine)),
+    sessionSource(timeline, engine),
+    filesSource(document),
+    pluginSource(catalog),
+    // Community plugins run as code in this page; a demo with no sign-in can take them all
+    wamCommunitySource({ allow: () => true }),
+  ],
+});
 const toolbar = new StudioToolbar('#toolbar', {
   timeline,
   engine,
   mixer,
+  browser,
   recorder,
   plugins,
   app: { name: 'Toneflix Studio', id: 'toneflix-studio-demo', version: '0.4', description: 'Demo session', copyright: '© Toneflix', extension: 'tfstudio' },
@@ -33,4 +68,4 @@ timeline.showAutomation('keys', 'volume');
 linkPlayback(timeline, engine);
 linkRecorder(timeline, recorder, { waveforms });
 
-Object.assign(window, { timeline, engine, mixer, recorder, plugins, toolbar, StudioToolbar });
+Object.assign(window, { timeline, engine, mixer, browser, recorder, plugins, toolbar, StudioToolbar });

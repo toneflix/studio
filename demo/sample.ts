@@ -95,3 +95,31 @@ export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms
 
   return waveforms;
 };
+
+/** One-shots and loops, made up like the stems, for the browser's Sounds tab. */
+const oneShots: [string, string, number, (t: number) => number][] = [
+  ['kick', 'Kick', 0.6, (t) => Math.exp(-t * 9) * Math.sin(TAU * 50 * t * (1 + Math.exp(-t * 40)))],
+  ['snare', 'Snare', 0.4, (t) => Math.exp(-t * 14) * (0.6 * noise(t) + 0.4 * Math.sin(TAU * 190 * t))],
+  ['hat', 'Closed hat', 0.15, (t) => 0.4 * Math.exp(-t * 60) * noise(t * 3.1)],
+  ['riser', 'Noise riser', 4, (t) => 0.3 * (t / 4) ** 2 * noise(t)],
+  ['pad', 'Warm pad', 8, (t) => 0.1 * Math.min(1, t / 2, (8 - t) / 2) * (Math.sin(TAU * 220 * t) + Math.sin(TAU * 277.18 * t) + Math.sin(TAU * 329.63 * t))],
+  ['sub', 'Sub drop', 2, (t) => 0.6 * Math.exp(-t * 1.5) * Math.sin(TAU * (60 - 20 * t) * t)],
+];
+
+/** The demo's sound library, decoded on demand into the engine's sample rate. */
+export const demoSounds = (engine: AudioEngine) =>
+  oneShots.map(([id, name, seconds, voice]) => ({
+    id,
+    name,
+    kind: 'audio' as const,
+    detail: seconds < 1 ? 'One-shot' : 'Loop',
+    duration: seconds,
+    load: async () => {
+      const audio = synth(seconds, voice);
+      const buffer = engine.context.createBuffer(1, audio.getChannelData().length, rate);
+
+      buffer.copyToChannel(audio.getChannelData(), 0);
+
+      return buffer;
+    },
+  }));

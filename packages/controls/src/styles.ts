@@ -95,6 +95,52 @@ export const CONTROL_STYLES = `
 .tfs-meter--vertical { flex-direction: row; width: 9px; background: linear-gradient(to right, var(--tfs-meter-off, rgba(255, 255, 255, 0.07)) 4px, transparent 4px) 0 0 / 5px 100%; }
 .tfs-meter--vertical i { width: 4px; height: auto; background: linear-gradient(to top, #2fd07f 0%, #2fd07f 70%, #f5b53d 85%, #ff5a5f 100%); }
 
+.tfs-browser { display: flex; flex-direction: column; width: min(var(--tfs-browser-width, 300px), 100%); box-sizing: border-box; border-right: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
+.tfs-browser[hidden] { display: none; }
+.tfs-browser--overlay { position: absolute; top: 0; bottom: 0; left: 0; z-index: 31; box-shadow: 12px 0 32px rgba(0, 0, 0, 0.45); animation: tfs-browser-in 0.18s ease-out; }
+@keyframes tfs-browser-in { from { transform: translateX(-24px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tfs-browser--overlay { animation: none; } }
+.tfs-browser-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 6px 14px; }
+.tfs-browser-head h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.tfs-browser-tabs { display: flex; gap: 4px; padding: 0 10px 8px; overflow-x: auto; scrollbar-width: none; }
+.tfs-browser-tabs[hidden] { display: none; }
+.tfs-browser-tab { flex: none; padding: 5px 10px; border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); border-radius: 999px; background: none; color: var(--tfs-display-muted, #9a9aa2); font: 600 11px/1 system-ui, sans-serif; cursor: pointer; }
+.tfs-browser-tab:hover { color: inherit; }
+.tfs-browser-tab[aria-selected='true'] { border-color: transparent; background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
+.tfs-browser-search { display: block; padding: 0 10px 8px; }
+.tfs-browser-search input { width: 100%; height: 30px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); border-radius: 6px; background: rgba(255, 255, 255, 0.04); color: inherit; font: inherit; outline: none; }
+.tfs-browser-search input:focus { border-color: var(--tfs-toolbar-active, #03bfff); }
+.tfs-browser-action, .tfs-browser-more { margin: 0 10px 8px; padding: 7px 10px; border: 1px dashed var(--tfs-toolbar-line, rgba(255, 255, 255, 0.18)); border-radius: 6px; background: none; color: inherit; font: 600 12px/1 system-ui, sans-serif; cursor: pointer; }
+.tfs-browser-action:hover, .tfs-browser-more:hover { background: rgba(255, 255, 255, 0.05); }
+.tfs-browser-action[hidden], .tfs-browser-more[hidden], .tfs-browser-status[hidden] { display: none; }
+.tfs-browser-list { flex: 1 1 auto; min-height: 0; margin: 0; padding: 0 4px; overflow-y: auto; list-style: none; }
+.tfs-browser-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: grab; }
+.tfs-browser-item:hover { background: rgba(255, 255, 255, 0.05); }
+.tfs-browser-item[aria-busy='true'] { opacity: 0.55; cursor: progress; }
+.tfs-browser-item .tfs-tool { width: 26px; height: 26px; flex: none; border-radius: 6px; }
+.tfs-browser-item .tfs-tool .tfs-icon { width: 14px; height: 14px; }
+.tfs-browser-item .tfs-browser-preview { border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); }
+.tfs-browser-preview[aria-busy='true'] { opacity: 0.5; }
+.tfs-browser-kind { display: grid; place-items: center; width: 26px; height: 26px; flex: none; color: var(--tfs-display-muted, #9a9aa2); }
+.tfs-browser-kind .tfs-icon { width: 15px; height: 15px; }
+.tfs-browser-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
+.tfs-browser-name, .tfs-browser-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tfs-browser-name { font-weight: 600; }
+.tfs-browser-detail, .tfs-browser-length { color: var(--tfs-display-muted, #9a9aa2); font-size: 11px; }
+.tfs-browser-length { flex: none; font-variant-numeric: tabular-nums; }
+.tfs-browser-add { opacity: 0.6; }
+.tfs-browser-item:hover .tfs-browser-add, .tfs-browser-add:focus-visible { opacity: 1; }
+.tfs-browser-add[hidden] { display: none; }
+.tfs-browser-status { padding: 12px 14px; color: var(--tfs-display-muted, #9a9aa2); }
+.tfs-browser-status--failed { color: var(--tfs-menu-danger, #ff6b7a); }
+@media (max-width: 480px) { .tfs-browser--overlay { width: 100%; } }
+@media (pointer: coarse) {
+  .tfs-browser-item { padding: 6px; }
+  .tfs-browser-item .tfs-tool { width: 36px; height: 36px; }
+  .tfs-browser-add { opacity: 1; }
+  .tfs-browser-search input { height: 38px; font-size: 16px; }
+}
+
 .tfs-mixer { display: flex; height: var(--tfs-mixer-height, 320px); box-sizing: border-box; border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
 .tfs-mixer[hidden] { display: none; }
 .tfs-mixer--overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; max-height: 100%; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.45); animation: tfs-mixer-in 0.18s ease-out; }
