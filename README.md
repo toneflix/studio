@@ -1,11 +1,15 @@
 # @toneflix/studio
 
+![A multitrack timeline with drums, bass, keys and vocal clips](https://raw.githubusercontent.com/toneflix/studio/main/docs/public/screenshot.png)
+
 **The studio engine for the web.** Give any web app a real multitrack editor. Your users arrange, cut and shape audio as freely as in a desktop DAW, right in the browser.
 
 - **Edit without limits.** Split anything, drag clips anywhere, layer them and move them between tracks. Nothing snaps back unless you ask it to.
 - **Fast with big sessions.** Waveforms are drawn in the background and cached on the device, so long recordings open instantly the next time.
 - **Fits any stack.** No framework and no dependencies. Restyle it with CSS variables and drop in your own track controls.
 - **Open by design.** MIT licensed. Project exchange with the desktop DAWs musicians already use is on the roadmap.
+
+Read the docs and try the playground at **[toneflix.github.io/studio](https://toneflix.github.io/studio/)**.
 
 > Status: early. This release has the timeline and waveforms. Playback and recording come next.
 
@@ -59,10 +63,11 @@ Where clips overlap on a lane, the one that starts later is on top and is the on
 ## Develop
 
 ```sh
-yarn install
-yarn test        # node --test, no browser needed
-yarn demo        # the demo page with made-up audio
-yarn build       # dist/ with type declarations
+pnpm install
+pnpm test        # node --test, no browser needed
+pnpm demo        # the demo page with made-up audio
+pnpm docs:dev    # the docs site with a live playground
+pnpm build       # dist/ with type declarations
 ```
 
 ## Release
