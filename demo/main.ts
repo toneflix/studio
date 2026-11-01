@@ -37,12 +37,11 @@ const catalog = [
 ];
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
 const drawWaveform = (id: string, buffer: AudioBuffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks));
-const browser = new StudioBrowser('#workspace', {
+const browser = new StudioBrowser('#timeline', {
   timeline,
   engine,
   plugins,
   hidden: true,
-  docked: true,
   onSource: drawWaveform,
   sources: [
     listSource('sounds', 'Sounds', demoSounds(engine)),

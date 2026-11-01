@@ -20,7 +20,7 @@ const browser = new StudioBrowser('#editor', {
 new StudioToolbar('#toolbar', { timeline, engine, browser });
 ```
 
-It slides in over the left of the element you give it. With `docked: true` it sits first in that element instead, in the page flow, so a row like `<main style="display: flex">` puts it beside the timeline. Given a `browser`, the toolbar gets a library button that shows and hides it.
+It slides in over the left of the element you give it, so the timeline keeps its size; on a phone it takes the full width. With `docked: true` it sits first in that element instead, in the page flow, so a row like `<main style="display: flex">` puts it beside the timeline. On touch screens the buttons grow, and **+** places sounds and plugins, since dragging needs a mouse. Given a `browser`, the toolbar gets a library button that shows and hides it.
 
 | Gesture | What it does |
 | --- | --- |

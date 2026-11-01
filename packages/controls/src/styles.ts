@@ -95,7 +95,7 @@ export const CONTROL_STYLES = `
 .tfs-meter--vertical { flex-direction: row; width: 9px; background: linear-gradient(to right, var(--tfs-meter-off, rgba(255, 255, 255, 0.07)) 4px, transparent 4px) 0 0 / 5px 100%; }
 .tfs-meter--vertical i { width: 4px; height: auto; background: linear-gradient(to top, #2fd07f 0%, #2fd07f 70%, #f5b53d 85%, #ff5a5f 100%); }
 
-.tfs-browser { display: flex; flex-direction: column; width: var(--tfs-browser-width, 300px); max-width: 100%; box-sizing: border-box; border-right: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
+.tfs-browser { display: flex; flex-direction: column; width: min(var(--tfs-browser-width, 300px), 100%); box-sizing: border-box; border-right: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
 .tfs-browser[hidden] { display: none; }
 .tfs-browser--overlay { position: absolute; top: 0; bottom: 0; left: 0; z-index: 31; box-shadow: 12px 0 32px rgba(0, 0, 0, 0.45); animation: tfs-browser-in 0.18s ease-out; }
 @keyframes tfs-browser-in { from { transform: translateX(-24px); opacity: 0; } }
@@ -133,6 +133,13 @@ export const CONTROL_STYLES = `
 .tfs-browser-add[hidden] { display: none; }
 .tfs-browser-status { padding: 12px 14px; color: var(--tfs-display-muted, #9a9aa2); }
 .tfs-browser-status--failed { color: var(--tfs-menu-danger, #ff6b7a); }
+@media (max-width: 480px) { .tfs-browser--overlay { width: 100%; } }
+@media (pointer: coarse) {
+  .tfs-browser-item { padding: 6px; }
+  .tfs-browser-item .tfs-tool { width: 36px; height: 36px; }
+  .tfs-browser-add { opacity: 1; }
+  .tfs-browser-search input { height: 38px; font-size: 16px; }
+}
 
 .tfs-mixer { display: flex; height: var(--tfs-mixer-height, 320px); box-sizing: border-box; border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
 .tfs-mixer[hidden] { display: none; }
