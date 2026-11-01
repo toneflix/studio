@@ -11,9 +11,9 @@ Clips are pieces of audio on a track. Each one says where it starts on the timel
 | Drag a clip edge | Trims it, up to the ends of its audio |
 | Drag a corner handle | Fade in or fade out |
 | Click / Shift click / Ctrl or ⌘ click | Select, add to the selection, toggle in the selection |
-| Drag on an empty track or the ruler | Selects a time range, also marked on the ruler |
+| Drag on an empty track | Selects every clip the box touches; with Shift, adds them to the selection |
+| Drag on the ruler | Selects a time range across all tracks, for splitting and looping |
 | Drag a range's handles | Moves its start or end, on the ruler or at its edges on the tracks |
-| Shift + drag on an empty track | Selects every clip inside the box |
 | Click the ruler or an empty track | Moves the playhead |
 | Alt while dragging | Turns snapping off |
 | Ctrl or ⌘ + wheel | Zooms around the pointer |

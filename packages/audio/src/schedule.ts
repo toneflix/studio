@@ -134,15 +134,5 @@ export const gainSteps = (voice: Pick<Voice, 'clip' | 'start' | 'end'>) => {
 };
 
 /** Metronome beats in a pass's window. */
-export const clicksIn = (grid: Grid, pass: Pass): Click[] => {
-  const clicks: Click[] = [];
-  const beat = grid.beat;
-
-  for (let n = Math.ceil(pass.from / beat - 1e-9); n * beat < pass.to; n++) {
-    const time = n * beat;
-
-    clicks.push({ time, accent: n % grid.meter[0] === 0, at: pass.at + time - pass.start });
-  }
-
-  return clicks;
-};
+export const clicksIn = (grid: Grid, pass: Pass): Click[] =>
+  grid.beats(pass.from, pass.to).map(({ time, accent }) => ({ time, accent, at: pass.at + time - pass.start }));

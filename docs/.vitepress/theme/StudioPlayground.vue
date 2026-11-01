@@ -49,7 +49,7 @@ onBeforeUnmount(() => cleanup());
   <div class="studio-playground">
     <div ref="bar" class="studio-playground__bar" />
     <div ref="host" class="studio-playground__timeline" :style="{ height: `${props.height}px` }" />
-    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it. Arm a track with R and press the red button to record over the music. The sliders button opens the mixer, where + adds an Echo or Drive plugin to a track.</p>
+    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Drag on the ruler to pick a range to loop, or on the tracks to select clips. Drag the Keys volume curve, and add markers or tempo changes with the + buttons under the ruler. Arm a track with R and press the red button to record over the music. The sliders button opens the mixer, where + adds an Echo or Drive plugin to a track.</p>
   </div>
 </template>
 

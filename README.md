@@ -54,12 +54,14 @@ timeline.on('change', ({ state, final }) => final && save(state));
 | Drag a clip edge | Trims it, up to the ends of its audio |
 | Drag a corner handle | Fade in or out |
 | Click, Shift or Ctrl/Cmd click | Select, add to or toggle the selection |
-| Drag on an empty lane or the ruler | Selects a time range; with Shift, selects the clips inside it |
+| Drag on an empty lane | Selects the clips the box touches (Shift adds to the selection) |
+| Drag on the ruler | Selects a time range across all tracks |
 | Alt while dragging | Turns snapping off |
 | Ctrl/Cmd + wheel | Zoom around the pointer |
 | S, Delete, Ctrl+D, Ctrl+A | Split at the playhead, delete, duplicate, select all |
 | Arrows | Nudge by the snap step, or move up and down a lane |
 | + above the headers, click a track name | Add a track; rename, duplicate, move or delete one from its menu |
+| Markers and Tempo lanes under the ruler | + adds a marker or tempo change; drag to move, click a marker to jump there, click a tempo change to set its tempo or meter |
 | Track menu, Show volume/pan automation | Opens a lane under the track: click to add points, drag to move, double-click to remove |
 | Ctrl+Z, Ctrl+Shift+Z | Undo and redo |
 

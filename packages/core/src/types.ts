@@ -1,4 +1,5 @@
 import type { Automation } from './automation.ts';
+import type { TempoChange } from './grid.ts';
 
 /** A piece of audio on the timeline, in seconds. */
 export interface Clip {
@@ -41,10 +42,22 @@ export interface Source {
   duration?: number;
 }
 
+/** A named point on the timeline, like Verse or Chorus. */
+export interface Marker {
+  id: string;
+  time: number;
+  name: string;
+  color?: string;
+}
+
 /** Everything that undo and redo restore. */
 export interface TimelineState {
   tracks: readonly Track[];
   clips: readonly Clip[];
+  /** Named points on the ruler, by time */
+  markers?: readonly Marker[];
+  /** Tempo and meter changes after the start; the grid's tempo plays before the first */
+  tempo?: readonly TempoChange[];
 }
 
 /** A time range picked on the timeline, with the tracks it covers. */
