@@ -17,6 +17,7 @@ interface Entry {
   channel: () => Channel;
   bars: HTMLElement[];
   shown: [number, number];
+  vertical: boolean;
 }
 
 /** Drives every meter of one engine from a single animation frame loop, only while there is something to show. */
@@ -57,7 +58,7 @@ class MeterBoard {
         const shown = Math.max(level, entry.shown[side] * FALL);
 
         entry.shown[side] = shown < 0.002 ? 0 : shown;
-        entry.bars[side]!.style.clipPath = `inset(0 ${((1 - entry.shown[side]) * 100).toFixed(1)}% 0 0)`;
+        entry.bars[side]!.style.clipPath = cut(entry.shown[side], entry.vertical);
         moving ||= entry.shown[side] > 0;
       }
     }
@@ -66,13 +67,20 @@ class MeterBoard {
   }
 }
 
+/** Hides the part of a bar above a level. */
+const cut = (level: number, vertical: boolean) => {
+  const rest = `${((1 - level) * 100).toFixed(1)}%`;
+
+  return vertical ? `inset(${rest} 0 0 0)` : `inset(0 ${rest} 0 0)`;
+};
+
 const boards = new WeakMap<AudioEngine, MeterBoard>();
 
 /**
  * A left and right level meter for a channel. Returns the element and a
  * function that stops it.
  */
-export const createMeter = (doc: Document, engine: AudioEngine, channel: () => Channel) => {
+export const createMeter = (doc: Document, engine: AudioEngine, channel: () => Channel, { vertical = false } = {}) => {
   let board = boards.get(engine);
 
   if (!board) {
@@ -83,10 +91,10 @@ export const createMeter = (doc: Document, engine: AudioEngine, channel: () => C
   const element = doc.createElement('div');
   const bars = [doc.createElement('i'), doc.createElement('i')];
 
-  element.className = 'tfs-meter';
+  element.className = vertical ? 'tfs-meter tfs-meter--vertical' : 'tfs-meter';
   element.setAttribute('aria-hidden', 'true');
-  for (const bar of bars) bar.style.clipPath = 'inset(0 100% 0 0)';
+  for (const bar of bars) bar.style.clipPath = cut(0, vertical);
   element.append(...bars);
 
-  return { element, stop: board.add({ channel, bars, shown: [0, 0] }) };
+  return { element, stop: board.add({ channel, bars, shown: [0, 0], vertical }) };
 };
