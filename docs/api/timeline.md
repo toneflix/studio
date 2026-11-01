@@ -26,7 +26,9 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `keyboard` | `boolean` | `true` | Editing shortcuts while focused |
 | `palette` | `string[]` | 8 colours | Colours for tracks without one |
 | `renderHeader` | `(track, cell) => void \| (() => void)` | | Your own header controls |
-| `createTrack` | `() => Track` | | Lets clips be dragged onto a new track |
+| `createTrack` | `() => Track` | | Makes new tracks: for the add button and the menu, and for clips dragged below the last track |
+| `editTracks` | `boolean` | `true` | The add track button and the track menu |
+| `trackLabels` | `Partial<TrackLabels>` | `DEFAULT_TRACK_LABELS` | Names of the add button and menu items; `newTrack` is `'Track {n}'` |
 
 ## Properties
 
@@ -59,9 +61,15 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `deleteSelected()` / `duplicateSelected()` | |
 | `nudge(seconds, tracks?)` | Move the selected clips |
 | `undo()` / `redo()` | |
+| `addTrack(track?, index?)` | Add a track (a new one by default) at the end or an index; returns it |
+| `removeTrack(id)` | Delete a track and its clips |
+| `renameTrack(id, name)` / `editTrackName(id)` | Rename from code, or put the name up for editing in its header |
+| `duplicateTrack(id)` | Copy a track and its clips just below it; returns the copy |
+| `moveTrack(id, index)` | |
+| `showTrackMenu(id, at?)` | Open a track's menu, under its header or at `{ x, y }` |
 | `setGrid({ bpm?, meter?, snap?, show? })` | |
 | `readonly` | Whether editing is off |
-| `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, resizeTracks?, keyboard? })` | |
+| `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, resizeTracks?, keyboard?, editTracks? })` | |
 | `heightOf(track)` | The track's row height in pixels |
 | `colorOf(track)` | The track's colour, its own or from the palette |
 | `on(event, listener)` | Returns a function that removes the listener |

@@ -1,5 +1,6 @@
 import {
-  addTrack,
+  addClips,
+  addTrack as insertTrack,
   type Clip,
   clipEnd,
   duplicateClips,
@@ -7,10 +8,13 @@ import {
   Grid,
   type GridOptions,
   type History,
+  makeClip,
+  moveTrack,
   moveClips,
   nearestSnap,
   type Peaks,
   removeClips,
+  removeTrack as dropTrack,
   setFades,
   type Source,
   splitClips,
@@ -22,10 +26,12 @@ import {
   type Track,
   trimEnd,
   trimStart,
+  uid,
   updateTrack,
 } from '@toneflix/studio-core';
 import { ClipView } from './clip-view.ts';
 import { resolveContainer, type ContainerTarget } from './container.ts';
+import { closeMenu, openMenu } from './menu.ts';
 import { injectStyles } from './styles.ts';
 
 export interface TimelineOptions {
@@ -61,7 +67,39 @@ export interface TimelineOptions {
   renderHeader?: (track: Track, cell: HTMLElement) => void | (() => void);
   /** Makes the track a clip lands on when dragged below the last one; leave out to stop at the last */
   createTrack?: () => Track;
+  /** Show the add track button and the track menu (rename, duplicate, move, delete) */
+  editTracks?: boolean;
+  /** Names for the add track button and the track menu, for example to translate them */
+  trackLabels?: Partial<TrackLabels>;
 }
+
+export interface TrackLabels {
+  add: string;
+  addBelow: string;
+  rename: string;
+  duplicate: string;
+  moveUp: string;
+  moveDown: string;
+  delete: string;
+  menu: string;
+  /** Name of a new track; `{n}` is its number */
+  newTrack: string;
+}
+
+export const DEFAULT_TRACK_LABELS: TrackLabels = {
+  add: 'Add track',
+  addBelow: 'Add track below',
+  rename: 'Rename',
+  duplicate: 'Duplicate',
+  moveUp: 'Move up',
+  moveDown: 'Move down',
+  delete: 'Delete track',
+  menu: 'Track options',
+  newTrack: 'Track {n}',
+};
+
+/** Fired by an element in a track header to open that track's menu, for custom headers. */
+export const TRACK_MENU_EVENT = 'tfs-track-menu';
 
 export interface TimelineEvents extends Record<string, unknown> {
   change: { state: TimelineState; label: string; final: boolean };
@@ -126,8 +164,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private frame = 0;
   private resize?: ResizeObserver;
   private unsubscribe: (() => void)[] = [];
-  private options: Required<Omit<TimelineOptions, 'model' | 'history' | 'grid' | 'renderHeader' | 'createTrack'>> &
+  private options: Required<Omit<TimelineOptions, 'model' | 'history' | 'grid' | 'renderHeader' | 'createTrack' | 'trackLabels'>> &
     Pick<TimelineOptions, 'renderHeader' | 'createTrack'>;
+  private readonly trackLabels: TrackLabels;
+  private addButton!: HTMLButtonElement;
   private pps: number;
   private playheadTime = 0;
 
@@ -157,7 +197,9 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       palette: options.palette ?? PALETTE,
       renderHeader: options.renderHeader,
       createTrack: options.createTrack,
+      editTracks: options.editTracks ?? true,
     };
+    this.trackLabels = { ...DEFAULT_TRACK_LABELS, ...options.trackLabels };
     this.pps = clamp(this.options.pxPerSecond, this.options.minPxPerSecond, this.options.maxPxPerSecond);
 
     injectStyles(this.doc);
@@ -178,6 +220,16 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.content = el('div', 'tfs-content', this.scroller);
     const rulerRow = el('div', 'tfs-ruler-row', this.content);
     this.corner = el('div', 'tfs-corner', rulerRow);
+    this.addButton = el('button', 'tfs-add-track', this.corner);
+    this.addButton.type = 'button';
+    this.addButton.textContent = '+';
+    this.addButton.title = this.trackLabels.add;
+    this.addButton.setAttribute('aria-label', this.trackLabels.add);
+    this.addButton.addEventListener('click', () => {
+      const track = this.addTrack();
+
+      if (track) this.editTrackName(track.id);
+    });
     this.ruler = el('div', 'tfs-ruler', rulerRow);
     this.rows = el('div', 'tfs-rows', this.content);
     this.overlay = el('div', 'tfs-overlay', this.content);
@@ -253,7 +305,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     return this.options.readonly;
   }
 
-  setOptions(options: Partial<Pick<TimelineOptions, 'readonly' | 'follow' | 'snapToClips' | 'trackHeight' | 'resizeTracks' | 'keyboard'>>) {
+  setOptions(options: Partial<Pick<TimelineOptions, 'readonly' | 'follow' | 'snapToClips' | 'trackHeight' | 'resizeTracks' | 'keyboard' | 'editTracks'>>) {
     Object.assign(this.options, options);
     for (const view of this.clipViews.values()) view.invalidate();
 
@@ -392,7 +444,166 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.model.apply('Move', (state) => moveClips(state, this.selected, seconds, lanes));
   }
 
+  // ---- tracks ----
+
+  private get tracksEditable() {
+    return this.options.editTracks && !this.options.readonly;
+  }
+
+  /** A new track from `createTrack`, or one named Track n. */
+  private makeTrack(): Track {
+    if (this.options.createTrack) return this.options.createTrack();
+
+    const names = new Set(this.state.tracks.map((track) => track.name));
+    let n = this.state.tracks.length + 1;
+
+    while (names.has(this.trackLabels.newTrack.replace('{n}', String(n)))) n++;
+
+    return { id: uid('t'), name: this.trackLabels.newTrack.replace('{n}', String(n)) };
+  }
+
+  /** Add a track, at the end unless an index is given, as one undo step. Returns it. */
+  addTrack(track: Track = this.makeTrack(), index = this.state.tracks.length) {
+    if (this.state.tracks.some((t) => t.id === track.id)) return null;
+
+    this.model.apply('Add track', (state) => insertTrack(state, track, index));
+    this.scrollToTrack(track.id);
+
+    return track;
+  }
+
+  /** Delete a track and its clips, as one undo step. */
+  removeTrack(id: string) {
+    if (!this.state.tracks.some((track) => track.id === id)) return;
+
+    const gone = this.state.clips.filter((clip) => clip.track === id).map((clip) => clip.id);
+
+    if (gone.some((clip) => this.selected.has(clip))) this.select(this.selection.filter((clip) => !gone.includes(clip)));
+    if (this.currentRange?.tracks.includes(id)) {
+      const tracks = this.currentRange.tracks.filter((track) => track !== id);
+
+      this.setRange(tracks.length ? { ...this.currentRange, tracks } : null);
+    }
+
+    this.model.apply('Delete track', (state) => dropTrack(state, id));
+  }
+
+  renameTrack(id: string, name: string) {
+    const trimmed = name.trim();
+    const track = this.state.tracks.find((t) => t.id === id);
+    if (!track || !trimmed || trimmed === track.name) return;
+
+    this.model.apply('Rename track', (state) => updateTrack(state, id, { name: trimmed }));
+  }
+
+  /** Copy a track and its clips just below it. Returns the copy. */
+  duplicateTrack(id: string) {
+    const index = this.state.tracks.findIndex((track) => track.id === id);
+    const track = this.state.tracks[index];
+    if (!track) return null;
+
+    const copy: Track = { ...this.makeTrack(), color: this.trackColor(track, index), height: track.height, name: `${track.name} copy` };
+    const clips = this.state.clips.filter((clip) => clip.track === id).map((clip) => makeClip({ ...clip, id: undefined, track: copy.id }));
+
+    this.model.apply('Duplicate track', (state) => addClips(insertTrack(state, copy, index + 1), clips));
+
+    return copy;
+  }
+
+  /** Move a track to another place, as one undo step. */
+  moveTrack(id: string, index: number) {
+    const from = this.state.tracks.findIndex((track) => track.id === id);
+    if (from < 0 || from === index) return;
+
+    this.model.apply('Move track', (state) => moveTrack(state, id, index));
+  }
+
+  /** Type a new name for a track in its header. */
+  editTrackName(id: string, tries = 3) {
+    const row = this.trackRows.get(id);
+    const track = this.state.tracks.find((t) => t.id === id);
+    if (!track || this.options.readonly) return;
+
+    // A track that was just added gets its row on the next frame
+    if (!row?.header.offsetWidth) {
+      if (tries > 0) requestAnimationFrame(() => this.editTrackName(id, tries - 1));
+      return;
+    }
+
+    const input = this.doc.createElement('input');
+    let done = false;
+    const finish = (save: boolean) => {
+      if (done) return;
+
+      done = true;
+      input.remove();
+      if (save) this.renameTrack(id, input.value);
+      this.root.focus({ preventScroll: true });
+    };
+
+    input.className = 'tfs-rename';
+    input.value = track.name;
+    input.setAttribute('aria-label', this.trackLabels.rename);
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') finish(true);
+      else if (e.key === 'Escape') finish(false);
+    });
+    input.addEventListener('blur', () => finish(true));
+    input.addEventListener('pointerdown', (e) => e.stopPropagation());
+    row.header.append(input);
+    input.focus();
+    input.select();
+  }
+
+  /** Open a track's menu at a point on the page, or under its header. */
+  showTrackMenu(id: string, at?: { x: number; y: number }) {
+    const index = this.state.tracks.findIndex((track) => track.id === id);
+    const row = this.trackRows.get(id);
+    if (index < 0 || !row || !this.tracksEditable) return;
+
+    const box = row.header.getBoundingClientRect();
+    const labels = this.trackLabels;
+    const last = this.state.tracks.length - 1;
+
+    openMenu(
+      this.doc,
+      at ?? { x: box.left + 8, y: box.top + 24 },
+      [
+        { label: labels.rename, onSelect: () => this.editTrackName(id) },
+        { label: labels.duplicate, onSelect: () => this.duplicateTrack(id) },
+        {
+          label: labels.addBelow,
+          onSelect: () => {
+            const track = this.addTrack(undefined, index + 1);
+
+            if (track) this.editTrackName(track.id);
+          },
+        },
+        { label: labels.moveUp, disabled: index === 0, onSelect: () => this.moveTrack(id, index - 1) },
+        { label: labels.moveDown, disabled: index === last, onSelect: () => this.moveTrack(id, index + 1) },
+        { label: labels.delete, danger: true, onSelect: () => this.removeTrack(id) },
+      ],
+      `${labels.menu}: ${this.state.tracks[index]!.name}`,
+    );
+  }
+
+  /** Scroll the timeline, not the page, so a track's row is in view. */
+  private scrollToTrack(id: string) {
+    requestAnimationFrame(() => {
+      const row = this.trackRows.get(id)?.row;
+      if (!row) return;
+
+      const view = this.scroller.getBoundingClientRect();
+      const box = row.getBoundingClientRect();
+
+      if (box.bottom > view.bottom) this.scroller.scrollTop += box.bottom - view.bottom;
+      else if (box.top < view.top + this.ruler.offsetHeight) this.scroller.scrollTop -= view.top + this.ruler.offsetHeight - box.top;
+    });
+  }
+
   destroy() {
+    closeMenu();
     cancelAnimationFrame(this.frame);
     this.resize?.disconnect();
     for (const off of this.unsubscribe) off();
@@ -425,6 +636,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.root.style.setProperty('--tfs-bar-px', `${this.grid.bar * this.pps}px`);
     this.content.style.width = `${headerWidth + width}px`;
     this.corner.style.width = `${headerWidth}px`;
+    this.addButton.hidden = !this.tracksEditable;
     this.ruler.style.width = `${width}px`;
     this.overlay.style.left = `${headerWidth}px`;
     this.overlay.style.width = `${width}px`;
@@ -509,6 +721,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
     cell.className = 'tfs-header-default';
     name.textContent = track.name;
+    name.className = 'tfs-track-name';
+    name.addEventListener('click', () => name.dispatchEvent(new CustomEvent(TRACK_MENU_EVENT, { bubbles: true })));
     cell.append(swatch, name);
     row.header.append(cell);
     row.cleanup = undefined;
@@ -689,12 +903,47 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     on(this.content, 'pointerup', (e) => this.onPointerUp(e));
     on(this.content, 'pointercancel', () => this.cancelGesture());
     on(this.root, 'keydown', (e) => this.onKey(e));
+    on(this.rows, 'contextmenu', (e) => {
+      const id = this.headerTrack(e.target);
+      if (!id || !this.tracksEditable) return;
+
+      e.preventDefault();
+      this.showTrackMenu(id, { x: e.clientX, y: e.clientY });
+    });
+    const onMenuEvent = (e: Event) => {
+      const id = this.headerTrack(e.target);
+      const box = (e.target as HTMLElement).getBoundingClientRect();
+
+      if (id) this.showTrackMenu(id, { x: box.left, y: box.bottom + 2 });
+    };
+
+    this.rows.addEventListener(TRACK_MENU_EVENT, onMenuEvent);
+    this.unsubscribe.push(() => this.rows.removeEventListener(TRACK_MENU_EVENT, onMenuEvent));
+    on(this.rows, 'dblclick', (e) => {
+      if (!(e.target as HTMLElement).closest('.tfs-track-name')) return;
+
+      const id = this.headerTrack(e.target);
+
+      if (id && this.tracksEditable) {
+        closeMenu();
+        this.editTrackName(id);
+      }
+    });
     on(this.scroller, 'wheel', (e) => this.onWheel(e), { passive: false });
 
     if (typeof ResizeObserver !== 'undefined') {
       this.resize = new ResizeObserver(() => this.schedule());
       this.resize.observe(this.root);
     }
+  }
+
+  /** The track whose header holds an element. */
+  private headerTrack(target: EventTarget | null) {
+    const header = (target as HTMLElement | null)?.closest?.('.tfs-header');
+
+    for (const [id, row] of this.trackRows) if (row.header === header) return id;
+
+    return null;
   }
 
   /** The lane under a point. Above the first it is -1; below the last it counts on in default-height rows. */
@@ -888,7 +1137,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
     if (this.options.createTrack && lowest + lanes >= base.tracks.length) {
       g.track ??= this.options.createTrack();
-      state = addTrack(base, g.track);
+      state = insertTrack(base, g.track);
       lanes = base.tracks.length - lowest;
     }
 

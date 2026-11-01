@@ -18,8 +18,26 @@ Clips are pieces of audio on a track. Each one says where it starts on the timel
 | Alt while dragging | Turns snapping off |
 | Ctrl or ⌘ + wheel | Zooms around the pointer |
 | Drag a track's bottom edge | Makes the track taller or shorter; double-click to reset |
+| **+** above the track headers | Adds a track at the bottom and lets you name it |
+| Click a track's name, or right-click its header | Opens the track menu: rename, duplicate, add a track below, move up or down, delete |
+| Double-click a track's name | Renames it; Enter keeps the name, Esc cancels |
 
 On touch screens, drag clips with a finger and swipe empty space to scroll. Range selection works from the ruler.
+
+## Tracks
+
+The **+** above the track headers adds a track and puts its name up for editing. Each track's menu, opened from its name or by right-clicking its header, can rename, duplicate (with its clips), add a track below, move it up or down, or delete it with its clips. Every change is one undo step.
+
+New tracks come from `createTrack` when you give it, and are named Track 1, Track 2 and so on otherwise. Pass `editTracks: false` to hide the button and the menu, and `trackLabels` to rename their items. In your own `renderHeader`, fire `TRACK_MENU_EVENT` from an element to open the menu under it, and give the name element the class `tfs-track-name` for double-click renaming:
+
+```ts
+import { TRACK_MENU_EVENT } from '@toneflix/studio';
+
+name.className = 'tfs-track-name';
+name.onclick = () => name.dispatchEvent(new CustomEvent(TRACK_MENU_EVENT, { bubbles: true }));
+```
+
+From code: `addTrack(track?, index?)`, `removeTrack(id)`, `renameTrack(id, name)`, `duplicateTrack(id)`, `moveTrack(id, index)`, `editTrackName(id)` and `showTrackMenu(id)`.
 
 ## Keyboard
 

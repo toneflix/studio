@@ -67,7 +67,7 @@ onMounted(async () => {
     headerWidth: narrow ? 112 : 168,
     pxPerSecond: narrow ? 24 : 52,
     palette: ['#03bfff', '#8b7cff', '#ff5c8a', '#2fd07f', '#f5b53d'],
-    createTrack: () => ({ id: uid('t'), name: 'New track' }),
+    createTrack: () => ({ id: uid('t'), name: `Track ${view.state.tracks.length + 1}` }),
     renderHeader: trackStrip(audio, { recorder }),
   });
 

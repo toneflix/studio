@@ -59,6 +59,7 @@ timeline.on('change', ({ state, final }) => final && save(state));
 | Ctrl/Cmd + wheel | Zoom around the pointer |
 | S, Delete, Ctrl+D, Ctrl+A | Split at the playhead, delete, duplicate, select all |
 | Arrows | Nudge by the snap step, or move up and down a lane |
+| + above the headers, click a track name | Add a track; rename, duplicate, move or delete one from its menu |
 | Ctrl+Z, Ctrl+Shift+Z | Undo and redo |
 
 Where clips overlap on a lane, the one that starts later is on top and is the one heard. `audibleRanges(clips)` gives the heard part of each clip, for players and mix renderers.

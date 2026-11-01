@@ -25,6 +25,8 @@ The timeline injects its default styles once per page. Override the variables on
 
 Clips take their track's `color`, or the next colour of the `palette` option. A clip's own `color` wins over both.
 
+The track menu is placed on the page body, outside `.tfs`, so it has its own variables on `:root` or `body`: `--tfs-menu-bg` (`#1f1f24`), `--tfs-menu-text` (`#e8e8ea`), `--tfs-menu-line` and `--tfs-menu-danger` (`#ff6b7a`).
+
 ## Sizes
 
 ```ts
