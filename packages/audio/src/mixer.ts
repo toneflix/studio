@@ -26,13 +26,20 @@ const glide = (param: AudioParam, value: number, context: BaseAudioContext) => {
   else param.value = value;
 };
 
-/** A strip on the mixer: input, effects, volume, pan, then mute and solo. */
+/**
+ * A strip on the mixer: input, effects, volume, pan, the track's automation,
+ * then mute and solo.
+ */
 export class Channel {
   readonly context: BaseAudioContext;
   readonly input: GainNode;
   readonly output: GainNode;
+  /** Driven by the track's automation: a gain after the volume, and a pan after the pan */
+  readonly automation: { volume: AudioParam; pan: AudioParam };
   private readonly volumeNode: GainNode;
   private readonly panner: StereoPannerNode;
+  private readonly autoGain: GainNode;
+  private readonly autoPan: StereoPannerNode;
   private chain: Effect[] = [];
   private current: ChannelSettings = { ...DEFAULT_CHANNEL };
   private silenced = false;
@@ -43,9 +50,14 @@ export class Channel {
     this.input = context.createGain();
     this.volumeNode = context.createGain();
     this.panner = context.createStereoPanner();
+    this.autoGain = context.createGain();
+    this.autoPan = context.createStereoPanner();
     this.output = context.createGain();
+    this.automation = { volume: this.autoGain.gain, pan: this.autoPan.pan };
     this.volumeNode.connect(this.panner);
-    this.panner.connect(this.output);
+    this.panner.connect(this.autoGain);
+    this.autoGain.connect(this.autoPan);
+    this.autoPan.connect(this.output);
     this.wire();
   }
 
@@ -117,6 +129,8 @@ export class Channel {
     this.input.disconnect();
     this.volumeNode.disconnect();
     this.panner.disconnect();
+    this.autoGain.disconnect();
+    this.autoPan.disconnect();
     this.output.disconnect();
   }
 

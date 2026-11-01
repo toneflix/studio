@@ -6,15 +6,21 @@ import { AudioEngine } from '../src/engine.ts';
 /** Just enough of Web Audio to see what the engine schedules. */
 class FakeParam {
   value = 1;
-  setValueAtTime(value: number) {
+  events: [string, number, number][] = [];
+  setValueAtTime(value: number, when: number) {
     this.value = value;
+    this.events.push(['set', value, when]);
   }
-  linearRampToValueAtTime() {}
+  linearRampToValueAtTime(value: number, when: number) {
+    this.events.push(['ramp', value, when]);
+  }
   exponentialRampToValueAtTime() {}
   setTargetAtTime(value: number) {
     this.value = value;
   }
-  cancelScheduledValues() {}
+  cancelScheduledValues() {
+    this.events = [];
+  }
 }
 
 class FakeNode {
@@ -127,5 +133,42 @@ test('solo silences the other tracks and mute silences its own', () => {
   engine.mixer.set('a', { solo: false, mute: true });
   assert.deepEqual([output('a'), output('b')], [0, 1]);
   assert.deepEqual(engine.mixer.snapshot().tracks.a, { volume: 1, pan: 0, mute: true, solo: false });
+  engine.destroy();
+});
+
+test('volume automation ramps through its points while playing', async () => {
+  const { engine } = setup();
+  const param = () => engine.mixer.channel('a').automation.volume as unknown as FakeParam;
+  const round = (events: [string, number, number][]) => events.map(([kind, value, when]) => [kind, +value.toFixed(3), +(when - 0.04).toFixed(3)]);
+
+  engine.load({
+    ...engine.state,
+    tracks: [
+      {
+        id: 'a',
+        name: 'A',
+        automation: {
+          volume: [
+            { time: 1, value: 1 },
+            { time: 3, value: 0 },
+          ],
+        },
+      },
+      { id: 'b', name: 'B' },
+    ],
+  });
+  assert.equal(param().value, 1);
+
+  await engine.play(2);
+  assert.deepEqual(round(param().events).slice(-3), [
+    ['set', 0.5, 0],
+    ['ramp', 0, 1],
+    ['ramp', 0, 100],
+  ]);
+
+  engine.pause();
+  engine.seek(3);
+  assert.equal(param().value, 0);
+  assert.equal((engine.mixer.channel('b').automation.volume as unknown as FakeParam).value, 1);
   engine.destroy();
 });

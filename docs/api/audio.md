@@ -33,6 +33,7 @@ Events: `play`, `pause`, `seek` and `end` with `{ time }`, and `loop` with `{ lo
 | `mixer.snapshot()` / `mixer.restore(snapshot)` | Every channel's settings, to save and load |
 | `channel.setEffects(effects)` | `AudioNode` or `{ input, output }`, in order |
 | `channel.levels()` | Peak level of the left and right sides right now, as gains |
+| `channel.automation` | `{ volume, pan }` AudioParams the engine drives from the track's automation |
 | `channel.settings`, `channel.effects`, `channel.input`, `channel.output` | |
 | `dbToGain(db)` / `gainToDb(gain)` | |
 

@@ -54,7 +54,21 @@ export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms
   const sources = Object.entries(voices).map(([id, [seconds, voice]]) => ({ id, audio: synth(seconds, voice) }));
 
   timeline.load({
-    tracks: sources.map(({ id }) => ({ id, name: id[0]!.toUpperCase() + id.slice(1) })),
+    tracks: sources.map(({ id }) => ({
+      id,
+      name: id[0]!.toUpperCase() + id.slice(1),
+      // The keys swell in over two bars and dip at the end
+      ...(id === 'keys' && {
+        automation: {
+          volume: [
+            { time: 4, value: 0.15 },
+            { time: 8, value: 1 },
+            { time: 12, value: 1 },
+            { time: 15, value: 0.4 },
+          ],
+        },
+      }),
+    })),
     clips: sources.map(({ id, audio }, i) =>
       makeClip({ id: `${id}-1`, track: id, source: id, name: id[0]!.toUpperCase() + id.slice(1), start: i * 2, offset: 0, duration: audio.duration, fadeIn: i === 3 ? 1 : 0 }),
     ),

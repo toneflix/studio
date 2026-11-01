@@ -28,6 +28,7 @@ export default defineConfig({
           { text: 'Editing', link: '/guide/editing' },
           { text: 'Waveforms', link: '/guide/waveforms' },
           { text: 'Playback', link: '/guide/playback' },
+          { text: 'Automation', link: '/guide/automation' },
           { text: 'Plugins', link: '/guide/plugins' },
           { text: 'Recording', link: '/guide/recording' },
           { text: 'Toolbar and controls', link: '/guide/controls' },

@@ -28,7 +28,8 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `renderHeader` | `(track, cell) => void \| (() => void)` | | Your own header controls |
 | `createTrack` | `() => Track` | | Makes new tracks: for the add button and the menu, and for clips dragged below the last track |
 | `editTracks` | `boolean` | `true` | The add track button and the track menu |
-| `trackLabels` | `Partial<TrackLabels>` | `DEFAULT_TRACK_LABELS` | Names of the add button and menu items; `newTrack` is `'Track {n}'` |
+| `trackLabels` | `Partial<TrackLabels>` | `DEFAULT_TRACK_LABELS` | Names of the add button, menu items and automation lanes; `newTrack` is `'Track {n}'` |
+| `automationHeight` | `number` | `64` | Height of the automation lane under a track |
 
 ## Properties
 
@@ -67,10 +68,13 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `duplicateTrack(id)` | Copy a track and its clips just below it; returns the copy |
 | `moveTrack(id, index)` | |
 | `showTrackMenu(id, at?)` | Open a track's menu, under its header or at `{ x, y }` |
+| `showAutomation(id, 'volume' \| 'pan' \| null)` / `automationView(id)` | Open, switch or hide a track's automation lane |
+| `setAutomation(id, param, points)` | Replace a track's points for volume or pan, as one undo step; `[]` clears them |
+| `removeAutomationPoint(id, param, index)` | |
 | `setGrid({ bpm?, meter?, snap?, show? })` | |
 | `readonly` | Whether editing is off |
 | `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, resizeTracks?, keyboard?, editTracks? })` | |
-| `heightOf(track)` | The track's row height in pixels |
+| `heightOf(track)` | Height of the track's clip lane in pixels |
 | `colorOf(track)` | The track's colour, its own or from the palette |
 | `on(event, listener)` | Returns a function that removes the listener |
 | `destroy()` | Remove the timeline and its listeners |
@@ -84,3 +88,4 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `range` | `{ range }` | A time range was picked or cleared |
 | `seek` | `{ time }` | Someone clicked to move the playhead |
 | `zoom` | `{ pxPerSecond }` | The zoom changed |
+| `automation` | `{ track, param }` | An automation lane opened, switched or closed (`param` is `null`) |

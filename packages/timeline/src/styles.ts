@@ -16,6 +16,7 @@ export const STYLES = `
   --tfs-range: rgba(255, 211, 77, 0.16);
   --tfs-loop: #03bfff;
   --tfs-ruler-height: 28px;
+  --tfs-auto-bg: #141417;
   position: relative;
   width: 100%;
   height: 100%;
@@ -45,14 +46,28 @@ export const STYLES = `
 .tfs-menu .tfs-menu-danger { color: var(--tfs-menu-danger, #ff6b7a); }
 .tfs-ruler { position: relative; flex: none; background: var(--tfs-header); border-bottom: 1px solid var(--tfs-line); cursor: text; overflow: hidden; }
 .tfs-ruler-label { position: absolute; top: 4px; padding-left: 4px; color: var(--tfs-muted); font-size: 11px; white-space: nowrap; border-left: 1px solid var(--tfs-bar); height: calc(var(--tfs-ruler-height) - 4px); pointer-events: none; }
-.tfs-row { position: relative; display: flex; border-bottom: 1px solid var(--tfs-line); }
+.tfs-row { position: relative; display: grid; grid-template-columns: auto auto; justify-content: start; border-bottom: 1px solid var(--tfs-line); }
+.tfs-row > .tfs-header { grid-row: 1; grid-column: 1; }
+.tfs-row > .tfs-lane { grid-row: 1; grid-column: 2; }
+.tfs-auto-head { position: sticky; left: 0; z-index: 5; grid-row: 2; grid-column: 1; display: flex; align-items: center; justify-content: space-between; gap: 6px; box-sizing: border-box; padding: 0 10px; background: var(--tfs-header); border-top: 1px solid var(--tfs-line); border-right: 1px solid var(--tfs-line); }
+.tfs-auto-name { padding: 2px 6px; border: 1px solid var(--tfs-line); border-radius: 4px; background: none; color: var(--clip, var(--tfs-clip)); font: 600 11px/1.2 system-ui, sans-serif; cursor: pointer; }
+.tfs-auto-name::after { content: ' ▾'; color: var(--tfs-muted); }
+.tfs-auto-name:hover { background: rgba(255, 255, 255, 0.08); }
+.tfs-auto-value { color: var(--tfs-muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tfs-auto-lane { position: relative; grid-row: 2; grid-column: 2; overflow: hidden; background: var(--tfs-auto-bg); border-top: 1px solid var(--tfs-line); cursor: crosshair; touch-action: none; }
+.tfs-auto-lane svg { position: absolute; top: 0; left: 0; }
+.tfs-auto-line { fill: none; stroke: var(--clip, var(--tfs-clip)); stroke-width: 1.5; }
+.tfs-auto-line--flat { stroke-dasharray: 4 4; opacity: 0.45; }
+.tfs-auto-point { fill: var(--tfs-auto-bg); stroke: var(--clip, var(--tfs-clip)); stroke-width: 1.5; cursor: grab; }
+.tfs-auto-point:hover { fill: var(--clip, var(--tfs-clip)); }
+.tfs--readonly .tfs-auto-lane, .tfs--readonly .tfs-auto-point { cursor: default; }
 .tfs-row:nth-child(odd of .tfs-row) .tfs-lane { background-color: var(--tfs-lane-alt); }
 .tfs-header { position: sticky; left: 0; z-index: 5; flex: none; box-sizing: border-box; background: var(--tfs-header); border-right: 1px solid var(--tfs-line); overflow: hidden; }
 .tfs-header-default { display: flex; align-items: center; gap: 8px; height: 100%; padding: 0 12px; }
 .tfs-header-default i { width: 4px; align-self: stretch; margin: 10px 0; border-radius: 2px; background: var(--clip, var(--tfs-clip)); }
 .tfs-header-default span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tfs-lane { position: relative; flex: none; background-color: var(--tfs-lane); touch-action: pan-x pan-y; }
-.tfs--grid .tfs-lane {
+.tfs--grid .tfs-lane, .tfs--grid .tfs-auto-lane {
   background-image: linear-gradient(to right, var(--tfs-bar) 1px, transparent 1px), linear-gradient(to right, var(--tfs-beat) 1px, transparent 1px);
   background-size: var(--tfs-bar-px) 100%, var(--tfs-beat-px) 100%;
 }

@@ -1,5 +1,12 @@
 import {
   addClips,
+  AUTOMATION_RANGES,
+  automationAt,
+  automationOf,
+  type AutomationParam,
+  type AutomationPoint,
+  cleanPoints,
+  setAutomation as writeAutomation,
   addTrack as insertTrack,
   type Clip,
   clipEnd,
@@ -71,6 +78,8 @@ export interface TimelineOptions {
   editTracks?: boolean;
   /** Names for the add track button and the track menu, for example to translate them */
   trackLabels?: Partial<TrackLabels>;
+  /** Height in pixels of the automation lane under a track */
+  automationHeight?: number;
 }
 
 export interface TrackLabels {
@@ -84,6 +93,12 @@ export interface TrackLabels {
   menu: string;
   /** Name of a new track; `{n}` is its number */
   newTrack: string;
+  volume: string;
+  pan: string;
+  showVolume: string;
+  showPan: string;
+  hideAutomation: string;
+  clearAutomation: string;
 }
 
 export const DEFAULT_TRACK_LABELS: TrackLabels = {
@@ -96,6 +111,12 @@ export const DEFAULT_TRACK_LABELS: TrackLabels = {
   delete: 'Delete track',
   menu: 'Track options',
   newTrack: 'Track {n}',
+  volume: 'Volume',
+  pan: 'Pan',
+  showVolume: 'Show volume automation',
+  showPan: 'Show pan automation',
+  hideAutomation: 'Hide automation',
+  clearAutomation: 'Clear automation',
 };
 
 /** Fired by an element in a track header to open that track's menu, for custom headers. */
@@ -107,6 +128,8 @@ export interface TimelineEvents extends Record<string, unknown> {
   range: { range: TimeRange | null };
   seek: { time: number };
   zoom: { pxPerSecond: number };
+  /** An automation lane was shown, switched or hidden */
+  automation: { track: string; param: AutomationParam | null };
 }
 
 type Gesture =
@@ -115,7 +138,38 @@ type Gesture =
   | { kind: 'range'; id: number; x: number; y: number; started: boolean; time: number; lane: number; additive: boolean; ruler: boolean; touch: boolean }
   | { kind: 'range-edge'; id: number; x: number; y: number; started: boolean; edge: 'start' | 'end'; range: TimeRange }
   | { kind: 'click-clip'; id: number; x: number; y: number; clip: Clip }
-  | { kind: 'resize-track'; id: number; x: number; y: number; started: boolean; track: Track; height: number };
+  | { kind: 'resize-track'; id: number; x: number; y: number; started: boolean; track: Track; height: number }
+  | { kind: 'point'; id: number; x: number; y: number; started: boolean; track: string; param: AutomationParam; others: AutomationPoint[]; adding: boolean };
+
+interface Row {
+  row: HTMLDivElement;
+  header: HTMLDivElement;
+  lane: HTMLDivElement;
+  grip: HTMLDivElement;
+  /** The automation lane's name cell and drawing area */
+  autoHead: HTMLDivElement;
+  autoLane: HTMLDivElement;
+  cleanup?: () => void;
+}
+
+const SVG = 'http://www.w3.org/2000/svg';
+
+/** Space above and below the line in an automation lane, in pixels */
+const AUTO_PAD = 5;
+
+const formatValue = (param: AutomationParam, value: number) => {
+  if (param === 'pan') {
+    const amount = Math.round(Math.abs(value) * 100);
+
+    return amount === 0 ? 'C' : `${value < 0 ? 'L' : 'R'} ${amount}`;
+  }
+
+  if (value <= 0.00001) return '-∞ dB';
+
+  const db = 20 * Math.log10(value);
+
+  return `${db > 0.05 ? '+' : ''}${db.toFixed(1)} dB`;
+};
 
 const PALETTE = ['#4f9cf9', '#f97362', '#5fd08a', '#c58af9', '#f9c74f', '#4fd1d9', '#f98fc4', '#a3b18a'];
 
@@ -154,13 +208,15 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private rangeMark: HTMLDivElement;
   private loopEl: HTMLDivElement;
   private snapEl: HTMLDivElement;
-  private trackRows = new Map<string, { row: HTMLDivElement; header: HTMLDivElement; lane: HTMLDivElement; grip: HTMLDivElement; cleanup?: () => void }>();
+  private trackRows = new Map<string, Row>();
+  private automationShown = new Map<string, AutomationParam>();
   private clipViews = new Map<string, ClipView>();
   private selected = new Set<string>();
   private currentRange: TimeRange | null = null;
   private loopRange: { start: number; end: number } | null = null;
   private gesture: Gesture | null = null;
   private lastGrip: { track: string; at: number } | null = null;
+  private lastPoint: { track: string; index: number; at: number } | null = null;
   private frame = 0;
   private resize?: ResizeObserver;
   private unsubscribe: (() => void)[] = [];
@@ -198,6 +254,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       renderHeader: options.renderHeader,
       createTrack: options.createTrack,
       editTracks: options.editTracks ?? true,
+      automationHeight: options.automationHeight ?? 64,
     };
     this.trackLabels = { ...DEFAULT_TRACK_LABELS, ...options.trackLabels };
     this.pps = clamp(this.options.pxPerSecond, this.options.minPxPerSecond, this.options.maxPxPerSecond);
@@ -502,7 +559,13 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     const track = this.state.tracks[index];
     if (!track) return null;
 
-    const copy: Track = { ...this.makeTrack(), color: this.trackColor(track, index), height: track.height, name: `${track.name} copy` };
+    const copy: Track = {
+      ...this.makeTrack(),
+      color: this.trackColor(track, index),
+      height: track.height,
+      automation: track.automation,
+      name: `${track.name} copy`,
+    };
     const clips = this.state.clips.filter((clip) => clip.track === id).map((clip) => makeClip({ ...clip, id: undefined, track: copy.id }));
 
     this.model.apply('Duplicate track', (state) => addClips(insertTrack(state, copy, index + 1), clips));
@@ -582,9 +645,75 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         },
         { label: labels.moveUp, disabled: index === 0, onSelect: () => this.moveTrack(id, index - 1) },
         { label: labels.moveDown, disabled: index === last, onSelect: () => this.moveTrack(id, index + 1) },
+        ...this.automationItems(id),
         { label: labels.delete, danger: true, onSelect: () => this.removeTrack(id) },
       ],
       `${labels.menu}: ${this.state.tracks[index]!.name}`,
+    );
+  }
+
+  // ---- automation ----
+
+  /** The automation lane shown under a track, if any. */
+  automationView(track: string) {
+    return this.automationShown.get(track) ?? null;
+  }
+
+  /** Show a track's volume or pan automation in a lane under it, or hide the lane with null. */
+  showAutomation(track: string, param: AutomationParam | null) {
+    if (!this.state.tracks.some((t) => t.id === track) || this.automationView(track) === param) return;
+
+    if (param) this.automationShown.set(track, param);
+    else this.automationShown.delete(track);
+
+    this.emit('automation', { track, param });
+    this.schedule();
+  }
+
+  /** Replace a track's points for a setting, as one undo step. An empty list clears it. */
+  setAutomation(track: string, param: AutomationParam, points: readonly AutomationPoint[]) {
+    this.model.apply(points.length ? 'Automation' : 'Clear automation', (state) => writeAutomation(state, track, param, points));
+  }
+
+  /** Remove one point, as one undo step. */
+  removeAutomationPoint(track: string, param: AutomationParam, index: number) {
+    const points = automationOf(this.state.tracks.find((t) => t.id === track), param);
+    if (!points[index]) return;
+
+    this.model.apply('Delete point', (state) => writeAutomation(state, track, param, points.filter((_, i) => i !== index)));
+  }
+
+  private automationItems(id: string) {
+    const labels = this.trackLabels;
+    const shown = this.automationView(id);
+    const items = [];
+
+    if (shown !== 'volume') items.push({ label: labels.showVolume, onSelect: () => this.showAutomation(id, 'volume') });
+    if (shown !== 'pan') items.push({ label: labels.showPan, onSelect: () => this.showAutomation(id, 'pan') });
+    if (shown) items.push({ label: labels.hideAutomation, onSelect: () => this.showAutomation(id, null) });
+
+    return items;
+  }
+
+  /** The menu of an automation lane's name: switch setting, clear or hide. */
+  private showAutomationMenu(id: string, at: { x: number; y: number }) {
+    const param = this.automationView(id);
+    const track = this.state.tracks.find((t) => t.id === id);
+    if (!param || !track) return;
+
+    const labels = this.trackLabels;
+    const editable = !this.options.readonly;
+
+    openMenu(
+      this.doc,
+      at,
+      [
+        { label: labels.volume, disabled: param === 'volume', onSelect: () => this.showAutomation(id, 'volume') },
+        { label: labels.pan, disabled: param === 'pan', onSelect: () => this.showAutomation(id, 'pan') },
+        { label: labels.clearAutomation, danger: true, disabled: !editable || !automationOf(track, param).length, onSelect: () => this.setAutomation(id, param, []) },
+        { label: labels.hideAutomation, onSelect: () => this.showAutomation(id, null) },
+      ],
+      `${labels[param]}: ${track.name}`,
     );
   }
 
@@ -664,16 +793,21 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         const header = this.doc.createElement('div');
         const lane = this.doc.createElement('div');
 
+        const grip = this.doc.createElement('div');
+        const autoHead = this.doc.createElement('div');
+        const autoLane = this.doc.createElement('div');
+
         rowEl.className = 'tfs-row';
         header.className = 'tfs-header';
         lane.className = 'tfs-lane';
         lane.dataset.track = track.id;
-        const grip = this.doc.createElement('div');
-
         grip.className = 'tfs-row-resize';
         grip.dataset.track = track.id;
-        rowEl.append(header, lane, grip);
-        row = { row: rowEl, header, lane, grip };
+        autoHead.className = 'tfs-auto-head';
+        autoLane.className = 'tfs-auto-lane';
+        autoLane.dataset.track = track.id;
+        rowEl.append(header, lane, autoHead, autoLane, grip);
+        row = { row: rowEl, header, lane, grip, autoHead, autoLane };
         this.trackRows.set(track.id, row);
         this.fillHeader(track, row);
       } else if (row.header.dataset.name !== track.name || row.header.dataset.color !== this.trackColor(track, index)) {
@@ -681,7 +815,15 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         this.fillHeader(track, row);
       }
 
-      row.row.style.height = `${this.heightOf(track)}px`;
+      const param = this.automationView(track.id);
+
+      row.row.style.height = `${this.rowHeight(track)}px`;
+      row.row.style.gridTemplateRows = param ? `minmax(0, 1fr) ${this.options.automationHeight}px` : 'minmax(0, 1fr)';
+      row.autoHead.style.display = param && headerWidth ? '' : 'none';
+      row.autoLane.style.display = param ? '' : 'none';
+      row.autoHead.style.width = `${headerWidth}px`;
+      row.autoLane.style.width = `${width}px`;
+      if (param) this.renderAutomation(track, param, row, width);
       row.grip.style.display = resizable ? '' : 'none';
       row.row.style.boxSizing = 'border-box';
       row.row.style.setProperty('--clip', this.trackColor(track, index));
@@ -700,6 +842,58 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       row.row.remove();
       this.trackRows.delete(id);
     }
+
+    for (const id of this.automationShown.keys()) if (!seen.has(id)) this.automationShown.delete(id);
+  }
+
+  /** Draw a track's automation line and points, with the setting's name and value at the playhead. */
+  private renderAutomation(track: Track, param: AutomationParam, row: Row, width: number) {
+    const height = this.options.automationHeight;
+    const range = AUTOMATION_RANGES[param];
+    const points = automationOf(track, param);
+    const y = (value: number) => AUTO_PAD + (1 - range.toLevel(value)) * (height - AUTO_PAD * 2);
+    const svg = this.doc.createElementNS(SVG, 'svg');
+    const line = this.doc.createElementNS(SVG, 'polyline');
+    const coords = [`0,${y(automationAt(points, 0, range.neutral))}`, ...points.map((p) => `${p.time * this.pps},${y(p.value)}`)];
+
+    coords.push(`${width},${y(automationAt(points, Infinity, range.neutral))}`);
+    svg.setAttribute('width', String(width));
+    svg.setAttribute('height', String(height));
+    line.setAttribute('points', coords.join(' '));
+    line.setAttribute('class', points.length ? 'tfs-auto-line' : 'tfs-auto-line tfs-auto-line--flat');
+    svg.append(line);
+
+    points.forEach((point, index) => {
+      const dot = this.doc.createElementNS(SVG, 'circle');
+
+      dot.setAttribute('cx', String(point.time * this.pps));
+      dot.setAttribute('cy', String(y(point.value)));
+      dot.setAttribute('r', '4');
+      dot.setAttribute('class', 'tfs-auto-point');
+      dot.dataset.point = String(index);
+      svg.append(dot);
+    });
+
+    row.autoLane.replaceChildren(svg);
+
+    const name = this.doc.createElement('button');
+    const value = this.doc.createElement('span');
+
+    name.type = 'button';
+    name.className = 'tfs-auto-name';
+    name.textContent = this.trackLabels[param];
+    name.title = this.trackLabels[param];
+    value.className = 'tfs-auto-value';
+    value.textContent = formatValue(param, automationAt(points, this.playheadTime, range.neutral));
+    row.autoHead.replaceChildren(name, value);
+  }
+
+  /** The automation value under a point in a track's automation lane. */
+  private automationValueAt(row: Row, param: AutomationParam, clientY: number) {
+    const box = row.autoLane.getBoundingClientRect();
+    const level = 1 - (clientY - box.top - AUTO_PAD) / (box.height - AUTO_PAD * 2);
+
+    return AUTOMATION_RANGES[param].fromLevel(level);
   }
 
   private fillHeader(track: Track, row: { header: HTMLDivElement; cleanup?: () => void }) {
@@ -728,16 +922,21 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     row.cleanup = undefined;
   }
 
-  /** A track's row height in pixels. */
+  /** Height in pixels of a track's clip lane. */
   heightOf(track: Track) {
     return clamp(Math.round(track.height ?? this.options.trackHeight), this.options.minTrackHeight, this.options.maxTrackHeight);
+  }
+
+  /** Height of a track's whole row: its clip lane and any automation lane. */
+  private rowHeight(track: Track) {
+    return this.heightOf(track) + (this.automationShown.has(track.id) ? this.options.automationHeight : 0);
   }
 
   /** Top of a lane, in pixels below the ruler. */
   private laneTop(index: number) {
     let top = 0;
 
-    for (let i = 0; i < index && i < this.state.tracks.length; i++) top += this.heightOf(this.state.tracks[i]!);
+    for (let i = 0; i < index && i < this.state.tracks.length; i++) top += this.rowHeight(this.state.tracks[i]!);
 
     return top;
   }
@@ -875,6 +1074,15 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
   private placePlayhead() {
     this.playhead.style.transform = `translateX(${this.playheadTime * this.pps}px)`;
+
+    for (const [id, param] of this.automationShown) {
+      const readout = this.trackRows.get(id)?.autoHead.querySelector('.tfs-auto-value');
+      const track = this.state.tracks.find((t) => t.id === id);
+
+      if (readout && track && this.gesture?.kind !== 'point') {
+        readout.textContent = formatValue(param, automationAt(automationOf(track, param), this.playheadTime, AUTOMATION_RANGES[param].neutral));
+      }
+    }
   }
 
   // ---- input ----
@@ -919,6 +1127,16 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
     this.rows.addEventListener(TRACK_MENU_EVENT, onMenuEvent);
     this.unsubscribe.push(() => this.rows.removeEventListener(TRACK_MENU_EVENT, onMenuEvent));
+    on(this.rows, 'click', (e) => {
+      const name = (e.target as HTMLElement).closest<HTMLElement>('.tfs-auto-name');
+      const id = name && [...this.trackRows].find(([, row]) => row.autoHead.contains(name))?.[0];
+
+      if (!id) return;
+
+      const box = name.getBoundingClientRect();
+
+      this.showAutomationMenu(id, { x: box.left, y: box.bottom + 2 });
+    });
     on(this.rows, 'dblclick', (e) => {
       if (!(e.target as HTMLElement).closest('.tfs-track-name')) return;
 
@@ -954,7 +1172,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     let top = 0;
 
     for (const [index, track] of this.state.tracks.entries()) {
-      top += this.heightOf(track);
+      top += this.rowHeight(track);
       if (y < top) return index;
     }
 
@@ -999,7 +1217,15 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       return;
     }
 
-    if (target.closest('.tfs-header, .tfs-corner')) return;
+    if (target.closest('.tfs-header, .tfs-corner, .tfs-auto-head')) return;
+
+    const autoLane = target.closest<HTMLElement>('.tfs-auto-lane');
+
+    if (autoLane) {
+      this.startPoint(e, autoLane.dataset.track!, target.dataset.point);
+
+      return;
+    }
 
     const clipEl = target.closest<HTMLElement>('.tfs-clip');
     const clip = clipEl ? this.state.clips.find((c) => c.id === clipEl.dataset.clip) : undefined;
@@ -1072,6 +1298,12 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       g.started = true;
     }
 
+    if (g.kind === 'point') {
+      this.dragPoint(g, e);
+
+      return;
+    }
+
     if (g.kind === 'resize-track') {
       const height = clamp(Math.round(g.height + e.clientY - g.y), this.options.minTrackHeight, this.options.maxTrackHeight);
 
@@ -1127,6 +1359,52 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     }
   }
 
+  /** Grab a point in an automation lane, or add one where the lane is pressed. A double click removes a point. */
+  private startPoint(e: PointerEvent, track: string, point: string | undefined) {
+    const param = this.automationView(track);
+    const row = this.trackRows.get(track);
+    if (!param || !row || this.options.readonly) return;
+
+    e.preventDefault();
+    this.root.focus({ preventScroll: true });
+
+    const points = [...automationOf(this.state.tracks.find((t) => t.id === track), param)];
+    const index = point === undefined ? -1 : Number(point);
+
+    const last = this.lastPoint;
+
+    this.lastPoint = index >= 0 ? { track, index, at: e.timeStamp } : null;
+
+    // A double click on a point removes it
+    if (last && index >= 0 && last.track === track && last.index === index && e.timeStamp - last.at < 400) {
+      this.lastPoint = null;
+      this.removeAutomationPoint(track, param, index);
+
+      return;
+    }
+    const adding = index < 0;
+    const others = adding ? points : points.filter((_, i) => i !== index);
+
+    this.gesture = { kind: 'point', id: e.pointerId, x: e.clientX, y: e.clientY, started: adding, track, param, others, adding };
+    this.content.setPointerCapture?.(e.pointerId);
+    if (adding) this.dragPoint(this.gesture, e);
+  }
+
+  private dragPoint(g: Extract<Gesture, { kind: 'point' }>, e: PointerEvent) {
+    const row = this.trackRows.get(g.track);
+    if (!row) return;
+
+    const raw = this.timeAt(e.clientX);
+    const time = e.altKey || !this.options.showGrid ? raw : this.grid.round(raw);
+    const value = this.automationValueAt(row, g.param, e.clientY);
+
+    this.model.draft(g.adding ? 'Add point' : 'Move point', (state) => writeAutomation(state, g.track, g.param, cleanPoints(g.param, [...g.others, { time, value }])));
+
+    const readout = row.autoHead.querySelector('.tfs-auto-value');
+
+    if (readout) readout.textContent = formatValue(g.param, value);
+  }
+
   private dragMove(g: Extract<Gesture, { kind: 'move' }>, e: PointerEvent, free: boolean) {
     const base = g.base;
     const moving = base.clips.filter((clip) => g.ids.has(clip.id));
@@ -1162,8 +1440,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     } else if (g.kind === 'range-edge') {
       if (g.started) this.setRange(this.currentRange);
     } else if (g.started) {
-      const labels = { move: 'Move', 'trim-start': 'Trim', 'trim-end': 'Trim', 'fade-in': 'Fade in', 'fade-out': 'Fade out', 'resize-track': 'Resize track' } as const;
-      this.model.commit(g.kind === 'move' && g.ids.size > 1 ? 'Move clips' : labels[g.kind]);
+      const labels = { move: 'Move', 'trim-start': 'Trim', 'trim-end': 'Trim', 'fade-in': 'Fade in', 'fade-out': 'Fade out', 'resize-track': 'Resize track', point: 'Move point' } as const;
+      const label = g.kind === 'move' && g.ids.size > 1 ? 'Move clips' : g.kind === 'point' && g.adding ? 'Add point' : labels[g.kind];
+
+      this.model.commit(label);
     } else if (g.kind === 'move' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
       this.select([g.clip.id]);
     }

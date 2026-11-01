@@ -1,3 +1,5 @@
+import type { Automation } from './automation.ts';
+
 /** A piece of audio on the timeline, in seconds. */
 export interface Clip {
   id: string;
@@ -26,6 +28,8 @@ export interface Track {
   color?: string;
   /** Row height in pixels; the timeline's `trackHeight` when left out */
   height?: number;
+  /** Volume and pan changes over time, played through the track's mixer channel */
+  automation?: Automation;
   /** Anything the host app keeps with the track */
   data?: unknown;
 }

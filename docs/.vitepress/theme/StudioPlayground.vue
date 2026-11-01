@@ -25,6 +25,7 @@ onMounted(async () => {
   const toolbar = new StudioToolbar(bar.value!, { timeline, engine, mixer, recorder, plugins });
 
   loadSample(timeline, { engine, waveforms });
+  timeline.showAutomation('keys', 'volume');
 
   const unlink = linkPlayback(timeline, engine);
   const unlinkRecorder = linkRecorder(timeline, recorder, { waveforms });
