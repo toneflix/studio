@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-controls",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Ready-made controls for Toneflix Studio: a transport and editing toolbar and track strips with mute, solo and volume, drawn with Lucide icons you can replace.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
