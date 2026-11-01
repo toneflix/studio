@@ -187,6 +187,64 @@ export const CONTROL_STYLES = `
 .tfs-knob:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #03bfff); outline-offset: 2px; }
 .tfs-knob-dial { position: absolute; inset: 0; border-radius: 50%; }
 .tfs-knob-dial::after { content: ''; position: absolute; left: 50%; top: 3px; width: 2px; height: 9px; margin-left: -1px; border-radius: 1px; background: var(--clip, #e8e8ea); }
+.tfs-roll { --tfs-roll-row: 14px; --tfs-roll-keys: 56px; display: flex; flex-direction: column; height: var(--tfs-roll-height, 340px); box-sizing: border-box; border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-roll-bg, #141418); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
+.tfs-roll[hidden] { display: none; }
+.tfs-roll--overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; max-height: 100%; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.45); animation: tfs-mixer-in 0.18s ease-out; }
+@media (prefers-reduced-motion: reduce) { .tfs-roll--overlay { animation: none; } }
+.tfs-roll--drums { --tfs-roll-keys: 96px; }
+.tfs-roll-bar { display: flex; flex: none; align-items: center; gap: 4px; padding: 4px 6px 4px 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); }
+.tfs-roll-title { flex: 0 1 auto; min-width: 0; margin-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.tfs-roll-gap { flex: 1 1 0; }
+.tfs-roll-bar .tfs-tool { flex: none; width: 30px; height: 30px; }
+.tfs-roll-bar .tfs-tool .tfs-icon { width: 16px; height: 16px; }
+.tfs-roll-bar .tfs-tool:disabled, .tfs-roll-text:disabled { opacity: 0.4; cursor: default; }
+.tfs-roll-snap { display: inline-flex; flex: none; align-items: center; gap: 6px; color: var(--tfs-display-muted, #9a9aa2); }
+.tfs-roll-snap select, .tfs-roll-text { height: 28px; padding: 0 8px; border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.12)); border-radius: 6px; background: rgba(255, 255, 255, 0.04); color: var(--tfs-toolbar-text, #e8e8ea); font: 600 12px/1 system-ui, sans-serif; }
+.tfs-roll-snap select option { background: var(--tfs-menu-bg, #1f1f24); }
+.tfs-roll-text { flex: none; cursor: pointer; }
+.tfs-roll-text:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+.tfs-roll-scroller { position: relative; flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.tfs-roll--empty .tfs-roll-scroller { display: none; }
+.tfs-roll-empty { display: grid; flex: 1; place-items: center; padding: 16px; color: var(--tfs-display-muted, #9a9aa2); text-align: center; }
+.tfs-roll-empty[hidden] { display: none; }
+.tfs-roll-content { position: relative; width: calc(var(--tfs-roll-keys) + var(--tfs-roll-width, 0px)); }
+.tfs-roll-row { display: flex; }
+.tfs-roll-top { position: sticky; top: 0; z-index: 3; height: 22px; }
+.tfs-roll-bottom { position: sticky; bottom: 0; z-index: 3; height: 56px; }
+.tfs-roll-corner { position: sticky; left: 0; z-index: 2; flex: none; width: var(--tfs-roll-keys); box-sizing: border-box; padding: 4px 6px; border-right: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-display-muted, #9a9aa2); font-size: 10px; }
+.tfs-roll-ruler, .tfs-roll-velocity { position: relative; flex: none; width: var(--tfs-roll-width, 0px); background: var(--tfs-mixer-bg, #111114); }
+.tfs-roll-ruler { border-bottom: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); }
+.tfs-roll-ruler span { position: absolute; top: 0; bottom: 0; padding: 5px 4px 0; border-left: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.2)); color: var(--tfs-display-muted, #9a9aa2); font-size: 10px; font-variant-numeric: tabular-nums; }
+.tfs-roll-velocity { border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); touch-action: none; cursor: ns-resize; }
+.tfs-roll-keys { position: sticky; left: 0; z-index: 2; flex: none; width: var(--tfs-roll-keys); touch-action: none; }
+.tfs-roll-key { display: flex; align-items: center; justify-content: flex-end; height: var(--tfs-roll-row); box-sizing: border-box; padding-right: 4px; border-bottom: 1px solid rgba(0, 0, 0, 0.25); border-right: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: #d9d9de; color: #3a3a42; font-size: 9px; line-height: 1; white-space: nowrap; overflow: hidden; cursor: pointer; user-select: none; }
+.tfs-roll-key--black { background: #2a2a30; color: #c8c8d0; }
+.tfs-roll-key--down { background: var(--clip, #4f9cf9); color: #fff; }
+.tfs-roll--drums .tfs-roll-key { justify-content: flex-start; padding-left: 6px; background: #1f1f24; color: var(--tfs-display-muted, #9a9aa2); }
+.tfs-roll--drums .tfs-roll-key--named { background: #2b2b33; color: var(--tfs-toolbar-text, #e8e8ea); font-size: 10px; }
+.tfs-roll-area { position: relative; flex: none; width: var(--tfs-roll-width, 0px); height: var(--tfs-roll-height-px, 0px); outline: none; overflow: hidden; touch-action: pan-x pan-y; background: repeating-linear-gradient(to bottom, var(--tfs-roll-lane, #1d1d22) 0 calc(var(--tfs-roll-row) - 1px), rgba(0, 0, 0, 0.35) calc(var(--tfs-roll-row) - 1px) var(--tfs-roll-row)); cursor: crosshair; }
+.tfs-roll-area:focus-visible { box-shadow: inset 0 0 0 2px var(--tfs-toolbar-active, #03bfff); }
+.tfs-roll-lines { position: absolute; inset: 0; pointer-events: none; }
+.tfs-roll-lines i { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255, 255, 255, 0.05); }
+.tfs-roll-lines .tfs-roll-beat-line { background: rgba(255, 255, 255, 0.1); }
+.tfs-roll-lines .tfs-roll-bar-line { background: rgba(255, 255, 255, 0.24); }
+.tfs-roll-outside { position: absolute; top: 0; bottom: 0; left: 0; background: rgba(0, 0, 0, 0.4); pointer-events: none; }
+.tfs-roll-note { position: absolute; top: 0; left: 0; height: calc(var(--tfs-roll-row) - 1px); box-sizing: border-box; border: 1px solid rgba(0, 0, 0, 0.45); border-radius: 3px; background: color-mix(in srgb, var(--clip, #4f9cf9) calc(45% + var(--v, 0.8) * 55%), #1d1d22); cursor: grab; touch-action: none; }
+.tfs-roll-note::after { content: ''; position: absolute; top: 2px; right: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: rgba(255, 255, 255, 0.35); cursor: ew-resize; }
+.tfs-roll-note--picked { border-color: #fff; box-shadow: 0 0 0 1px #fff; }
+.tfs-roll-box { position: absolute; border: 1px solid var(--tfs-toolbar-active, #03bfff); background: color-mix(in srgb, var(--tfs-toolbar-active, #03bfff) 15%, transparent); pointer-events: none; }
+.tfs-roll-box[hidden], .tfs-roll-playhead[hidden] { display: none; }
+.tfs-roll-playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; margin-left: -1px; background: var(--tfs-playhead, #ff5a5f); pointer-events: none; }
+.tfs-roll-stalk { position: absolute; bottom: 0; width: 3px; margin-left: -1px; background: color-mix(in srgb, var(--clip, #4f9cf9) 70%, #fff); pointer-events: none; }
+.tfs-roll-stalk::before { content: ''; position: absolute; top: -3px; left: -2px; width: 7px; height: 7px; border-radius: 50%; background: inherit; }
+.tfs-roll-stalk--picked { background: #fff; }
+@media (pointer: coarse) {
+  .tfs-roll { --tfs-roll-row: 20px; }
+  .tfs-roll-bar .tfs-tool { width: 38px; height: 38px; }
+  .tfs-roll-snap select, .tfs-roll-text { height: 36px; }
+  .tfs-roll-note::after { width: 5px; }
+}
+@media (max-width: 600px) { .tfs-roll { --tfs-roll-keys: 44px; height: var(--tfs-roll-height, 60vh); } .tfs-roll--drums { --tfs-roll-keys: 80px; } }
 `;
 
 /** Add the control styles to a document once. */

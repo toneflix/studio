@@ -1,6 +1,7 @@
 import {
   AudioEngine,
   filesSource,
+  importAudioFiles,
   linkPlayback,
   linkRecorder,
   listSource,
@@ -11,6 +12,7 @@ import {
   sessionSource,
   StudioBrowser,
   StudioMixer,
+  StudioPianoRoll,
   StudioTimeline,
   StudioToolbar,
   trackStrip,
@@ -31,12 +33,16 @@ const timeline = new StudioTimeline('#timeline', {
   headerWidth: innerWidth < 600 ? 120 : 180,
   createTrack: () => ({ id: uid('t'), name: `Track ${timeline.state.tracks.length + 1}` }),
   renderHeader: trackStrip(engine, { recorder }),
+  // The add track menu's "Audio from a file" puts picked files on new tracks
+  importAudio: (files) => importAudioFiles(timeline, engine, files, { onSource: drawWaveform }),
 });
 
 // The curated plugins, served by the dev server; apps use jsDelivr, the default
 const wams = { base: new URL('/wams/', location.href).href };
 const catalog = curatedWams(wams);
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
+// Opens on a double-click on a note clip
+const pianoRoll = new StudioPianoRoll('#timeline', { timeline, engine, hidden: true });
 const drawWaveform = (id: string, buffer: AudioBuffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks));
 const browser = new StudioBrowser('#timeline', {
   timeline,
@@ -67,4 +73,4 @@ timeline.showAutomation('keys', 'volume');
 linkPlayback(timeline, engine);
 linkRecorder(timeline, recorder, { waveforms });
 
-Object.assign(window, { timeline, engine, mixer, browser, recorder, plugins, toolbar, StudioToolbar });
+Object.assign(window, { timeline, engine, mixer, pianoRoll, browser, recorder, plugins, toolbar, StudioToolbar });

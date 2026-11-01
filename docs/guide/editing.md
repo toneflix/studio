@@ -26,7 +26,17 @@ On touch screens, drag clips with a finger and swipe empty space to scroll. Rang
 
 ## Tracks
 
-The **+** above the track headers adds a track and puts its name up for editing. Each track's menu, opened from its name or by right-clicking its header, can rename, duplicate (with its clips), add a track below, move it up or down, or delete it with its clips. Every change is one undo step.
+The **+** above the track headers asks what to add: an empty audio track, audio from a file, or an [instrument or drum track](./instruments). A new empty track puts its name up for editing. Each track's menu, opened from its name or by right-clicking its header, can rename, duplicate (with its clips), add a track below, move it up or down, or delete it with its clips. Every change is one undo step.
+
+**Audio from a file** shows when you pass `importAudio`. It opens the device's file picker and hands the picked files to your function. `importAudioFiles` from `@toneflix/studio` decodes each one in the page, without uploading it, and puts it on a new track named after the file, at the playhead, as one undo step:
+
+```ts
+import { importAudioFiles, StudioTimeline } from '@toneflix/studio';
+
+const timeline = new StudioTimeline('#editor', {
+  importAudio: (files) => importAudioFiles(timeline, engine, files, { onSource: drawWaveform }),
+});
+```
 
 New tracks come from `createTrack` when you give it, and are named Track 1, Track 2 and so on otherwise. Pass `editTracks: false` to hide the button and the menu, and `trackLabels` to rename their items. In your own `renderHeader`, fire `TRACK_MENU_EVENT` from an element to open the menu under it, and give the name element the class `tfs-track-name` for double-click renaming:
 
