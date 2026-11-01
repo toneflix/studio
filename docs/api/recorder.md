@@ -8,7 +8,7 @@ From `@toneflix/studio-recorder`, also in `@toneflix/studio`. See the [Recording
 | --- | --- |
 | `new Recorder(engine, options?)` | `channels` (1), `latency` (worked out), `constraints`, `chunkSize` (4096 frames) |
 | `Recorder.inputs()` | The audio inputs the browser can see |
-| `recorder.open(deviceId?)` / `close()` | Ask for an input, or let it go. `start()` opens the default one when needed |
+| `recorder.open(deviceId?)` / `close()` | Ask for an input, or let it go. `start()` opens the default one when none is open and lets it go when the take ends; one opened with `open()` stays open until `close()` |
 | `recorder.arm(track \| null)` / `armed` | The track that records |
 | `recorder.start({ track?, from? })` | Record onto the armed track, or `track`. Starts playback from `from` (the play position) when stopped |
 | `recorder.stop()` | Ends the take; resolves to a `Take` or null. Pausing, stopping or seeking the engine also ends it |
