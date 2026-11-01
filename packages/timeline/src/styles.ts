@@ -105,6 +105,7 @@ export const STYLES = `
 .tfs-trim--start { left: 0; }
 .tfs-trim--end { right: 0; }
 .tfs-fade { position: absolute; top: 1px; width: 10px; height: 10px; margin-left: -5px; z-index: 3; box-sizing: border-box; border-radius: 2px; background: var(--tfs-text); opacity: 0; cursor: col-resize; }
+.tfs-clip--notes .tfs-fade { display: none; }
 .tfs-clip:hover .tfs-fade, .tfs-clip--selected .tfs-fade { opacity: 0.85; }
 .tfs--readonly .tfs-trim, .tfs--readonly .tfs-fade { display: none; }
 .tfs--readonly .tfs-clip { cursor: default; }

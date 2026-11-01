@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { makeClip } from '@toneflix/studio-core';
+import { makeClip, makeNoteClip } from '@toneflix/studio-core';
 import { AudioEngine } from '../src/engine.ts';
 
 /** Just enough of Web Audio to see what the engine schedules. */
@@ -170,5 +170,90 @@ test('volume automation ramps through its points while playing', async () => {
   engine.seek(3);
   assert.equal(param().value, 0);
   assert.equal((engine.mixer.channel('b').automation.volume as unknown as FakeParam).value, 1);
+  engine.destroy();
+});
+
+/** An instrument that writes down what it is asked to play. */
+const fakeInstrument = () => {
+  const played: [number, number, number, number][] = [];
+  const stops: number[] = [];
+
+  return {
+    played,
+    stops,
+    instrument: {
+      output: new FakeNode() as unknown as AudioNode,
+      play: (pitch: number, velocity: number, when: number, duration: number) => void played.push([pitch, velocity, +(when - 0.04).toFixed(3), +duration.toFixed(3)]),
+      noteOn() {},
+      noteOff() {},
+      stopAll: (when: number) => void stops.push(when),
+      destroy() {},
+    },
+  };
+};
+
+const noteSetup = async () => {
+  const { context } = fakeContext();
+  const fake = fakeInstrument();
+  const asked: string[] = [];
+  const engine = new AudioEngine({
+    context: context as unknown as BaseAudioContext,
+    lookahead: 100,
+    stopAtEnd: false,
+    instruments: (choice) => {
+      asked.push(choice.id);
+      return fake.instrument;
+    },
+  });
+
+  engine.load({
+    tracks: [{ id: 'keys', name: 'Keys', instrument: { id: 'synth' } }],
+    clips: [
+      makeNoteClip({
+        id: 'n1',
+        track: 'keys',
+        start: 2,
+        duration: 2,
+        gain: 0.5,
+        notes: [
+          { pitch: 60, start: 0, duration: 0.5, velocity: 1 },
+          { pitch: 64, start: 1, duration: 3, velocity: 0.8 },
+        ],
+      }),
+    ],
+  });
+  await engine.instrumentsReady();
+
+  return { engine, context, asked, ...fake };
+};
+
+test('note clips play their notes through the track instrument, cut at the clip end', async () => {
+  const { engine, asked, played } = await noteSetup();
+
+  await engine.play(0);
+  assert.deepEqual(asked, ['synth']);
+  assert.deepEqual(played, [
+    [60, 0.5, 2, 0.5],
+    [64, 0.4, 3, 1],
+  ]);
+  engine.destroy();
+});
+
+test('notes that started before the play position are not played, and pause stops the instrument', async () => {
+  const { engine, played, stops } = await noteSetup();
+
+  await engine.play(2.2);
+  assert.deepEqual(played, [[64, 0.4, 0.8, 1]]);
+  engine.pause();
+  assert.equal(stops.length, 1);
+  engine.destroy();
+});
+
+test('a track loses its instrument when it stops asking for one', async () => {
+  const { engine } = await noteSetup();
+
+  assert.ok(engine.instrument('keys'));
+  engine.load({ tracks: [{ id: 'keys', name: 'Keys' }], clips: [] });
+  assert.equal(engine.instrument('keys'), null);
   engine.destroy();
 });

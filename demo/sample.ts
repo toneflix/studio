@@ -1,4 +1,4 @@
-import { makeClip, Waveforms, type AudioEngine, type StudioTimeline } from '@toneflix/studio';
+import { makeClip, makeNoteClip, Waveforms, type AudioEngine, type Note, type StudioTimeline } from '@toneflix/studio';
 
 const rate = 22050;
 
@@ -43,6 +43,32 @@ const voices = {
   }],
 } as const;
 
+/** An arpeggio over the chords, in eighth notes, as MIDI notes for the synth. */
+const lead = (): Note[] => {
+  const chords = [
+    [69, 72, 76],
+    [65, 69, 72],
+    [72, 76, 79],
+    [67, 71, 74],
+  ];
+
+  return chords.flatMap((chord, bar) =>
+    [0, 1, 2, 1, 0, 1, 2, 1].map((step, i) => ({ pitch: chord[step]! + (i >= 4 && step === 2 ? 12 : 0), start: bar * 2 + i * 0.25, duration: 0.22, velocity: i % 2 ? 0.6 : 0.85 })),
+  );
+};
+
+/** Two bars of kick, snare and hats for the drum kit. */
+const beat = (): Note[] =>
+  Array.from({ length: 16 }, (_, i): Note[] => {
+    const at = i * 0.25;
+    const hits: Note[] = [{ pitch: 42, start: at, duration: 0.1, velocity: i % 2 ? 0.5 : 0.8 }];
+
+    if (i % 8 === 0 || i === 11) hits.push({ pitch: 36, start: at, duration: 0.1, velocity: 1 });
+    if (i % 8 === 4) hits.push({ pitch: 38, start: at, duration: 0.1, velocity: 0.9 });
+
+    return hits;
+  }).flat();
+
 export interface SampleOptions {
   waveforms?: Waveforms;
   /** Gets the stems' audio, so the sample can be played */
@@ -54,7 +80,8 @@ export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms
   const sources = Object.entries(voices).map(([id, [seconds, voice]]) => ({ id, audio: synth(seconds, voice) }));
 
   timeline.load({
-    tracks: sources.map(({ id }) => ({
+    tracks: [
+      ...sources.map(({ id }) => ({
       id,
       name: id[0]!.toUpperCase() + id.slice(1),
       // The keys swell in over two bars and dip at the end
@@ -68,15 +95,23 @@ export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms
           ],
         },
       }),
-    })),
+      })),
+      { id: 'lead', name: 'Lead', instrument: { id: 'synth' } },
+      { id: 'beat', name: 'Beat', instrument: { id: 'drums' } },
+    ],
     markers: [
       { id: 'intro', time: 0, name: 'Intro' },
       { id: 'verse', time: 6, name: 'Verse' },
       { id: 'outro', time: 14, name: 'Outro' },
     ],
-    clips: sources.map(({ id, audio }, i) =>
-      makeClip({ id: `${id}-1`, track: id, source: id, name: id[0]!.toUpperCase() + id.slice(1), start: i * 2, offset: 0, duration: audio.duration, fadeIn: i === 3 ? 1 : 0 }),
-    ),
+    clips: [
+      ...sources.map(({ id, audio }, i) =>
+        makeClip({ id: `${id}-1`, track: id, source: id, name: id[0]!.toUpperCase() + id.slice(1), start: i * 2, offset: 0, duration: audio.duration, fadeIn: i === 3 ? 1 : 0 }),
+      ),
+      makeNoteClip({ id: 'lead-1', track: 'lead', name: 'Lead', start: 8, duration: 8, notes: lead() }),
+      makeNoteClip({ id: 'beat-1', track: 'beat', name: 'Beat', start: 4, duration: 4, notes: beat() }),
+      makeNoteClip({ id: 'beat-2', track: 'beat', name: 'Beat', start: 8, duration: 8, notes: [...beat(), ...beat().map((note) => ({ ...note, start: note.start + 4 }))] }),
+    ],
   });
 
   for (const { id, audio } of sources) {

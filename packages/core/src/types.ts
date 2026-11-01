@@ -20,6 +20,30 @@ export interface Clip {
   fadeOut: number;
   name?: string;
   color?: string;
+  /**
+   * Notes to play through the track's instrument, which makes this a note clip.
+   * Note times count from the clip's content start, like audio.
+   */
+  notes?: readonly Note[];
+}
+
+/** One note of a note clip. */
+export interface Note {
+  /** MIDI note number, 60 is middle C */
+  pitch: number;
+  /** Seconds from the start of the clip's content */
+  start: number;
+  duration: number;
+  /** From 0 to 1 */
+  velocity: number;
+}
+
+/** The instrument an instrument track plays its note clips with. */
+export interface InstrumentChoice {
+  /** A built-in instrument (`synth`, `drums`) or a Web Audio Module's URL */
+  id: string;
+  /** Its settings */
+  state?: unknown;
 }
 
 /** A lane of clips, like a stem. */
@@ -31,6 +55,8 @@ export interface Track {
   height?: number;
   /** Volume and pan changes over time, played through the track's mixer channel */
   automation?: Automation;
+  /** Makes this an instrument track, whose note clips play through it */
+  instrument?: InstrumentChoice;
   /** Anything the host app keeps with the track */
   data?: unknown;
 }
@@ -68,6 +94,9 @@ export interface TimeRange {
 }
 
 export type ClipInput = Omit<Clip, 'id' | 'gain' | 'fadeIn' | 'fadeOut'> & Partial<Pick<Clip, 'id' | 'gain' | 'fadeIn' | 'fadeOut'>>;
+
+/** Whether a clip plays notes rather than audio. */
+export const isNoteClip = (clip: Pick<Clip, 'notes'>) => clip.notes !== undefined;
 
 export const clipEnd = (clip: Pick<Clip, 'start' | 'duration'>) => clip.start + clip.duration;
 

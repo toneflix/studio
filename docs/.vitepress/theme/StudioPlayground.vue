@@ -14,6 +14,8 @@ onMounted(async () => {
   const engine = new AudioEngine();
   const recorder = new Recorder(engine);
   const plugins = new PluginRack(engine);
+
+  engine.setInstruments(plugins.instruments());
   const waveforms = new Waveforms();
   const wams = { base: new URL(withBase('/wams/'), location.href).href };
   const timeline = new StudioTimeline(host.value!, {

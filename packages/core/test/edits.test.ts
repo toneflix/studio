@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { duplicateClips, makeClip, moveClips, removeMarker, removeTempoChange, removeTrack, setFades, setMarker, setTempoChange, splitClips, trimEnd, trimStart } from '../src/edits.ts';
-import type { Source, TimelineState } from '../src/types.ts';
+import { duplicateClips, makeClip, makeNoteClip, moveClips, removeMarker, removeTempoChange, removeTrack, setFades, setMarker, setTempoChange, splitClips, trimEnd, trimStart } from '../src/edits.ts';
+import { isNoteClip, type Source, type TimelineState } from '../src/types.ts';
 
 const state = (): TimelineState => ({
   tracks: [
@@ -84,4 +84,14 @@ test('markers and tempo changes stay sorted, and a change at the start is left o
 
   assert.deepEqual(tempo.tempo!.map((c) => c.id), ['x']);
   assert.deepEqual(removeTempoChange(tempo, 'x').tempo, []);
+});
+
+test('a note clip has its own source, no offset and its notes', () => {
+  const clip = makeNoteClip({ id: 'n', track: 't', start: 4, duration: 2, notes: [{ pitch: 60, start: 0, duration: 1, velocity: 1 }] });
+
+  assert.equal(clip.source, 'notes:n');
+  assert.equal(clip.offset, 0);
+  assert.equal(isNoteClip(clip), true);
+  assert.equal(isNoteClip(makeNoteClip({ track: 't', start: 0, duration: 1 })), true);
+  assert.deepEqual(makeNoteClip({ track: 't', start: 0, duration: 1 }).notes, []);
 });

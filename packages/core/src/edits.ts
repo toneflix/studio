@@ -1,5 +1,5 @@
 import type { TempoChange } from './grid.ts';
-import { clipEnd, type Clip, type ClipInput, type Marker, type Source, type TimelineState, type Track } from './types.ts';
+import { clipEnd, type Clip, type ClipInput, type Marker, type Note, type Source, type TimelineState, type Track } from './types.ts';
 
 /** Shortest clip a trim or split may leave, in seconds. */
 export const MIN_CLIP = 0.01;
@@ -25,6 +25,13 @@ export const makeClip = (input: ClipInput): Clip => ({
   ...input,
   id: input.id ?? uid(),
 });
+
+/** An empty note clip, or one with notes. Its source is its own id, since it plays no audio. */
+export const makeNoteClip = (input: Omit<ClipInput, 'source' | 'offset'> & { notes?: readonly Note[] }): Clip => {
+  const id = input.id ?? uid();
+
+  return makeClip({ ...input, id, source: `notes:${id}`, offset: 0, notes: input.notes ?? [] });
+};
 
 export const addClips = (state: TimelineState, clips: Clip[]): TimelineState => ({
   ...state,

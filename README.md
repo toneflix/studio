@@ -1,11 +1,12 @@
 # Toneflix Studio
 
-![A multitrack timeline with a take recording onto the vocal track and an Echo plugin window open](https://raw.githubusercontent.com/toneflix/studio/main/docs/public/screenshot.png)
+![A multitrack timeline playing audio stems with a synth lead and a drum beat on instrument tracks](https://raw.githubusercontent.com/toneflix/studio/main/docs/public/screenshot.png)
 
 **The studio engine for the web.** Give any web app a real multitrack editor. Your users arrange, cut and shape audio as freely as in a desktop DAW, right in the browser.
 
 - **Edit without limits.** Split anything, drag clips anywhere, layer them and move them between tracks. Nothing snaps back unless you ask it to.
 - **Hear every edit.** Playback follows the timeline as you work, with a mixer, effects, loops, a metronome and mixdown to WAV.
+- **Play instruments.** Instrument tracks play note clips through a built-in synth and drum kit, or any Web Audio Module instrument.
 - **Record over the mix.** Arm a track and record a voice or instrument while the music plays. Takes land where they were performed, with the waveform drawn as you go.
 - **Plugins, live.** Put Web Audio Module plugins on any track or the master and hear them as you play, with their own editors. They are saved with the project and printed into the mix.
 - **Fast with big sessions.** Waveforms are drawn in the background and cached on the device, so long recordings open instantly the next time.
@@ -60,7 +61,8 @@ timeline.on('change', ({ state, final }) => final && save(state));
 | Ctrl/Cmd + wheel | Zoom around the pointer |
 | S, Delete, Ctrl+D, Ctrl+A | Split at the playhead, delete, duplicate, select all |
 | Arrows | Nudge by the snap step, or move up and down a lane |
-| + above the headers, click a track name | Add a track; rename, duplicate, move or delete one from its menu |
+| + above the headers, click a track name | Add an audio, instrument or drum track; rename, duplicate, move or delete one from its menu |
+| Double-click an empty spot on an instrument track | Adds a one-bar note clip |
 | Markers and tempo in the ruler | Right-click the ruler to add a marker or tempo change, or double-click above the bar numbers for a marker; drag to move, click a marker to jump there, click a tempo to set it or the meter |
 | Track menu, Show volume/pan automation | Opens a lane under the track: click to add points, drag to move, double-click to remove |
 | Ctrl+Z, Ctrl+Shift+Z | Undo and redo |

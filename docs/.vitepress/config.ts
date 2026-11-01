@@ -35,6 +35,7 @@ export default defineConfig({
           { text: 'Automation', link: '/guide/automation' },
           { text: 'Markers and tempo', link: '/guide/arrangement' },
           { text: 'Plugins', link: '/guide/plugins' },
+          { text: 'Instruments and notes', link: '/guide/instruments' },
           { text: 'Recording', link: '/guide/recording' },
           { text: 'Toolbar and controls', link: '/guide/controls' },
           { text: 'Undo history', link: '/guide/history' },
