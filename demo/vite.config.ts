@@ -1,7 +1,7 @@
 import { defaultClientConditions, defineConfig } from 'vite';
+import { serveWams } from '../scripts/vite-wams.ts';
 
 export default defineConfig({
-  // The docs' public folder holds the demo plugins
-  publicDir: '../docs/public',
+  plugins: [serveWams()],
   resolve: { conditions: ['@toneflix/source', ...defaultClientConditions] },
 });

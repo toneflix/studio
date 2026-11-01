@@ -1,0 +1,53 @@
+{
+  "name": "@toneflix/studio-wams",
+  "version": "0.4.0",
+  "description": "Reviewed Web Audio Module effects for Toneflix Studio, pinned and served from jsDelivr, with a browser tab and mixer catalog for them.",
+  "license": "MIT",
+  "author": "Toneflix <code@toneflix.com.ng>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toneflix/studio.git",
+    "directory": "packages/wams"
+  },
+  "homepage": "https://toneflix.github.io/studio/",
+  "bugs": {
+    "url": "https://github.com/toneflix/studio/issues"
+  },
+  "keywords": [
+    "wam",
+    "web-audio-module",
+    "plugins",
+    "effects",
+    "daw"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@toneflix/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./plugins/*": "./plugins/*"
+  },
+  "files": [
+    "dist",
+    "plugins",
+    "licenses",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

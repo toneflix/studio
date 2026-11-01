@@ -15,14 +15,14 @@ onMounted(async () => {
   const recorder = new Recorder(engine);
   const plugins = new PluginRack(engine);
   const waveforms = new Waveforms();
-  const plugin = (name: string, file: string) => ({ name, url: new URL(withBase(`/plugins/${file}`), location.href).href });
+  const wams = { base: new URL(withBase('/wams/'), location.href).href };
   const timeline = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: host.value!.clientWidth < 600 ? 120 : 160,
     createTrack: () => ({ id: uid('t'), name: `Track ${timeline.state.tracks.length + 1}` }),
     renderHeader: trackStrip(engine, { recorder }),
   });
-  const catalog = [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')];
+  const catalog = studio.curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline,
@@ -34,7 +34,7 @@ onMounted(async () => {
       studio.listSource('sounds', 'Sounds', demoSounds(engine)),
       studio.sessionSource(timeline, engine),
       studio.filesSource(document),
-      studio.pluginSource(catalog),
+      studio.curatedWamSource(wams),
       // Community plugins run as code in this page; the docs have no sign-in, so they can take them all
       studio.wamCommunitySource({ allow: () => true }),
     ],

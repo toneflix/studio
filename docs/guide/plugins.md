@@ -77,4 +77,17 @@ Plugins get WAM transport events with the tempo, time signature, bar and whether
 
 Any WAM 2 plugin works: a JavaScript module whose default export has `createInstance()`. The [WAM community](https://www.webaudiomodules.com/community) lists open source ones, and [Faust](https://faust.grame.fr) can compile its effects to WAM. Plugins are loaded with `import()`, so their server must allow your site with CORS. Pass `load` to `PluginRack` to load them another way, for example from your own bundle.
 
-The demo plugins in the playground are in the repository's `docs/public/plugins` folder. They are short, so they're a good starting point for writing your own.
+## Curated plugins
+
+`@toneflix/studio-wams` holds reviewed effects whose licences allow passing them on: Toneflix's Echo and Drive, and Simple Delay, Simple Distortion and Simple EQ by Sequencer Party. They load from jsDelivr, pinned to the package's version, so the code you reviewed is the code that runs.
+
+```ts
+import { curatedWams, curatedWamSource } from '@toneflix/studio';
+
+new StudioMixer('#editor', { timeline, engine, plugins, catalog: curatedWams() });
+new StudioBrowser('#editor', { timeline, engine, plugins, sources: [curatedWamSource()] });
+```
+
+Pass `base` to serve the package's `plugins` folder from your own storage instead, and `allow` to offer only some. `plugins/plugins.json` lists them in the WAM community list's shape.
+
+Echo and Drive are in the package's `plugins/toneflix` folder. They are short, so they're a good starting point for writing your own.
