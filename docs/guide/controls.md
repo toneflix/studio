@@ -14,7 +14,7 @@ new StudioToolbar('#toolbar', { timeline, engine });
 linkPlayback(timeline, engine);
 ```
 
-The default toolbar has play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, the mixer, open and save as a [REAPER project](./reaper), export, the output meter and info. Undo, redo, split, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
+The default toolbar has play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, the mixer, open and save a [project](./projects) in your app's format or REAPER's, export, the output meter and info. Undo, redo, split, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
 
 Pick the buttons and their order with `items`. `'|'` adds a divider:
 

@@ -102,3 +102,12 @@ test('zip archives pack and unpack, stored or deflated', async () => {
   assert.equal(view.getUint32(0, true), 0x04034b50);
   assert.deepEqual((await unzip(out))[0]!.data, data);
 });
+
+test('project notes go to REAPER and come back line by line', () => {
+  const notes = 'Made with Toneflix Music 2.1\n\n© Toneflix  ';
+  const text = toReaper(state, { notes });
+
+  assert.match(text, /<NOTES 0 2\n {4}\|Made with Toneflix Music 2\.1\n {4}\|\n/);
+  assert.equal(fromReaper(text).notes, notes);
+  assert.equal(fromReaper(toReaper(state)).notes, undefined);
+});

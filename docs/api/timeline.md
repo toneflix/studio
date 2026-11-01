@@ -30,9 +30,9 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `editTracks` | `boolean` | `true` | The add track button and the track menu |
 | `trackLabels` | `Partial<TrackLabels>` | `DEFAULT_TRACK_LABELS` | Names of the add button, menu items and automation lanes; `newTrack` is `'Track {n}'` |
 | `automationHeight` | `number` | `64` | Height of the automation lane under a track |
-| `markers` | `boolean` | `true` | The marker lane under the ruler |
-| `tempoTrack` | `boolean` | `true` | The tempo lane under the ruler |
-| `rulerLabels` | `Partial<RulerLabels>` | `DEFAULT_RULER_LABELS` | Names in the marker and tempo lanes; `newMarker` is `'Marker {n}'` |
+| `markers` | `boolean` | `true` | Markers in the ruler, above the bar numbers |
+| `tempoTrack` | `boolean` | `true` | Tempo and meter changes beside the bar numbers |
+| `rulerLabels` | `Partial<RulerLabels>` | `DEFAULT_RULER_LABELS` | Names for markers and tempo changes in the ruler; `newMarker` is `'Marker {n}'` |
 
 ## Properties
 

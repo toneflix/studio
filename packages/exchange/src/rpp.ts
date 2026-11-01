@@ -33,6 +33,8 @@ export interface ReaperExportOptions {
   file?: (source: string) => string;
   /** A track's colour when it has none of its own, like the timeline's `colorOf` */
   colorOf?: (track: Track) => string | undefined;
+  /** Project notes, shown in REAPER under View > Project notes */
+  notes?: string;
 }
 
 /** A REAPER project read back: the timeline state, the grid, the mixer and the audio files it uses. */
@@ -43,6 +45,8 @@ export interface ReaperProject {
   mixer: Required<MixerValues>;
   /** Source id to the file path written in the project */
   files: Record<string, string>;
+  /** The project notes, if any */
+  notes?: string;
 }
 
 /** Envelope chunk names, by setting */
@@ -103,6 +107,12 @@ export const toReaper = (state: TimelineState, options: ReaperExportOptions = {}
   add(0, `<REAPER_PROJECT 0.1 "7.0" ${Math.floor(Date.now() / 1000)}`);
   add(1, `TEMPO ${num(bpm)} ${meter[0]} ${meter[1]}`);
   add(1, `MASTER_VOLUME ${num(master.volume)} ${num(master.pan)} -1 -1 1`);
+
+  if (options.notes) {
+    add(1, '<NOTES 0 2');
+    for (const line of options.notes.split(/\r?\n/)) add(2, `|${line}`);
+    add(1, '>');
+  }
 
   if (state.tempo?.length) {
     let current = meter;
@@ -197,6 +207,12 @@ const parseChunks = (text: string): Chunk => {
     if (!line) continue;
 
     const parent = stack[stack.length - 1]!;
+
+    // Notes are kept as written
+    if (line.startsWith('|')) {
+      parent.children.push({ name: '|', args: [raw.trimStart().slice(1)] });
+      continue;
+    }
 
     if (line.startsWith('>')) {
       if (stack.length > 1) stack.pop();
@@ -342,5 +358,8 @@ export const fromReaper = (text: string): ReaperProject => {
     }
   });
 
-  return { state: { tracks, clips, markers, tempo }, bpm, meter, mixer, files };
+  const notes = first(project, 'NOTES');
+  const notesText = notes && isChunk(notes) ? all(notes, '|').map((line) => line.args[0]).join('\n') : '';
+
+  return { state: { tracks, clips, markers, tempo }, bpm, meter, mixer, files, ...(notesText && { notes: notesText }) };
 };

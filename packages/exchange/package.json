@@ -1,7 +1,7 @@
 {
   "name": "@toneflix/studio-exchange",
   "version": "0.4.0",
-  "description": "Project exchange for Toneflix Studio: save sessions as REAPER projects and open them again, with tracks, clips, fades, automation, markers and tempo.",
+  "description": "Project exchange for Toneflix Studio: save sessions in the app's own format with plugins, or as REAPER projects, and open them again, with tracks, clips, fades, automation, markers and tempo.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
   "repository": {
@@ -43,6 +43,7 @@
   "dependencies": {
     "@toneflix/studio-audio": "workspace:^",
     "@toneflix/studio-core": "workspace:^",
+    "@toneflix/studio-plugins": "workspace:^",
     "@toneflix/studio-timeline": "workspace:^"
   },
   "engines": {

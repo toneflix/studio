@@ -237,6 +237,9 @@ importers:
       '@toneflix/studio-core':
         specifier: workspace:^
         version: link:../core
+      '@toneflix/studio-plugins':
+        specifier: workspace:^
+        version: link:../plugins
       '@toneflix/studio-timeline':
         specifier: workspace:^
         version: link:../timeline

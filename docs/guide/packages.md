@@ -11,7 +11,7 @@ Toneflix Studio is split into small packages, so an app installs only what it us
 | `@toneflix/studio-audio` | Playback, mixer, effects, loops, metronome and mixdown, `AudioEngine` | core |
 | `@toneflix/studio-recorder` | Recording a microphone or line input onto a track, lined up with playback, `Recorder` | core, audio |
 | `@toneflix/studio-plugins` | Web Audio Module (WAM 2) plugins as live track and master inserts, `PluginRack` | core, audio |
-| `@toneflix/studio-exchange` | Saving and opening REAPER projects (`saveReaperProject`, `openReaperProject`, `toReaper`, `fromReaper`) | core, audio, timeline |
+| `@toneflix/studio-exchange` | Saving and opening projects in the app's own format or REAPER's (`saveProject`, `openProject`, `toReaper`, `fromReaper`) | core, audio, timeline, plugins |
 | `@toneflix/studio-controls` | A toolbar, track strips and a mixer with Lucide icons you can replace | core, timeline, audio, recorder, plugins, exchange |
 
 ## Examples

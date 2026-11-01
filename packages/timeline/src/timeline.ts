@@ -86,11 +86,11 @@ export interface TimelineOptions {
   trackLabels?: Partial<TrackLabels>;
   /** Height in pixels of the automation lane under a track */
   automationHeight?: number;
-  /** Show the marker lane under the ruler */
+  /** Show markers in the ruler, above the bar numbers */
   markers?: boolean;
-  /** Show the tempo lane under the ruler, where the tempo and meter can change during the song */
+  /** Show the tempo beside the bar numbers, where the tempo and meter can change during the song */
   tempoTrack?: boolean;
-  /** Names in the marker and tempo lanes, for example to translate them */
+  /** Names for markers and tempo changes in the ruler, for example to translate them */
   rulerLabels?: Partial<RulerLabels>;
 }
 
@@ -112,8 +112,8 @@ export interface RulerLabels {
 export const DEFAULT_RULER_LABELS: RulerLabels = {
   markers: 'Markers',
   tempo: 'Tempo',
-  addMarker: 'Add marker at the playhead',
-  addTempo: 'Add a tempo change at the next bar',
+  addMarker: 'Add marker here',
+  addTempo: 'Add tempo change at this bar',
   rename: 'Rename',
   setTempo: 'Set tempo',
   deleteMarker: 'Delete marker',
@@ -276,11 +276,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     Pick<TimelineOptions, 'renderHeader' | 'createTrack'>;
   private readonly trackLabels: TrackLabels;
   private readonly rulerLabels: RulerLabels;
-  private globals!: HTMLDivElement;
-  private markerLane!: HTMLDivElement;
-  private tempoLane!: HTMLDivElement;
-  private globalHeads: HTMLDivElement[] = [];
+  private markerStrip!: HTMLDivElement;
+  private barLabels!: HTMLDivElement;
   private lastMarker: { id: string; at: number } | null = null;
+  private lastStripPress = 0;
   private addButton!: HTMLButtonElement;
   private pps: number;
   private playheadTime = 0;
@@ -350,37 +349,14 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       if (track) this.editTrackName(track.id);
     });
     this.ruler = el('div', 'tfs-ruler', rulerRow);
-    this.globals = el('div', 'tfs-globals', this.content);
-
-    const globalRow = (name: string, add: string, onAdd: () => void) => {
-      const row = el('div', 'tfs-global', this.globals);
-      const head = el('div', 'tfs-global-head', row);
-      const title = el('span', '', head);
-      const button = el('button', 'tfs-global-add', head);
-      const lane = el('div', 'tfs-global-lane', row);
-
-      title.textContent = name;
-      button.type = 'button';
-      button.textContent = '+';
-      button.title = add;
-      button.setAttribute('aria-label', add);
-      button.addEventListener('click', onAdd);
-      this.globalHeads.push(head);
-
-      return lane;
-    };
-
-    this.markerLane = globalRow(this.rulerLabels.markers, this.rulerLabels.addMarker, () => this.addMarker());
-    this.markerLane.classList.add('tfs-marker-lane');
-    this.tempoLane = globalRow(this.rulerLabels.tempo, this.rulerLabels.addTempo, () => this.addTempoChange());
-    this.tempoLane.classList.add('tfs-tempo-lane');
+    this.loopEl = el('div', 'tfs-loop', this.ruler);
+    this.rangeMark = el('div', 'tfs-range-mark', this.ruler);
+    this.markerStrip = el('div', 'tfs-ruler-markers', this.ruler);
+    this.markerStrip.setAttribute('aria-label', this.rulerLabels.markers);
+    this.barLabels = el('div', 'tfs-bar-labels', this.ruler);
     this.rows = el('div', 'tfs-rows', this.content);
     this.overlay = el('div', 'tfs-overlay', this.content);
-    this.loopEl = this.doc.createElement('div');
-    this.loopEl.className = 'tfs-loop';
     this.rangeEl = el('div', 'tfs-range', this.overlay);
-    this.rangeMark = this.doc.createElement('div');
-    this.rangeMark.className = 'tfs-range-mark';
 
     for (const edge of ['start', 'end']) {
       el('div', 'tfs-range-edge', this.rangeEl).dataset.rangeEdge = edge;
@@ -777,7 +753,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   /** Type a new name for a marker in its flag. */
   editMarkerName(id: string, tries = 3) {
     const marker = this.markers.find((m) => m.id === id);
-    const flag = this.markerLane.querySelector<HTMLElement>(`[data-marker="${id}"]`);
+    const flag = this.markerStrip.querySelector<HTMLElement>(`[data-marker="${id}"]`);
     if (!marker || this.options.readonly) return;
 
     if (!flag) {
@@ -785,7 +761,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       return;
     }
 
-    this.inlineInput(this.markerLane, marker.time, marker.name, this.rulerLabels.rename, (value) => this.updateMarker(id, { name: value }));
+    this.inlineInput(flag, marker.time, marker.name, this.rulerLabels.rename, (value) => this.updateMarker(id, { name: value }));
   }
 
   /** Add a tempo change, at the bar after the playhead unless a time is given, as one undo step. Returns it. */
@@ -820,7 +796,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   /** Type a new tempo into a tempo change. */
   editTempo(id: string, tries = 3) {
     const change = this.grid.tempo.find((c) => c.id === id);
-    const flag = this.tempoLane.querySelector<HTMLElement>(`[data-tempo="${id}"]`);
+    const flag = this.ruler.querySelector<HTMLElement>(`[data-tempo="${id}"]`);
     if (!change || this.options.readonly) return;
 
     if (!flag) {
@@ -834,7 +810,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       if (bpm >= 20 && bpm <= 999) this.updateTempoChange(id, { bpm });
     };
 
-    this.inlineInput(this.tempoLane, change.time, String(change.bpm), this.rulerLabels.setTempo, save, 'number');
+    this.inlineInput(flag, change.time, String(change.bpm), this.rulerLabels.setTempo, save, 'number');
   }
 
   private showMarkerMenu(id: string, at: { x: number; y: number }) {
@@ -850,6 +826,17 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       ],
       marker.name,
     );
+  }
+
+  /** Add a marker or a tempo change where the ruler was right-clicked. */
+  private showRulerMenu(time: number, at: { x: number; y: number }) {
+    const { markers, tempoTrack, showGrid } = this.options;
+    const items = [
+      ...(markers ? [{ label: this.rulerLabels.addMarker, onSelect: () => this.editMarkerName(this.addMarker(this.snapToGrid(time)).id) }] : []),
+      ...(tempoTrack && showGrid ? [{ label: this.rulerLabels.addTempo, onSelect: () => this.addTempoChange(this.nearestBar(time, '')) }] : []),
+    ];
+
+    if (items.length) openMenu(this.doc, at, items);
   }
 
   private showTempoMenu(id: string, at: { x: number; y: number }) {
@@ -871,12 +858,12 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   }
 
   /**
-   * An input at a time in the marker or tempo lane that saves on Enter or leaving
-   * it, and cancels on Escape. It sits beside the lane, which redraws while editing.
+   * An input over a marker or tempo flag that saves on Enter or leaving it, and
+   * cancels on Escape. It sits in the ruler's row, which keeps it while the ruler redraws.
    */
-  private inlineInput(lane: HTMLElement, time: number, value: string, label: string, save: (value: string) => void, type = 'text') {
+  private inlineInput(flag: HTMLElement, time: number, value: string, label: string, save: (value: string) => void, type = 'text') {
     const input = this.doc.createElement('input');
-    const parent = lane.parentElement!;
+    const parent = this.ruler.parentElement!;
     let done = false;
     const finish = (keep: boolean) => {
       if (done) return;
@@ -889,7 +876,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
     input.className = 'tfs-inline-edit';
     input.type = type;
-    input.style.left = `${lane.offsetLeft + time * this.pps}px`;
+    input.style.left = `${this.ruler.offsetLeft + time * this.pps}px`;
+    input.style.top = `${flag.getBoundingClientRect().top - parent.getBoundingClientRect().top}px`;
     input.value = value;
     input.setAttribute('aria-label', label);
     input.addEventListener('keydown', (e) => {
@@ -1036,7 +1024,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.overlay.style.left = `${headerWidth}px`;
     this.overlay.style.width = `${width}px`;
 
-    this.renderGlobals(state, width);
+    this.renderMarkers(state);
     this.renderTracks(state, width);
     this.renderClips(state);
     this.renderRuler();
@@ -1046,53 +1034,35 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.paint();
   }
 
-  /** The marker and tempo lanes under the ruler. */
-  private renderGlobals(state: TimelineState, width: number) {
-    const { headerWidth, markers, tempoTrack } = this.options;
-    const [markerRow, tempoRow] = [this.markerLane.parentElement!, this.tempoLane.parentElement!];
+  /** Marker flags along the top of the ruler. */
+  private renderMarkers(state: TimelineState) {
+    const show = this.options.markers;
 
-    markerRow.style.display = markers ? '' : 'none';
-    tempoRow.style.display = tempoTrack ? '' : 'none';
-    for (const head of this.globalHeads) {
-      head.style.width = `${headerWidth}px`;
-      head.style.display = headerWidth ? '' : 'none';
-      head.querySelector('button')!.hidden = this.options.readonly;
-    }
+    this.root.classList.toggle('tfs--markers', show);
+    this.markerStrip.hidden = !show;
+    this.markerStrip.replaceChildren(
+      ...(show ? (state.markers ?? []) : []).map((marker) => {
+        const node = this.flag('tfs-marker', marker.time, marker.name);
 
-    this.markerLane.style.width = `${width}px`;
-    this.tempoLane.style.width = `${width}px`;
-
-    const flag = (lane: HTMLElement, time: number, text: string, key: string, id: string, title = text) => {
-      const node = this.doc.createElement('div');
-      const label = this.doc.createElement('span');
-
-      node.className = lane === this.markerLane ? 'tfs-marker' : 'tfs-tempo';
-      node.dataset[key] = id;
-      node.style.left = `${time * this.pps}px`;
-      node.title = title;
-      label.textContent = text;
-      node.append(label);
-
-      return node;
-    };
-
-    if (markers) this.markerLane.replaceChildren(...(state.markers ?? []).map((m) => flag(this.markerLane, m.time, m.name, 'marker', m.id)));
-
-    if (tempoTrack) {
-      const sections = this.grid.sections;
-      const flags = sections.map((section, i) => {
-        const meterChanged = i === 0 || section.meter.join('/') !== sections[i - 1]!.meter.join('/');
-        const text = `${section.bpm}${meterChanged ? ` · ${section.meter.join('/')}` : ''}`;
-        const change = i ? this.grid.tempo.find((c) => Math.abs(c.time - section.start) < 1e-6) : undefined;
-        const node = flag(this.tempoLane, section.start, text, 'tempo', change?.id ?? '', i ? text : this.rulerLabels.startTempo);
-
-        if (!i) node.classList.add('tfs-tempo--start');
+        node.dataset.marker = marker.id;
 
         return node;
-      });
+      }),
+    );
+  }
 
-      this.tempoLane.replaceChildren(...flags);
-    }
+  /** A marker or tempo flag in the ruler. */
+  private flag(className: string, time: number | null, text: string, title = text) {
+    const node = this.doc.createElement('div');
+    const label = this.doc.createElement('span');
+
+    node.className = className;
+    if (time !== null) node.style.left = `${time * this.pps}px`;
+    node.title = title;
+    label.textContent = text;
+    node.append(label);
+
+    return node;
   }
 
   /** Bar and beat lines for each tempo section, drawn in a lane. */
@@ -1373,28 +1343,50 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       label.style.left = `${time * this.pps}px`;
       label.textContent = text;
       labels.push(label);
+
+      return label;
     };
+    const sections = this.grid.sections;
 
     if (this.options.showGrid) {
-      let last = -Infinity;
+      let free = -Infinity;
 
       // Leave out bars that would crowd the one before, but never the first bar of a tempo section
       // Counted from the start, so the same bars keep their labels while scrolling
       for (const { time, bar } of this.grid.bars(0, to)) {
         const x = time * this.pps;
-        const starts = this.grid.sections.some((section) => Math.abs(section.start - time) < 1e-6);
+        const index = sections.findIndex((section) => Math.abs(section.start - time) < 1e-6);
 
-        if (x - last < 48 && !starts) continue;
+        if (x < free && index < 0) continue;
 
-        if (time >= from) add(time, String(bar));
-        last = x;
+        const label = time >= from ? add(time, String(bar)) : null;
+        const tempo = index >= 0 && this.options.tempoTrack ? this.tempoFlag(index) : null;
+
+        if (label && tempo) label.append(tempo);
+        // Room for the bar number, and a tempo flag's text at about 6.5px a character
+        free = x + Math.max(48, tempo ? 40 + tempo.textContent!.length * 6.5 : 0);
       }
     } else {
       const step = LABELS.find((s) => s * this.pps >= 70) ?? 600;
       for (let time = Math.floor(from / step) * step; time < to; time += step) add(time, formatTime(time, step));
     }
 
-    this.ruler.replaceChildren(this.loopEl, this.rangeMark, ...labels);
+    this.barLabels.replaceChildren(...labels);
+  }
+
+  /** The tempo, and the meter where it changes, beside the bar number a tempo section starts on. */
+  private tempoFlag(index: number) {
+    const sections = this.grid.sections;
+    const section = sections[index]!;
+    const meterChanged = index === 0 || section.meter.join('/') !== sections[index - 1]!.meter.join('/');
+    const text = `${section.bpm}${meterChanged ? ` · ${section.meter.join('/')}` : ''}`;
+    const change = index ? this.grid.tempo.find((c) => Math.abs(c.time - section.start) < 1e-6) : undefined;
+    const node = this.flag('tfs-tempo', null, text, index ? `${this.rulerLabels.tempo} ${text}` : this.rulerLabels.startTempo);
+
+    node.dataset.tempo = change?.id ?? '';
+    if (!index) node.classList.add('tfs-tempo--start');
+
+    return node;
   }
 
   private renderRange() {
@@ -1496,20 +1488,17 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
     this.rows.addEventListener(TRACK_MENU_EVENT, onMenuEvent);
     this.unsubscribe.push(() => this.rows.removeEventListener(TRACK_MENU_EVENT, onMenuEvent));
-    on(this.globals, 'contextmenu', (e) => {
-      const id = (e.target as HTMLElement).closest<HTMLElement>('[data-marker]')?.dataset.marker;
+    on(this.ruler, 'contextmenu', (e) => {
+      const target = e.target as HTMLElement;
+      const marker = target.closest<HTMLElement>('[data-marker]')?.dataset.marker;
+      const tempo = target.closest<HTMLElement>('[data-tempo]')?.dataset.tempo;
 
-      if (!id || this.options.readonly) return;
+      if (this.options.readonly) return;
 
       e.preventDefault();
-      this.showMarkerMenu(id, { x: e.clientX, y: e.clientY });
-    });
-    on(this.markerLane, 'dblclick', (e) => {
-      if (this.options.readonly || (e.target as HTMLElement).closest('[data-marker], .tfs-inline-edit')) return;
-
-      const marker = this.addMarker(this.snapToGrid(this.timeAt(e.clientX)));
-
-      this.editMarkerName(marker.id);
+      if (marker) this.showMarkerMenu(marker, { x: e.clientX, y: e.clientY });
+      else if (tempo) this.showTempoMenu(tempo, { x: e.clientX, y: e.clientY });
+      else this.showRulerMenu(this.timeAt(e.clientX), { x: e.clientX, y: e.clientY });
     });
     on(this.rows, 'click', (e) => {
       const name = (e.target as HTMLElement).closest<HTMLElement>('.tfs-auto-name');
@@ -1601,10 +1590,24 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       return;
     }
 
-    if (target.closest('.tfs-globals')) {
-      this.globalPointerDown(e, target);
+    if (target.closest('.tfs-ruler [data-marker], .tfs-ruler [data-tempo]')) {
+      this.flagPointerDown(e, target);
 
       return;
+    }
+
+    // A double click on the marker strip adds a marker there
+    if (target === this.markerStrip && !this.options.readonly) {
+      const last = this.lastStripPress;
+
+      this.lastStripPress = e.timeStamp;
+      if (e.timeStamp - last < 400) {
+        e.preventDefault();
+        this.lastStripPress = 0;
+        this.editMarkerName(this.addMarker(this.snapToGrid(this.timeAt(e.clientX))).id);
+
+        return;
+      }
     }
 
     if (target.closest('.tfs-header, .tfs-corner, .tfs-auto-head')) return;
@@ -1770,14 +1773,12 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     }
   }
 
-  /** Press in the marker or tempo lane: grab a marker or tempo change, or rename a marker on a double click. */
-  private globalPointerDown(e: PointerEvent, target: HTMLElement) {
+  /** Press on a flag in the ruler: grab a marker or tempo change, or rename a marker on a double click. */
+  private flagPointerDown(e: PointerEvent, target: HTMLElement) {
     const markerId = target.closest<HTMLElement>('[data-marker]')?.dataset.marker;
     const tempoId = target.closest<HTMLElement>('[data-tempo]')?.dataset.tempo;
     const marker = this.markers.find((m) => m.id === markerId);
     const change = this.grid.tempo.find((c) => c.id === tempoId);
-
-    if (target.closest('.tfs-global-head, .tfs-inline-edit')) return;
 
     if (marker) {
       e.preventDefault();
@@ -1889,7 +1890,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       this.seek(g.marker.time);
     } else if (g.kind === 'tempo' && !g.started) {
       if (!this.options.readonly) {
-        const box = this.tempoLane.querySelector(`[data-tempo="${g.change.id}"]`)?.getBoundingClientRect();
+        const box = this.ruler.querySelector(`[data-tempo="${g.change.id}"]`)?.getBoundingClientRect();
 
         this.showTempoMenu(g.change.id, { x: box?.left ?? e.clientX, y: (box?.bottom ?? e.clientY) + 2 });
       }

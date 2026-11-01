@@ -1,9 +1,9 @@
 import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
-import { openReaperProject, saveReaperProject } from '@toneflix/studio-exchange';
+import { DEFAULT_APP, openProject, saveProject, type AppIdentity, type OpenedProject, type ProjectFormat } from '@toneflix/studio-exchange';
 import type { SnapTo } from '@toneflix/studio-core';
 import type { PluginRack } from '@toneflix/studio-plugins';
 import type { Recorder } from '@toneflix/studio-recorder';
-import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
+import { openMenu, resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { createDisplay } from './display.ts';
 import { renderIcon, type Icon, type IconName, type IconSet } from './icons.ts';
 import { createInfoDialog, sessionInfo, type InfoRow } from './info.ts';
@@ -14,7 +14,7 @@ import { injectControlStyles } from './styles.ts';
 /** A toolbar button, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
 export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo' | 'save' | 'close'> | 'display' | 'meter' | '|';
 
-export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature' | 'save' | 'close', string>;
+export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature' | 'save' | 'close' | 'appProject' | 'reaperProject', string>;
 
 /** What hooks and custom actions get to work with. */
 export interface ToolbarContext {
@@ -72,12 +72,16 @@ export interface ToolbarOptions {
   mixer?: StudioMixer;
   /** Rows for the info dialog; gets the default rows to extend or replace */
   info?: (rows: InfoRow[], context: ToolbarContext) => InfoRow[];
-  /** Name of a saved REAPER project, without the extension */
+  /** The app saving projects: names its own project format, and is written into every project */
+  app?: AppIdentity;
+  /** Formats the save project button offers; with more than one it asks which */
+  projectFormats?: ProjectFormat[];
+  /** Name of a saved project, without the extension */
   projectName?: string;
   /** Gets each source's audio after a project opens, for example to draw its waveform */
   onProjectSource?: (id: string, buffer: AudioBuffer) => void;
-  /** Called after a project opens, with the audio files it could not find */
-  onProjectOpen?: (result: { missing: string[] }) => void;
+  /** Called after a project opens, with its format and the audio files it could not find */
+  onProjectOpen?: (result: OpenedProject) => void;
 }
 
 export const DEFAULT_TOOLBAR: ToolbarItem[] = [
@@ -133,8 +137,10 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   meter: 'Output level',
   info: 'Session info',
   mixer: 'Mixer',
-  saveProject: 'Save as a REAPER project (.zip)',
-  openProject: 'Open a REAPER project (.zip or .rpp with its audio)',
+  saveProject: 'Save project',
+  openProject: 'Open a project',
+  appProject: '{app} project (.{ext}), with plugins',
+  reaperProject: 'REAPER project (.zip), without plugins',
   save: 'Save',
   close: 'Close',
 };
@@ -163,7 +169,7 @@ export class StudioToolbar {
   private readonly actions = new Map<string, { action: ToolbarAction; button: HTMLButtonElement }>();
   private readonly unsubscribe: (() => void)[] = [];
   private readonly onSave?: ToolbarOptions['onSave'];
-  private readonly project: Pick<ToolbarOptions, 'projectName' | 'onProjectSource' | 'onProjectOpen'>;
+  private readonly project: Pick<ToolbarOptions, 'projectName' | 'onProjectSource' | 'onProjectOpen'> & { app: AppIdentity; formats: ProjectFormat[] };
   private readonly infoRows?: ToolbarOptions['info'];
   private readonly mixer?: StudioMixer;
   private readonly plugins?: PluginRack;
@@ -180,7 +186,13 @@ export class StudioToolbar {
     this.labels = { ...DEFAULT_LABELS, ...options.labels };
     this.exportName = options.exportName ?? 'mix.wav';
     this.onSave = options.onSave;
-    this.project = { projectName: options.projectName, onProjectSource: options.onProjectSource, onProjectOpen: options.onProjectOpen };
+    this.project = {
+      app: options.app ?? DEFAULT_APP,
+      formats: options.projectFormats?.length ? options.projectFormats : ['app', 'reaper'],
+      projectName: options.projectName,
+      onProjectSource: options.onProjectSource,
+      onProjectOpen: options.onProjectOpen,
+    };
     this.infoRows = options.info;
     this.mixer = options.mixer;
     this.plugins = options.plugins;
@@ -366,7 +378,7 @@ export class StudioToolbar {
         void this.busy(this.buttons.get('export'), () => (this.onSave ? this.onSave(this.context) : this.download()));
         break;
       case 'saveProject':
-        void this.busy(this.buttons.get('saveProject'), () => this.saveProject());
+        this.pickFormat();
         break;
       case 'openProject':
         this.openProject();
@@ -417,20 +429,41 @@ export class StudioToolbar {
     return new Blob([encodeWav(audio)], { type: 'audio/wav' });
   }
 
-  /** Download the session as a zipped REAPER project. */
-  private async saveProject() {
+  /** Ask which format to save in when there is a choice, then save. */
+  private pickFormat() {
+    const button = this.buttons.get('saveProject');
+    const { formats, app } = this.project;
+    const save = (format: ProjectFormat) => void this.busy(button, () => this.saveProject(format));
+
+    if (formats.length === 1 || !button) return save(formats[0]!);
+
+    const box = button.getBoundingClientRect();
+    const label = (format: ProjectFormat) =>
+      format === 'app' ? this.labels.appProject.replace('{app}', app.name).replace('{ext}', app.extension ?? DEFAULT_APP.extension) : this.labels.reaperProject;
+
+    openMenu(
+      this.doc,
+      { x: box.left, y: box.bottom + 4 },
+      formats.map((format) => ({ label: label(format), onSelect: () => save(format) })),
+      this.labels.saveProject,
+    );
+  }
+
+  /** Download the session as a project; the app format keeps the plugins. */
+  private async saveProject(format: ProjectFormat) {
     if (!this.engine) return;
 
-    const name = this.project.projectName ?? 'Toneflix Studio';
+    const { app, projectName } = this.project;
+    const { blob, fileName } = await saveProject(format, this.timeline, this.engine, { app, name: projectName, plugins: this.plugins });
     const link = this.doc.createElement('a');
 
-    link.href = URL.createObjectURL(await saveReaperProject(this.timeline, this.engine, { name }));
-    link.download = `${name}.zip`;
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
 
-  /** Pick a zipped project, or an .rpp with its audio files, and open it. */
+  /** Pick an app project, a zipped REAPER project, or an .rpp with its audio files, and open it. */
   private openProject() {
     const engine = this.engine;
     if (!engine) return;
@@ -438,14 +471,17 @@ export class StudioToolbar {
     const input = this.doc.createElement('input');
 
     input.type = 'file';
-    input.accept = '.zip,.rpp,audio/*';
+    input.accept = `.${this.project.app.extension ?? DEFAULT_APP.extension},.zip,.rpp,audio/*`;
     input.multiple = true;
     input.addEventListener('change', () => {
       const files = [...(input.files ?? [])];
       if (!files.length) return;
 
       void this.busy(this.buttons.get('openProject'), async () => {
-        const result = await openReaperProject(files.length === 1 ? files[0]! : files, this.timeline, engine, { onSource: this.project.onProjectSource });
+        const result = await openProject(files.length === 1 ? files[0]! : files, this.timeline, engine, {
+          onSource: this.project.onProjectSource,
+          plugins: this.plugins,
+        });
 
         this.project.onProjectOpen?.(result);
       });
