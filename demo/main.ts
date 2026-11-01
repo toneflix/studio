@@ -5,8 +5,9 @@ import {
   linkRecorder,
   listSource,
   PluginRack,
-  pluginSource,
   Recorder,
+  curatedWams,
+  curatedWamSource,
   sessionSource,
   StudioBrowser,
   StudioMixer,
@@ -30,11 +31,9 @@ const timeline = new StudioTimeline('#timeline', {
   renderHeader: trackStrip(engine, { recorder }),
 });
 
-// Full URLs, so the dev server hands the plugin files over untouched
-const catalog = [
-  { name: 'Echo', url: new URL('/plugins/echo.js', location.href).href },
-  { name: 'Drive', url: new URL('/plugins/drive.js', location.href).href },
-];
+// The curated plugins, served by the dev server; apps use jsDelivr, the default
+const wams = { base: new URL('/wams/', location.href).href };
+const catalog = curatedWams(wams);
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
 const drawWaveform = (id: string, buffer: AudioBuffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks));
 const browser = new StudioBrowser('#timeline', {
@@ -47,7 +46,7 @@ const browser = new StudioBrowser('#timeline', {
     listSource('sounds', 'Sounds', demoSounds(engine)),
     sessionSource(timeline, engine),
     filesSource(document),
-    pluginSource(catalog),
+    curatedWamSource(wams),
     // Community plugins run as code in this page; a demo with no sign-in can take them all
     wamCommunitySource({ allow: () => true }),
   ],

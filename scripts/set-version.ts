@@ -18,4 +18,7 @@ for (const file of files) {
   writeFileSync(file, JSON.stringify(pkg, null, 2) + '\n');
 }
 
+// The curated plugins' jsDelivr URLs pin this version
+writeFileSync('packages/wams/src/version.ts', `/** This package's version; \`pnpm version:set\` keeps it in step with package.json. */\nexport const WAMS_VERSION = '${version}';\n`);
+
 console.log(`Set ${files.length} package.json files to ${version}`);

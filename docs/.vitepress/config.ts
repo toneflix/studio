@@ -1,4 +1,5 @@
 import { defineConfig } from 'vitepress';
+import { copyWams, serveWams } from '../../scripts/vite-wams.ts';
 
 export default defineConfig({
   title: 'Toneflix Studio',
@@ -8,7 +9,10 @@ export default defineConfig({
   appearance: 'dark',
   lastUpdated: true,
   head: [['meta', { name: 'theme-color', content: '#0a0c10' }]],
+  // The curated plugins, served at wams/ for the playground and home page
+  buildEnd: (site) => copyWams(site.outDir),
   vite: {
+    plugins: [serveWams()],
     // Use package sources, so the docs never need a build of the library first.
     resolve: { conditions: ['@toneflix/source'] },
     ssr: { resolve: { conditions: ['@toneflix/source'], externalConditions: ['@toneflix/source'] } },

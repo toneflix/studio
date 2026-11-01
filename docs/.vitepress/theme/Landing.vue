@@ -54,7 +54,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, linkRecorder, listSource, PluginRack, pluginSource, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
+  const { AudioEngine, curatedWams, curatedWamSource, linkPlayback, linkRecorder, listSource, PluginRack, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
     '@toneflix/studio'
   );
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
@@ -63,7 +63,7 @@ onMounted(async () => {
   const recorder = new Recorder(audio);
   const plugins = new PluginRack(audio);
   const waveforms = new Waveforms();
-  const plugin = (name: string, file: string) => ({ name, url: new URL(withBase(`/plugins/${file}`), location.href).href });
+  const wams = { base: new URL(withBase('/wams/'), location.href).href };
   const view = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
     headerWidth: narrow ? 112 : 168,
@@ -73,7 +73,7 @@ onMounted(async () => {
     renderHeader: trackStrip(audio, { recorder }),
   });
 
-  const catalog = [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')];
+  const catalog = curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline: view,
@@ -81,7 +81,7 @@ onMounted(async () => {
     plugins,
     hidden: true,
     onSource: (id, buffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
-    sources: [listSource('sounds', 'Sounds', demoSounds(audio)), sessionSource(view, audio), pluginSource(catalog)],
+    sources: [listSource('sounds', 'Sounds', demoSounds(audio)), sessionSource(view, audio), curatedWamSource(wams)],
   });
 
   toolbar.value = new StudioToolbar(actions.value!, {
@@ -91,7 +91,7 @@ onMounted(async () => {
     browser,
     recorder,
     plugins,
-    items: ['file', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'browser', 'mixer', 'meter'],
+    items: ['file', 'browser', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
     onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
   });
   loadSample(view, { engine: audio, waveforms });

@@ -38,6 +38,7 @@ Each addition is one undo step. Plugin items need `plugins`, a `PluginRack`.
 | `sessionSource(timeline, engine)` | Loaded: the sounds the session's clips use, to place them again |
 | `filesSource(document)` | Audio files people import from their device; they stay in the page and nothing is uploaded |
 | `pluginSource(catalog)` | Plugins from a list of `{ name, url }`, like the mixer's `catalog` |
+| `curatedWamSource()` | The reviewed plugins of [`@toneflix/studio-wams`](./plugins#curated-plugins), pinned on jsDelivr |
 | `listSource(id, label, items)` | Any fixed list, or a function that gives one; search and paging happen in the browser |
 | `wamCommunitySource({ allow })` | The Web Audio Modules community list, filtered by `allow` (see below) |
 
@@ -86,7 +87,7 @@ A source with an `action`, like the files source's Import files button, gets a b
 
 A Web Audio Module is JavaScript that runs in your page, with your page's rights. A plugin you load can read cookies and storage that scripts can reach, call your API as the signed-in user and change the page. A plugin list that changes, or a plugin file that is replaced, changes what runs. So:
 
-- **Offer only plugins you trust.** For a signed-in app, review plugins, host pinned copies on your own storage, and point `url` at your own list of them.
+- **Offer only plugins you trust.** `curatedWamSource()` gives reviewed plugins pinned to a version. For others, review them, host pinned copies on your own storage, and point `url` at your own list of them.
 - **Limit where scripts can come from** with a Content Security Policy `script-src`, so only your plugin host can serve plugin code.
 - **Keep sign-in tokens out of reach of scripts**, in HttpOnly cookies.
 

@@ -89,6 +89,7 @@ export interface ToolbarOptions {
 
 export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'file',
+  'browser',
   '|',
   'play',
   'stop',
@@ -111,7 +112,6 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   '|',
   'snap',
   '|',
-  'browser',
   'mixer',
   'meter',
   'info',

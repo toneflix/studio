@@ -48,6 +48,7 @@
     "@toneflix/studio-plugins": "workspace:^",
     "@toneflix/studio-recorder": "workspace:^",
     "@toneflix/studio-timeline": "workspace:^",
+    "@toneflix/studio-wams": "workspace:^",
     "@toneflix/studio-waveforms": "workspace:^"
   },
   "engines": {
