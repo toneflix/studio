@@ -384,10 +384,10 @@ export class StudioToolbar {
     const range = this.timeline.range;
     if (range) return { start: range.start, end: range.end };
 
-    const bar = this.timeline.grid.bar;
-    const start = Math.floor(this.timeline.time / bar) * bar;
+    const grid = this.timeline.grid;
+    const { bar } = grid.position(this.timeline.time);
 
-    return { start, end: start + bar * 4 };
+    return { start: grid.barTime(bar), end: grid.barTime(bar + 4) };
   }
 
   private async mix() {

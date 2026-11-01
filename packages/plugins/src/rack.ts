@@ -249,14 +249,14 @@ export class PluginRack extends Emitter<PluginRackEvents> {
     const { engine } = this;
     const grid = engine.metronome.grid;
     const now = engine.context.currentTime;
-    const bar = grid.bar;
-    const currentBar = Math.floor(engine.time / bar);
+    const section = grid.sectionAt(engine.time);
+    const currentBar = grid.position(engine.time).bar - 1;
     const data: WamTransportData = {
       currentBar,
-      currentBarStarted: now - (engine.time - currentBar * bar),
-      tempo: grid.bpm,
-      timeSigNumerator: grid.meter[0],
-      timeSigDenominator: grid.meter[1],
+      currentBarStarted: now - (engine.time - grid.barTime(currentBar + 1)),
+      tempo: section.bpm,
+      timeSigNumerator: section.meter[0],
+      timeSigDenominator: section.meter[1],
       playing: engine.isPlaying,
     };
 

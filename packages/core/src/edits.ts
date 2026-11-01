@@ -1,4 +1,5 @@
-import { clipEnd, type Clip, type ClipInput, type Source, type TimelineState, type Track } from './types.ts';
+import type { TempoChange } from './grid.ts';
+import { clipEnd, type Clip, type ClipInput, type Marker, type Source, type TimelineState, type Track } from './types.ts';
 
 /** Shortest clip a trim or split may leave, in seconds. */
 export const MIN_CLIP = 0.01;
@@ -44,6 +45,7 @@ export const addTrack = (state: TimelineState, track: Track, index = state.track
 
 /** Remove a track and its clips. */
 export const removeTrack = (state: TimelineState, id: string): TimelineState => ({
+  ...state,
   tracks: state.tracks.filter((track) => track.id !== id),
   clips: state.clips.filter((clip) => clip.track !== id),
 });
@@ -176,3 +178,27 @@ export const duplicateClips = (state: TimelineState, ids: ReadonlySet<string>) =
 
 /** Timeline length: the end of the last clip. */
 export const timelineEnd = (state: TimelineState) => state.clips.reduce((end, clip) => Math.max(end, clipEnd(clip)), 0);
+
+const byTime = <T extends { time: number }>(items: readonly T[]) => [...items].sort((a, b) => a.time - b.time);
+
+/** Add a marker, or replace the one with its id. */
+export const setMarker = (state: TimelineState, marker: Marker): TimelineState => ({
+  ...state,
+  markers: byTime([...(state.markers ?? []).filter((m) => m.id !== marker.id), { ...marker, time: Math.max(0, marker.time) }]),
+});
+
+export const removeMarker = (state: TimelineState, id: string): TimelineState => ({
+  ...state,
+  markers: (state.markers ?? []).filter((marker) => marker.id !== id),
+});
+
+/** Add a tempo change, or replace the one with its id. A change at the very start is left out. */
+export const setTempoChange = (state: TimelineState, change: TempoChange): TimelineState => ({
+  ...state,
+  tempo: byTime([...(state.tempo ?? []).filter((c) => c.id !== change.id && Math.abs(c.time - change.time) > 1e-6), change].filter((c) => c.time > 1e-6)),
+});
+
+export const removeTempoChange = (state: TimelineState, id: string): TimelineState => ({
+  ...state,
+  tempo: (state.tempo ?? []).filter((change) => change.id !== id),
+});

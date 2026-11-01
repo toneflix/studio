@@ -69,6 +69,11 @@ export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms
         },
       }),
     })),
+    markers: [
+      { id: 'intro', time: 0, name: 'Intro' },
+      { id: 'verse', time: 6, name: 'Verse' },
+      { id: 'outro', time: 14, name: 'Outro' },
+    ],
     clips: sources.map(({ id, audio }, i) =>
       makeClip({ id: `${id}-1`, track: id, source: id, name: id[0]!.toUpperCase() + id.slice(1), start: i * 2, offset: 0, duration: audio.duration, fadeIn: i === 3 ? 1 : 0 }),
     ),

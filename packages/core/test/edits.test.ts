@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { duplicateClips, makeClip, moveClips, removeTrack, setFades, splitClips, trimEnd, trimStart } from '../src/edits.ts';
+import { duplicateClips, makeClip, moveClips, removeMarker, removeTempoChange, removeTrack, setFades, setMarker, setTempoChange, splitClips, trimEnd, trimStart } from '../src/edits.ts';
 import type { Source, TimelineState } from '../src/types.ts';
 
 const state = (): TimelineState => ({
@@ -71,4 +71,17 @@ test('duplicates land right after the originals', () => {
 
 test('removing a track removes its clips', () => {
   assert.equal(removeTrack(state(), 'a').clips.length, 0);
+});
+
+test('markers and tempo changes stay sorted, and a change at the start is left out', () => {
+  const empty = { tracks: [], clips: [] };
+  const marked = setMarker(setMarker(empty, { id: 'b', time: 8, name: 'Chorus' }), { id: 'a', time: 4, name: 'Verse' });
+
+  assert.deepEqual(marked.markers!.map((m) => m.name), ['Verse', 'Chorus']);
+  assert.deepEqual(removeMarker(marked, 'a').markers!.map((m) => m.id), ['b']);
+
+  const tempo = setTempoChange(setTempoChange(empty, { id: 'x', time: 6, bpm: 90 }), { id: 'y', time: 0, bpm: 100 });
+
+  assert.deepEqual(tempo.tempo!.map((c) => c.id), ['x']);
+  assert.deepEqual(removeTempoChange(tempo, 'x').tempo, []);
 });

@@ -121,6 +121,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
   /** Play this timeline from now on. While playing, what is heard follows the change at once. */
   load(state: TimelineState) {
     this.current = state;
+    this.metronome.grid.setTempo(state.tempo);
     this.mixer.sync(state.tracks);
     if (this.playing) this.restart();
     else this.holdAutomation(this.position);

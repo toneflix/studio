@@ -19,6 +19,8 @@ Pure functions that take a `TimelineState` and return a new one. They work witho
 | `moveTrack(state, id, index)` | |
 | `updateTrack(state, id, patch)` | |
 | `setAutomation(state, track, 'volume' \| 'pan', points)` | Sorts and clamps the points; `[]` removes them |
+| `setMarker(state, marker)` / `removeMarker(state, id)` | Markers stay sorted by time |
+| `setTempoChange(state, change)` / `removeTempoChange(state, id)` | Changes stay sorted; one at the start is left out |
 | `automationAt(points, time, fallback)` | The value at a time, on the lines between points |
 | `timelineEnd(state)` | End of the last clip, in seconds |
 | `audibleRanges(clips)` | The heard parts of one track's clips |

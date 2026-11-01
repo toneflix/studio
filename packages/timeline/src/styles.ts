@@ -67,10 +67,28 @@ export const STYLES = `
 .tfs-header-default i { width: 4px; align-self: stretch; margin: 10px 0; border-radius: 2px; background: var(--clip, var(--tfs-clip)); }
 .tfs-header-default span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tfs-lane { position: relative; flex: none; background-color: var(--tfs-lane); touch-action: pan-x pan-y; }
-.tfs--grid .tfs-lane, .tfs--grid .tfs-auto-lane {
+.tfs-lane-grid { position: absolute; inset: 0; pointer-events: none; }
+.tfs-grid-section {
+  position: absolute; top: 0; bottom: 0;
   background-image: linear-gradient(to right, var(--tfs-bar) 1px, transparent 1px), linear-gradient(to right, var(--tfs-beat) 1px, transparent 1px);
   background-size: var(--tfs-bar-px) 100%, var(--tfs-beat-px) 100%;
 }
+.tfs-globals { position: sticky; top: var(--tfs-ruler-height); z-index: 6; }
+.tfs-global { position: relative; display: flex; height: var(--tfs-global-height, 22px); }
+.tfs-global-head { position: sticky; left: 0; z-index: 7; display: flex; align-items: center; justify-content: space-between; flex: none; box-sizing: border-box; padding: 0 6px 0 12px; background: var(--tfs-header); border-bottom: 1px solid var(--tfs-line); border-right: 1px solid var(--tfs-line); color: var(--tfs-muted); font-size: 11px; }
+.tfs-global-add { display: grid; place-items: center; width: 18px; height: 16px; padding: 0; border: 0; border-radius: 3px; background: none; color: var(--tfs-muted); font: 600 13px/1 system-ui, sans-serif; cursor: pointer; }
+.tfs-global-add:hover { background: rgba(255, 255, 255, 0.08); color: var(--tfs-text); }
+.tfs-global-add[hidden] { display: none; }
+.tfs-global-lane { position: relative; flex: none; overflow: hidden; background: var(--tfs-header); border-bottom: 1px solid var(--tfs-line); }
+.tfs-marker, .tfs-tempo { position: absolute; top: 3px; bottom: 3px; display: flex; align-items: center; max-width: 160px; padding: 0 6px; box-sizing: border-box; border-radius: 0 3px 3px 0; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: grab; touch-action: none; }
+.tfs-marker span, .tfs-tempo span { overflow: hidden; text-overflow: ellipsis; }
+.tfs-marker { background: color-mix(in srgb, var(--tfs-marker, #f5b53d) 30%, transparent); border-left: 2px solid var(--tfs-marker, #f5b53d); color: var(--tfs-text); }
+.tfs-tempo { background: color-mix(in srgb, var(--tfs-loop) 18%, transparent); border-left: 2px solid var(--tfs-loop); color: var(--tfs-text); font-variant-numeric: tabular-nums; }
+.tfs-tempo--start { cursor: default; background: none; color: var(--tfs-muted); }
+.tfs--readonly .tfs-marker, .tfs--readonly .tfs-tempo { cursor: pointer; }
+.tfs-inline-edit { position: absolute; z-index: 8; top: 2px; width: 120px; height: calc(100% - 4px); box-sizing: border-box; padding: 0 4px; border: 1px solid var(--tfs-select); border-radius: 3px; background: var(--tfs-bg); color: var(--tfs-text); font: 600 11px/1 system-ui, sans-serif; outline: none; }
+.tfs-range.tfs-range--box { background: color-mix(in srgb, var(--tfs-select) 10%, transparent); border: 1px dashed var(--tfs-select); }
+.tfs-range--box .tfs-range-edge { display: none; }
 .tfs-row-resize { position: absolute; left: 0; right: 0; bottom: -4px; height: 7px; z-index: 6; cursor: row-resize; touch-action: none; }
 .tfs-row-resize:hover, .tfs-row-resize:active { background: linear-gradient(transparent 3px, var(--tfs-select) 3px 4px, transparent 4px); }
 .tfs-row--new .tfs-lane { background: repeating-linear-gradient(45deg, transparent 0 8px, var(--tfs-line) 8px 16px); }

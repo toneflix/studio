@@ -77,9 +77,19 @@ export const createDisplay = (doc: Document, timeline: StudioTimeline, engine: A
 
   element.append(cell(position, 'Bar'), cell(clock, 'Time'), cell(tempo, 'BPM'), cell(meter, 'Meter'));
 
+  const playhead = () => (engine?.isPlaying ? engine.time : timeline.time);
+
+  // Changes the tempo section under the playhead: the grid's own tempo, or a tempo change
   const setGrid = (options: { bpm?: number; meter?: [number, number] }) => {
-    timeline.setGrid(options);
-    engine?.metronome.grid.set(options);
+    const section = timeline.grid.sectionAt(playhead());
+    const change = timeline.grid.tempo.find((c) => Math.abs(c.time - section.start) < 1e-6);
+
+    if (change) timeline.updateTempoChange(change.id, options);
+    else {
+      timeline.setGrid(options);
+      engine?.metronome.grid.set(options);
+    }
+
     update();
   };
 
@@ -87,21 +97,22 @@ export const createDisplay = (doc: Document, timeline: StudioTimeline, engine: A
     const bpm = Math.round(Number(tempo.value));
 
     if (bpm >= 20 && bpm <= 999) setGrid({ bpm });
-    else tempo.value = String(timeline.grid.bpm);
+    else tempo.value = String(timeline.grid.sectionAt(playhead()).bpm);
   });
   meter.addEventListener('change', () => setGrid({ meter: meter.value.split('/').map(Number) as [number, number] }));
 
   let frame = 0;
 
   const update = () => {
-    const time = engine?.isPlaying ? engine.time : timeline.time;
-    const { bar, beat, sixteenth } = barsAndBeats(time, timeline.grid.bpm, timeline.grid.meter);
+    const time = playhead();
+    const { bar, beat, sixteenth } = timeline.grid.position(time);
+    const section = timeline.grid.sectionAt(time);
 
     position.textContent = `${bar}.${beat}.${sixteenth}`;
     clock.textContent = clockTime(time);
-    if (doc.activeElement !== tempo) tempo.value = String(timeline.grid.bpm);
+    if (doc.activeElement !== tempo) tempo.value = String(section.bpm);
 
-    const value = timeline.grid.meter.join('/');
+    const value = section.meter.join('/');
 
     if (![...meter.options].some((option) => option.value === value)) meter.add(new Option(value, value));
     meter.value = value;

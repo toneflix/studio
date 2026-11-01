@@ -30,6 +30,9 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `editTracks` | `boolean` | `true` | The add track button and the track menu |
 | `trackLabels` | `Partial<TrackLabels>` | `DEFAULT_TRACK_LABELS` | Names of the add button, menu items and automation lanes; `newTrack` is `'Track {n}'` |
 | `automationHeight` | `number` | `64` | Height of the automation lane under a track |
+| `markers` | `boolean` | `true` | The marker lane under the ruler |
+| `tempoTrack` | `boolean` | `true` | The tempo lane under the ruler |
+| `rulerLabels` | `Partial<RulerLabels>` | `DEFAULT_RULER_LABELS` | Names in the marker and tempo lanes; `newMarker` is `'Marker {n}'` |
 
 ## Properties
 
@@ -38,7 +41,8 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `state` | The current `TimelineState` |
 | `model` | The `TimelineModel` |
 | `history` | The `History` |
-| `grid` | The `Grid` (tempo, meter, snap) |
+| `grid` | The `Grid` (tempo, meter, snap, and the tempo sections) |
+| `markers` | The markers, by time |
 | `selection` | Ids of the selected clips |
 | `range` | The selected time range, or `null` |
 | `time` | The playhead, in seconds |
@@ -71,7 +75,9 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `showAutomation(id, 'volume' \| 'pan' \| null)` / `automationView(id)` | Open, switch or hide a track's automation lane |
 | `setAutomation(id, param, points)` | Replace a track's points for volume or pan, as one undo step; `[]` clears them |
 | `removeAutomationPoint(id, param, index)` | |
-| `setGrid({ bpm?, meter?, snap?, show? })` | |
+| `setGrid({ bpm?, meter?, snap?, show? })` | The tempo and meter at the start |
+| `addMarker(time?, name?)` / `updateMarker(id, patch)` / `removeMarker(id)` / `editMarkerName(id)` | Markers, each change one undo step |
+| `addTempoChange(time?, bpm?, meter?)` / `updateTempoChange(id, patch)` / `removeTempoChange(id)` / `editTempo(id)` | Tempo changes, each one undo step |
 | `readonly` | Whether editing is off |
 | `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, resizeTracks?, keyboard?, editTracks? })` | |
 | `heightOf(track)` | Height of the track's clip lane in pixels |
