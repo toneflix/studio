@@ -54,21 +54,24 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, StudioTimeline, StudioToolbar, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
+  const audio = new AudioEngine();
   const view = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
-    headerWidth: narrow ? 84 : 140,
-    trackHeight: narrow ? 72 : 84,
+    headerWidth: narrow ? 112 : 168,
     pxPerSecond: narrow ? 24 : 52,
     palette: ['#03bfff', '#8b7cff', '#ff5c8a', '#2fd07f', '#f5b53d'],
     createTrack: () => ({ id: uid('t'), name: 'New track' }),
+    renderHeader: trackStrip(audio),
   });
 
-  const audio = new AudioEngine();
-
-  toolbar.value = new StudioToolbar(actions.value!, { timeline: view, engine: audio, items: ['play', 'stop', 'loop', '|', 'split', 'undo', 'fit'] });
+  toolbar.value = new StudioToolbar(actions.value!, {
+    timeline: view,
+    engine: audio,
+    items: ['play', 'stop', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'meter'],
+  });
   loadSample(view, { engine: audio });
   unlink = linkPlayback(view, audio);
   timeline.value = view;
@@ -116,9 +119,9 @@ onBeforeUnmount(() => {
     <section class="window" aria-label="A live timeline you can edit">
       <div class="window-bar">
         <span class="dots" aria-hidden="true"><i /><i /><i /></span>
-        <span class="window-title">Untitled session · 120 BPM · 4/4</span>
-        <span ref="actions" class="window-actions" />
+        <span class="window-title">Untitled session</span>
       </div>
+      <div ref="actions" class="window-actions" />
       <div ref="host" class="window-body" />
       <p class="window-hint">It's live. Press play, drag a clip while it plays, or click the ruler and press S to split.</p>
     </section>
@@ -363,7 +366,7 @@ studio.<span class="f">on</span>(<span class="s">'change'</span>, ({ state }) =&
   display: flex;
   align-items: center;
   gap: 16px;
-  height: 44px;
+  height: 36px;
   padding: 0 14px;
   border-bottom: 1px solid var(--tf-border);
   background: var(--tf-surface-2);
@@ -390,9 +393,8 @@ studio.<span class="f">on</span>(<span class="s">'change'</span>, ({ state }) =&
   text-overflow: ellipsis;
 }
 .window-actions {
-  display: inline-flex;
-  margin-left: auto;
-  --tfs-toolbar-bg: transparent;
+  border-bottom: 1px solid var(--tf-border);
+  --tfs-toolbar-bg: var(--tf-surface-2);
   --tfs-toolbar-text: var(--tf-text);
   --tfs-toolbar-hover: var(--tf-surface-3);
   --tfs-toolbar-line: var(--tf-border-strong);
@@ -401,10 +403,10 @@ studio.<span class="f">on</span>(<span class="s">'change'</span>, ({ state }) =&
   --tfs-toolbar-size: 30px;
 }
 .window-actions :deep(.tfs-toolbar) {
-  padding: 0;
+  padding: 6px 10px;
 }
 .window-body {
-  height: 380px;
+  height: 320px;
   --tfs-bg: var(--tf-surface-1);
   --tfs-lane: #0e1116;
   --tfs-lane-alt: #10141a;
@@ -620,8 +622,6 @@ studio.<span class="f">on</span>(<span class="s">'change'</span>, ({ state }) =&
   .hero { padding-top: 40px; }
   .features { grid-template-columns: 1fr; padding-top: 64px; }
   .window-body { height: 320px; }
-  .window-title { display: none; }
-  .window-actions { margin-left: auto; }
   .split, .uses, .roadmap { padding-top: 72px; }
   .foot a { margin: 0 16px 0 0; }
 }
