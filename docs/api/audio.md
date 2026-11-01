@@ -59,7 +59,8 @@ From `@toneflix/studio-controls`, also exported by `@toneflix/studio`. See [Tool
 
 | | |
 | --- | --- |
-| `new StudioToolbar(container, options)` | `timeline`, `engine?`, `items?`, `icons?`, `labels?`, `exportName?`; `refresh()`, `destroy()` |
+| `new StudioToolbar(container, options)` | `timeline`, `engine?`, `items?`, `icons?`, `labels?`, `exportName?`, `actions?`, `onSave?`, `info?`; `addAction()`, `removeAction()`, `showInfo()`, `refresh()`, `destroy()` |
+| `sessionInfo(timeline)` | The info dialog's default rows |
 | `DEFAULT_TOOLBAR`, `DEFAULT_LABELS` | The default buttons and their names |
 | `trackStrip(engine, options?)` | A `renderHeader` for the timeline; `icons?`, `labels?`, `maxVolume?` (1.5), `meter?` (true) |
 | `createMeter(document, engine, channel)` | A level meter for a channel; returns `{ element, stop }` |

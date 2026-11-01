@@ -2,26 +2,65 @@ import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
 import type { SnapTo } from '@toneflix/studio-core';
 import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { createDisplay } from './display.ts';
-import { renderIcon, type IconName, type IconSet } from './icons.ts';
+import { renderIcon, type Icon, type IconName, type IconSet } from './icons.ts';
+import { createInfoDialog, sessionInfo, type InfoRow } from './info.ts';
 import { createMeter } from './meter.ts';
 import { injectControlStyles } from './styles.ts';
 
 /** A toolbar button, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
-export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo'> | 'display' | 'meter' | '|';
+export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo' | 'save' | 'close'> | 'display' | 'meter' | '|';
 
-export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature', string>;
+export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature' | 'save' | 'close', string>;
+
+/** What hooks and custom actions get to work with. */
+export interface ToolbarContext {
+  timeline: StudioTimeline;
+  engine?: AudioEngine;
+  toolbar: StudioToolbar;
+  /** Render the mix as a WAV file; needs an engine */
+  mix: () => Promise<Blob>;
+  /** Download the mix, as the export button does without `onSave` */
+  download: () => Promise<void>;
+}
+
+/** A button an app adds to the toolbar. */
+export interface ToolbarAction {
+  /** Names the button: its `data-tool`, and where `items` can place it */
+  id: string;
+  /** Tooltip and screen reader name */
+  label: string;
+  icon: Icon;
+  onClick: (context: ToolbarContext) => void | Promise<void>;
+  /** Put it just before or after a built-in item or another action; it goes at the end otherwise */
+  before?: string;
+  after?: string;
+  /** Show it as switched on, read on every refresh */
+  pressed?: (context: ToolbarContext) => boolean;
+  /** Grey it out, read on every refresh */
+  disabled?: (context: ToolbarContext) => boolean;
+}
 
 export interface ToolbarOptions {
   timeline: StudioTimeline;
   /** Needed for play, stop, loop, metronome and export; they are left out without it */
   engine?: AudioEngine;
-  items?: ToolbarItem[];
+  /** Built-in items and action ids, in order */
+  items?: (ToolbarItem | (string & {}))[];
   /** Replace any of the icons */
   icons?: Partial<IconSet>;
   /** Button names, shown as tooltips and read by screen readers */
   labels?: Partial<ToolbarLabels>;
   /** File name of an exported mix */
   exportName?: string;
+  /** Your own buttons; `addAction()` adds more later */
+  actions?: ToolbarAction[];
+  /**
+   * Turns the export button into Save and calls this instead of downloading,
+   * for example to upload the mix or store the project. The button waits while it runs.
+   */
+  onSave?: (context: ToolbarContext) => void | Promise<void>;
+  /** Rows for the info dialog; gets the default rows to extend or replace */
+  info?: (rows: InfoRow[], context: ToolbarContext) => InfoRow[];
 }
 
 export const DEFAULT_TOOLBAR: ToolbarItem[] = [
@@ -47,6 +86,7 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   '|',
   'export',
   'meter',
+  'info',
 ];
 
 export const DEFAULT_LABELS: ToolbarLabels = {
@@ -69,6 +109,9 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   tempo: 'Tempo',
   timeSignature: 'Time signature',
   meter: 'Output level',
+  info: 'Session info',
+  save: 'Save',
+  close: 'Close',
 };
 
 const AUDIO: ToolbarItem[] = ['play', 'stop', 'loop', 'metronome', 'export', 'meter'];
@@ -91,7 +134,12 @@ export class StudioToolbar {
   private readonly exportName: string;
   private readonly doc: Document;
   private readonly buttons = new Map<ToolbarItem, HTMLButtonElement>();
+  private readonly placed = new Map<string, HTMLElement>();
+  private readonly actions = new Map<string, { action: ToolbarAction; button: HTMLButtonElement }>();
   private readonly unsubscribe: (() => void)[] = [];
+  private readonly onSave?: ToolbarOptions['onSave'];
+  private readonly infoRows?: ToolbarOptions['info'];
+  private infoDialog?: ReturnType<typeof createInfoDialog>;
 
   constructor(target: ContainerTarget, options: ToolbarOptions) {
     const container = resolveContainer(target);
@@ -102,25 +150,91 @@ export class StudioToolbar {
     this.icons = options.icons ?? {};
     this.labels = { ...DEFAULT_LABELS, ...options.labels };
     this.exportName = options.exportName ?? 'mix.wav';
+    this.onSave = options.onSave;
+    this.infoRows = options.info;
     this.root = this.doc.createElement('div');
     this.root.className = 'tfs-toolbar';
     this.root.setAttribute('role', 'toolbar');
     injectControlStyles(this.doc);
 
-    const items = (options.items ?? DEFAULT_TOOLBAR).filter((item) => this.engine || !AUDIO.includes(item));
+    const actions = new Map((options.actions ?? []).map((action) => [action.id, action]));
+    const items = (options.items ?? DEFAULT_TOOLBAR).filter(
+      (item) => actions.has(item) || this.engine || !AUDIO.includes(item as ToolbarItem) || (item === 'export' && this.onSave),
+    );
 
     for (const [i, item] of items.entries()) {
-      if (item === '|') {
+      const action = actions.get(item);
+
+      if (action) {
+        actions.delete(item);
+        this.root.append(this.actionButton(action));
+      } else if (item === '|') {
         if (i > 0 && items[i - 1] !== '|' && i < items.length - 1) this.root.append(this.divider());
-      } else if (item === 'snap') this.root.append(this.snapPicker());
-      else if (item === 'display') this.root.append(this.display());
-      else if (item === 'meter') this.root.append(this.outputMeter());
-      else this.root.append(this.button(item));
+      } else if (item === 'snap') this.place(item, this.snapPicker());
+      else if (item === 'display') this.place(item, this.display());
+      else if (item === 'meter') this.place(item, this.outputMeter());
+      else this.place(item, this.button(item as Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter'>));
     }
+
+    for (const action of actions.values()) this.addAction(action);
 
     container.append(this.root);
     this.listen();
     this.refresh();
+  }
+
+  /** What hooks and actions are given. */
+  get context(): ToolbarContext {
+    return {
+      timeline: this.timeline,
+      engine: this.engine,
+      toolbar: this,
+      mix: () => this.mix(),
+      download: () => this.download(),
+    };
+  }
+
+  /**
+   * Add a button. It goes before or after the item its `before` or `after`
+   * names, or at the end. Returns a function that removes it.
+   */
+  addAction(action: ToolbarAction) {
+    this.removeAction(action.id);
+
+    const button = this.actionButton(action);
+    const anchor = this.placed.get(action.before ?? action.after ?? '');
+
+    if (anchor && action.before) anchor.before(button);
+    else if (anchor) anchor.after(button);
+    else this.root.append(button);
+
+    this.refresh();
+
+    return () => this.removeAction(action.id);
+  }
+
+  removeAction(id: string) {
+    const added = this.actions.get(id);
+    if (!added) return;
+
+    added.button.remove();
+    this.actions.delete(id);
+    this.placed.delete(id);
+  }
+
+  /** Open the info dialog. */
+  showInfo() {
+    this.infoDialog ??= createInfoDialog(this.doc, this.timeline, this.engine, {
+      title: this.labels.info,
+      closeLabel: this.labels.close,
+      icons: this.icons,
+      rows: () => {
+        const rows = sessionInfo(this.timeline);
+
+        return this.infoRows ? this.infoRows(rows, this.context) : rows;
+      },
+    });
+    this.infoDialog.open();
   }
 
   /** Bring button states up to date; called on its own after timeline and engine events. */
@@ -136,6 +250,15 @@ export class StudioToolbar {
     set('duplicate', (b) => (b.disabled = !timeline.selection.length));
     set('delete', (b) => (b.disabled = !timeline.selection.length));
 
+    for (const { action, button } of this.actions.values()) {
+      const context = this.context;
+
+      if (action.pressed) button.setAttribute('aria-pressed', String(action.pressed(context)));
+      if (action.disabled && button.getAttribute('aria-busy') !== 'true') button.disabled = action.disabled(context);
+    }
+
+    this.infoDialog?.update();
+
     if (!engine) return;
 
     set('play', (b) => {
@@ -150,6 +273,7 @@ export class StudioToolbar {
   destroy() {
     for (const off of this.unsubscribe) off();
 
+    this.infoDialog?.destroy();
     this.root.remove();
   }
 
@@ -194,7 +318,10 @@ export class StudioToolbar {
         timeline.fit();
         break;
       case 'export':
-        void this.exportMix();
+        void this.busy(this.buttons.get('export'), () => (this.onSave ? this.onSave(this.context) : this.download()));
+        break;
+      case 'info':
+        this.showInfo();
         break;
     }
 
@@ -212,16 +339,58 @@ export class StudioToolbar {
     return { start, end: start + bar * 4 };
   }
 
-  private async exportMix() {
-    if (!this.engine) return;
+  private async mix() {
+    if (!this.engine) throw new Error('Rendering a mix needs an engine');
 
-    const mix = await this.engine.render();
+    const audio = await this.engine.render();
+
+    return new Blob([encodeWav(audio)], { type: 'audio/wav' });
+  }
+
+  private async download() {
     const link = this.doc.createElement('a');
 
-    link.href = URL.createObjectURL(new Blob([encodeWav(mix)], { type: 'audio/wav' }));
+    link.href = URL.createObjectURL(await this.mix());
     link.download = this.exportName;
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+  }
+
+  /** Disable a button while its work runs, so it can't start twice. */
+  private async busy(button: HTMLButtonElement | undefined, work: () => void | Promise<void>) {
+    if (button?.getAttribute('aria-busy') === 'true') return;
+
+    button?.setAttribute('aria-busy', 'true');
+    if (button) button.disabled = true;
+
+    try {
+      await work();
+    } finally {
+      button?.removeAttribute('aria-busy');
+      if (button) button.disabled = false;
+      this.refresh();
+    }
+  }
+
+  private place(id: string, element: HTMLElement) {
+    if (!this.placed.has(id)) this.placed.set(id, element);
+    this.root.append(element);
+  }
+
+  private actionButton(action: ToolbarAction) {
+    const button = this.doc.createElement('button');
+
+    button.type = 'button';
+    button.className = 'tfs-tool';
+    button.dataset.tool = action.id;
+    button.title = action.label;
+    button.setAttribute('aria-label', action.label);
+    button.append(renderIcon(this.doc, 'info', { info: action.icon }));
+    button.addEventListener('click', () => void this.busy(button, () => action.onClick(this.context)));
+    this.actions.set(action.id, { action, button });
+    this.placed.set(action.id, button);
+
+    return button;
   }
 
   private display() {
@@ -254,7 +423,8 @@ export class StudioToolbar {
     button.className = 'tfs-tool';
     button.dataset.tool = item;
     if (item === 'play') button.classList.add('tfs-tool--primary');
-    this.setIcon(button, item, this.labels[item]);
+    if (item === 'export' && this.onSave) this.setIcon(button, 'save', this.labels.save);
+    else this.setIcon(button, item, this.labels[item]);
     button.addEventListener('click', () => this.run(item));
     this.buttons.set(item, button);
 

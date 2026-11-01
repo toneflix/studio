@@ -67,6 +67,25 @@ export const CONTROL_STYLES = `
 .tfs-display-tempo::-webkit-inner-spin-button, .tfs-display-tempo::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .tfs-display-meter { width: 46px; cursor: pointer; text-align-last: center; }
 .tfs-display-meter option { color: initial; }
+.tfs-tool[aria-busy='true'] { cursor: progress; }
+
+.tfs-dialog {
+  min-width: min(320px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  padding: 0;
+  border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  background: var(--tfs-toolbar-bg, #18181b);
+  color: var(--tfs-toolbar-text, #e8e8ea);
+  font: 13px/1.4 system-ui, sans-serif;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+}
+.tfs-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+.tfs-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 8px 8px 16px; border-bottom: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); }
+.tfs-dialog-head h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.tfs-dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 24px; margin: 0; padding: 16px; }
+.tfs-dialog dt { color: var(--tfs-display-muted, #7d8590); }
+.tfs-dialog dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
 `;
 
 /** Add the control styles to a document once. */
