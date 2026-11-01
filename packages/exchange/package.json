@@ -1,0 +1,55 @@
+{
+  "name": "@toneflix/studio-exchange",
+  "version": "0.4.0",
+  "description": "Project exchange for Toneflix Studio: save sessions as REAPER projects and open them again, with tracks, clips, fades, automation, markers and tempo.",
+  "license": "MIT",
+  "author": "Toneflix <code@toneflix.com.ng>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toneflix/studio.git",
+    "directory": "packages/exchange"
+  },
+  "homepage": "https://toneflix.github.io/studio/",
+  "bugs": {
+    "url": "https://github.com/toneflix/studio/issues"
+  },
+  "keywords": [
+    "daw",
+    "reaper",
+    "rpp",
+    "project",
+    "audio",
+    "export"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "@toneflix/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@toneflix/studio-audio": "workspace:^",
+    "@toneflix/studio-core": "workspace:^",
+    "@toneflix/studio-timeline": "workspace:^"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

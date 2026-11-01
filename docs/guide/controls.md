@@ -14,7 +14,7 @@ new StudioToolbar('#toolbar', { timeline, engine });
 linkPlayback(timeline, engine);
 ```
 
-The default toolbar has play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, export, the output meter and info. Undo, redo, split, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
+The default toolbar has play, stop, loop and metronome, the transport display, split, duplicate, delete, undo, redo, zoom, fit, snap, the mixer, open and save as a [REAPER project](./reaper), export, the output meter and info. Undo, redo, split, duplicate and delete are disabled when there's nothing to do. Play turns into pause while playing.
 
 Pick the buttons and their order with `items`. `'|'` adds a divider:
 
@@ -179,7 +179,7 @@ setDefaultIcons({ play: playSvg, pause: pauseSvg, stop: stopSvg });
 
 Mute and solo show the letters M and S unless you give them icons. The arm button always shows R.
 
-Icon names: `play`, `pause`, `stop`, `record`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute`, `solo`, `info`, `save`, `close` and `mixer`. Icons use `currentColor`, so they take the button's text colour. Play, pause, stop and record are solid shapes; the rest are outlines.
+Icon names: `play`, `pause`, `stop`, `record`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute`, `solo`, `info`, `save`, `close`, `mixer`, `saveProject` and `openProject`. Icons use `currentColor`, so they take the button's text colour. Play, pause, stop and record are solid shapes; the rest are outlines.
 
 ## Styling
 

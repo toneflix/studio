@@ -26,6 +26,8 @@ const icons: Record<string, string> = {
   save: 'save',
   close: 'x',
   mixer: 'sliders-vertical',
+  saveProject: 'folder-down',
+  openProject: 'folder-open',
 };
 
 /** Shape attributes changed from Lucide's: the record dot is drawn smaller, as on hardware. */

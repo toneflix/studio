@@ -133,6 +133,11 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     if (this.playing && this.current.clips.some((clip) => clip.source === source)) this.restart();
   }
 
+  /** The decoded audio of a source, if the engine has it. */
+  getBuffer(source: string) {
+    return this.buffers.get(source);
+  }
+
   hasBuffer(source: string) {
     return this.buffers.has(source);
   }
