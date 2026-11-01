@@ -1,80 +1,43 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
-import type { AudioEngine, StudioTimeline } from '@toneflix/studio';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = withDefaults(defineProps<{ height?: number }>(), { height: 420 });
+const bar = ref<HTMLElement>();
 const host = ref<HTMLElement>();
-const timeline = shallowRef<StudioTimeline>();
-const engine = shallowRef<AudioEngine>();
-const playing = ref(false);
-const looping = ref(false);
-const clicking = ref(false);
-let unlink = () => {};
-const canUndo = ref(false);
-const canRedo = ref(false);
+let cleanup = () => {};
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, StudioTimeline, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
-  const { mixerHeader } = await import('../../../demo/mixer-header.ts');
-  const audio = new AudioEngine();
-  const view = new StudioTimeline(host.value!, {
+  const engine = new AudioEngine();
+  const timeline = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
-    headerWidth: host.value!.clientWidth < 600 ? 96 : 150,
+    headerWidth: host.value!.clientWidth < 600 ? 120 : 160,
     createTrack: () => ({ id: uid('t'), name: 'New stem' }),
-    renderHeader: mixerHeader(audio),
+    renderHeader: trackStrip(engine),
   });
+  const toolbar = new StudioToolbar(bar.value!, { timeline, engine });
 
-  view.history.on('change', (info) => {
-    canUndo.value = info.canUndo;
-    canRedo.value = info.canRedo;
-  });
+  loadSample(timeline, { engine });
 
-  audio.on('play', () => (playing.value = true));
-  audio.on('pause', () => (playing.value = false));
-  audio.on('end', () => (playing.value = false));
-  audio.on('loop', ({ loop }) => (looping.value = !!loop));
+  const unlink = linkPlayback(timeline, engine);
 
-  loadSample(view, { engine: audio });
-  unlink = linkPlayback(view, audio);
-  timeline.value = view;
-  engine.value = audio;
+  cleanup = () => {
+    unlink();
+    toolbar.destroy();
+    engine.destroy();
+    timeline.destroy();
+  };
 });
 
-const toggleLoop = () => {
-  const range = timeline.value?.range;
-
-  engine.value?.setLoop(looping.value ? null : range ? { start: range.start, end: range.end } : { start: 0, end: 8 });
-};
-
-const toggleClick = () => {
-  if (!engine.value) return;
-
-  clicking.value = !clicking.value;
-  engine.value.metronome.enabled = clicking.value;
-};
-
-onBeforeUnmount(() => {
-  unlink();
-  engine.value?.destroy();
-  timeline.value?.destroy();
-});
+onBeforeUnmount(() => cleanup());
 </script>
 
 <template>
   <div class="studio-playground">
-    <div class="studio-playground__bar">
-      <button type="button" class="primary" @click="engine?.toggle()">{{ playing ? 'Pause' : 'Play' }}</button>
-      <button type="button" @click="engine?.stop()">Stop</button>
-      <button type="button" :aria-pressed="looping" @click="toggleLoop">Loop</button>
-      <button type="button" :aria-pressed="clicking" @click="toggleClick">Click</button>
-      <button type="button" @click="timeline?.split()">Split</button>
-      <button type="button" :disabled="!canUndo" @click="timeline?.undo()">Undo</button>
-      <button type="button" :disabled="!canRedo" @click="timeline?.redo()">Redo</button>
-      <button type="button" @click="timeline?.fit()">Fit</button>
-      <span>Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it.</span>
-    </div>
+    <div ref="bar" class="studio-playground__bar" />
     <div ref="host" class="studio-playground__timeline" :style="{ height: `${props.height}px` }" />
+    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Select a range before Loop to loop it.</p>
   </div>
 </template>
 
@@ -86,31 +49,17 @@ onBeforeUnmount(() => {
   overflow: hidden;
 }
 .studio-playground__bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  padding: 8px;
+  --tfs-toolbar-bg: var(--vp-c-bg-soft);
+  --tfs-toolbar-text: var(--vp-c-text-1);
+  --tfs-toolbar-active: var(--vp-c-brand-1);
+  --tfs-toolbar-active-text: var(--tf-on-primary, #03141c);
+  --tfs-toolbar-line: var(--vp-c-divider);
+}
+.studio-playground__hint {
+  margin: 0 !important;
+  padding: 8px 12px;
   background: var(--vp-c-bg-soft);
-  font-size: 13px;
-}
-.studio-playground__bar button {
-  padding: 2px 10px;
-  border: 1px solid var(--vp-c-divider);
-  border-radius: 6px;
-  background: var(--vp-c-bg);
-}
-.studio-playground__bar button.primary,
-.studio-playground__bar button[aria-pressed='true'] {
-  border-color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-1);
-  color: var(--tf-on-primary, #03141c);
-}
-.studio-playground__bar button:disabled {
-  opacity: 0.4;
-}
-.studio-playground__bar span {
-  margin-left: 4px;
   color: var(--vp-c-text-2);
+  font-size: 13px;
 }
 </style>
