@@ -10,4 +10,4 @@ Four made-up stems to play with. Drag clips by their body, pull their edges to t
   <StudioPlayground :height="460" />
 </ClientOnly>
 
-Playback and recording are coming in the next release.
+Press Play or Space to listen. Edits are heard straight away while it plays, and the M and S buttons mute and solo a track. Recording comes in the next release.

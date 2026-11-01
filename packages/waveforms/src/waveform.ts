@@ -1,4 +1,4 @@
-import type { Clip, Peaks } from '@toneflix/studio-core';
+import { envelopeAt, type Clip, type Peaks } from '@toneflix/studio-core';
 import { peakAt } from './peaks.ts';
 
 export interface WaveformDraw {
@@ -10,16 +10,6 @@ export interface WaveformDraw {
   color: string;
   pixelRatio: number;
 }
-
-/** Clip loudness at a time into the clip: its gain shaped by the fades. */
-export const envelopeAt = (clip: Clip, time: number) => {
-  let gain = clip.gain;
-
-  if (clip.fadeIn > 0 && time < clip.fadeIn) gain *= Math.max(0, time / clip.fadeIn);
-  if (clip.fadeOut > 0 && time > clip.duration - clip.fadeOut) gain *= Math.max(0, (clip.duration - time) / clip.fadeOut);
-
-  return gain;
-};
 
 /** Draw a slice of a clip's waveform, one bar per device pixel, with fade lines on top. */
 export const drawWaveform = (canvas: HTMLCanvasElement, draw: WaveformDraw) => {
