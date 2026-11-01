@@ -38,7 +38,7 @@ const features = [
 const uses = ['Music apps', 'Podcast editors', 'Classrooms', 'AI audio tools', 'Games', 'Sample libraries'];
 
 const roadmap = [
-  { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, live plugins, loops and a metronome.' },
+  { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, automation, live plugins, loops and a metronome.' },
   { stage: 'Available', title: 'Recording', text: 'Record over the mix onto any track, lined up with what was heard, with the waveform drawn as you record.' },
   { stage: 'Planned', title: 'DAW project exchange', text: 'Open and save sessions that travel to and from desktop studios.' },
 ];
@@ -82,6 +82,7 @@ onMounted(async () => {
     items: ['play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
   });
   loadSample(view, { engine: audio, waveforms });
+  view.showAutomation('keys', 'volume');
 
   const unlinkPlayback = linkPlayback(view, audio);
   const unlinkRecorder = linkRecorder(view, recorder, { waveforms });

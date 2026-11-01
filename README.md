@@ -60,6 +60,7 @@ timeline.on('change', ({ state, final }) => final && save(state));
 | S, Delete, Ctrl+D, Ctrl+A | Split at the playhead, delete, duplicate, select all |
 | Arrows | Nudge by the snap step, or move up and down a lane |
 | + above the headers, click a track name | Add a track; rename, duplicate, move or delete one from its menu |
+| Track menu, Show volume/pan automation | Opens a lane under the track: click to add points, drag to move, double-click to remove |
 | Ctrl+Z, Ctrl+Shift+Z | Undo and redo |
 
 Where clips overlap on a lane, the one that starts later is on top and is the one heard. `audibleRanges(clips)` gives the heard part of each clip, for players and mix renderers.
@@ -73,7 +74,7 @@ Install `@toneflix/studio` for everything, or only the parts your app uses. Ever
 | [`@toneflix/studio`](packages/studio) | Everything below, from one import |
 | [`@toneflix/studio-core`](packages/core) | Tracks, clips, pure edits (`splitClips`, `moveClips`, `trimStart`, `setFades`…), snapping, `TimelineModel` and `History`. No DOM or audio, so it also runs on servers and in tests |
 | [`@toneflix/studio-waveforms`](packages/waveforms) | `Waveforms`, `PeaksWorker`, `PeaksCache` and `drawWaveform`: peaks off the main thread, cached on the device |
-| [`@toneflix/studio-audio`](packages/audio) | `AudioEngine`: playback with a mixer, effects, loops, a metronome and offline mixdown |
+| [`@toneflix/studio-audio`](packages/audio) | `AudioEngine`: playback with a mixer, effects, volume and pan automation, loops, a metronome and offline mixdown |
 | [`@toneflix/studio-recorder`](packages/recorder) | `Recorder`: records a microphone or line input onto a track, lined up with what was playing |
 | [`@toneflix/studio-plugins`](packages/plugins) | `PluginRack`: Web Audio Module (WAM 2) plugins on tracks and the master, live, with their editors, saved with the project and in the mixdown |
 | [`@toneflix/studio-controls`](packages/controls) | `StudioToolbar`, `trackStrip` and `StudioMixer`: playback, recording and editing buttons, track arm, mute, solo and volume, and a mixer with plugin slots, with Lucide icons you can replace |

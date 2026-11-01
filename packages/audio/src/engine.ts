@@ -1,4 +1,4 @@
-import { Emitter, timelineEnd, type TimelineState } from '@toneflix/studio-core';
+import { AUTOMATION_PARAMS, AUTOMATION_RANGES, automationAt, automationOf, automationSteps, Emitter, timelineEnd, type TimelineState } from '@toneflix/studio-core';
 import { Metronome } from './metronome.ts';
 import { Mixer, type Effect } from './mixer.ts';
 import { clicksIn, gainSteps, heardRanges, loops, passesBetween, timelineAt, voicesIn, type Click, type Loop, type Voice } from './schedule.ts';
@@ -123,6 +123,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     this.current = state;
     this.mixer.sync(state.tracks);
     if (this.playing) this.restart();
+    else this.holdAutomation(this.position);
   }
 
   /** The decoded audio of a source. */
@@ -181,7 +182,10 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     if (this.playing) {
       this.silence();
       this.start(to);
-    } else this.position = to;
+    } else {
+      this.position = to;
+      this.holdAutomation(to);
+    }
 
     this.emit('seek', { time: to });
   }
@@ -213,6 +217,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     }
 
     engine.origin = from;
+    engine.holdAutomation(from);
     engine.scheduleBetween(0, to - from, 0);
 
     return offline.startRendering();
@@ -273,6 +278,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
 
     for (const pass of passesBetween(this.origin, this.loopRange, from, to)) {
       for (const voice of voicesIn(ranges, pass)) this.startVoice(voice, clockStart);
+      this.scheduleAutomation(pass, clockStart, now);
 
       for (const click of clicksIn(this.metronome.grid, pass)) {
         const when = clockStart + click.at;
@@ -331,9 +337,52 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     };
   }
 
+  /** Ramp each automated setting along its points through a pass's window. */
+  private scheduleAutomation(pass: { start: number; from: number; to: number; at: number }, clockStart: number, now: number) {
+    for (const track of this.current.tracks) {
+      if (!track.automation) continue;
+
+      const channel = this.mixer.channel(track.id);
+
+      for (const param of AUTOMATION_PARAMS) {
+        const points = automationOf(track, param);
+        if (!points.length) continue;
+
+        const audio = channel.automation[param];
+        const neutral = AUTOMATION_RANGES[param].neutral;
+        const when = (time: number) => clockStart + pass.at + time - pass.start;
+        const steps = automationSteps(points, pass.from, pass.to, neutral);
+        const first = steps[0]!;
+        const start = Math.max(when(first.time), now);
+
+        audio.setValueAtTime(automationAt(points, pass.from + start - when(first.time), neutral), start);
+        for (const step of steps.slice(1)) if (when(step.time) > start) audio.linearRampToValueAtTime(step.value, when(step.time));
+      }
+    }
+  }
+
+  /** Set every channel's automation to its value at a time and keep it there. */
+  private holdAutomation(time: number) {
+    const now = this.context.currentTime;
+
+    for (const track of this.current.tracks) {
+      const channel = this.mixer.channel(track.id);
+
+      for (const param of AUTOMATION_PARAMS) {
+        const audio = channel.automation[param];
+        const value = automationAt(automationOf(track, param), time, AUTOMATION_RANGES[param].neutral);
+
+        audio.cancelScheduledValues(now);
+        audio.setValueAtTime(value, now);
+      }
+    }
+  }
+
   /** Fade out and stop everything scheduled. */
   private silence() {
     const now = this.context.currentTime;
+
+    this.holdAutomation(this.time);
 
     for (const { source, edge } of this.voices) {
       edge.gain.cancelScheduledValues(now);

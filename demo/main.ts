@@ -20,6 +20,7 @@ const catalog = [
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
 const toolbar = new StudioToolbar('#toolbar', { timeline, engine, mixer, recorder, plugins });
 loadSample(timeline, { engine, waveforms });
+timeline.showAutomation('keys', 'volume');
 linkPlayback(timeline, engine);
 linkRecorder(timeline, recorder, { waveforms });
 
