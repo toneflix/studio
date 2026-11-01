@@ -493,6 +493,11 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     return top;
   }
 
+  /** A track's colour: its own, or one from the palette by its place. */
+  colorOf(track: Track) {
+    return this.trackColor(track, this.state.tracks.indexOf(track));
+  }
+
   private trackColor(track: Track, index: number) {
     return track.color ?? this.options.palette[Math.max(0, index) % this.options.palette.length]!;
   }
