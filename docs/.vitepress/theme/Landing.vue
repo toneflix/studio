@@ -54,7 +54,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, curatedWams, curatedWamSource, linkPlayback, linkRecorder, listSource, PluginRack, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
+  const { AudioEngine, curatedWams, curatedWamSource, linkPlayback, linkRecorder, listSource, PluginRack, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
     '@toneflix/studio'
   );
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
@@ -77,6 +77,7 @@ onMounted(async () => {
 
   const catalog = curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog, hidden: true });
+  const pianoRoll = new StudioPianoRoll(host.value!, { timeline: view, engine: audio, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline: view,
     engine: audio,
@@ -90,10 +91,11 @@ onMounted(async () => {
     timeline: view,
     engine: audio,
     mixer,
+    pianoRoll,
     browser,
     recorder,
     plugins,
-    items: ['file', 'browser', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
+    items: ['file', 'browser', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'pianoRoll', 'meter'],
     onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
   });
   loadSample(view, { engine: audio, waveforms });
@@ -107,6 +109,7 @@ onMounted(async () => {
     unlinkRecorder();
     recorder.destroy();
     mixer.destroy();
+    pianoRoll.destroy();
     browser.destroy();
     plugins.destroy();
   };
@@ -159,7 +162,7 @@ onBeforeUnmount(() => {
       </div>
       <div ref="actions" class="window-actions" />
       <div ref="host" class="window-body" />
-      <p class="window-hint">It's live. Press play, drag a clip while it plays, click the ruler and press S to split, or arm a track with R and record. The sliders button opens the mixer, where + adds a plugin.</p>
+      <p class="window-hint">It's live. Press play, drag a clip while it plays, click the ruler and press S to split, or arm a track with R and record. The sliders button opens the mixer, where + adds a plugin. Double-click the Lead clip to draw notes in the piano roll.</p>
     </section>
 
     <section class="features">

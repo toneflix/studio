@@ -29,6 +29,7 @@ import {
   nearestSnap,
   type Peaks,
   removeClips,
+  replaceNotes,
   removeTrack as dropTrack,
   setFades,
   type Source,
@@ -204,6 +205,8 @@ export interface TimelineEvents extends Record<string, unknown> {
   zoom: { pxPerSecond: number };
   /** An automation lane was shown, switched or hidden */
   automation: { track: string; param: AutomationParam | null };
+  /** A clip was double-clicked, for example to open its notes in a piano roll */
+  open: { clip: string };
 }
 
 type Gesture =
@@ -662,7 +665,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   setNotes(id: string, notes: Clip['notes'] & {}, label = 'Edit notes') {
     if (!this.state.clips.some((clip) => clip.id === id && clip.notes)) return;
 
-    this.model.apply(label, (state) => ({ ...state, clips: state.clips.map((clip) => (clip.id === id ? { ...clip, notes } : clip)) }));
+    this.model.apply(label, (state) => replaceNotes(state, id, notes));
   }
 
   /** Choose a track's instrument, or its settings, as one undo step. */
@@ -1609,18 +1612,18 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         this.editTrackName(id);
       }
     });
-    // An empty spot on an instrument track's lane gets a note clip. Found by position,
-    // since a drag's pointer capture can move the event's target off the lane.
+    // A clip opens; an empty spot on an instrument track's lane gets a note clip. Found by
+    // position, since a drag's pointer capture can move the event's target off the lane.
     on(this.root, 'dblclick', (e) => {
-      if (this.options.readonly || (e.target as HTMLElement).closest('.tfs-clip, .tfs-header, .tfs-ruler-row')) return;
+      if ((e.target as HTMLElement).closest('.tfs-header, .tfs-ruler-row')) return;
       if (e.clientX < this.ruler.getBoundingClientRect().left) return;
 
       const track = this.trackAt(e.clientY);
       const time = this.timeAt(e.clientX);
+      const clip = track && [...this.state.clips].reverse().find((c) => c.track === track.id && time >= c.start && time < clipEnd(c));
 
-      if (track?.instrument && !this.state.clips.some((clip) => clip.track === track.id && time >= clip.start && time < clipEnd(clip))) {
-        this.addNoteClip(track.id, time);
-      }
+      if (clip) this.emit('open', { clip: clip.id });
+      else if (track?.instrument && !this.options.readonly) this.addNoteClip(track.id, time);
     });
     on(this.scroller, 'wheel', (e) => this.onWheel(e), { passive: false });
 

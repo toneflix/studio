@@ -7,3 +7,4 @@ export * from './emitter.ts';
 export * from './model.ts';
 export * from './envelope.ts';
 export * from './automation.ts';
+export * from './notes.ts';

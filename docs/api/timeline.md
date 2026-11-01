@@ -95,3 +95,4 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `seek` | `{ time }` | Someone clicked to move the playhead |
 | `zoom` | `{ pxPerSecond }` | The zoom changed |
 | `automation` | `{ track, param }` | An automation lane opened, switched or closed (`param` is `null`) |
+| `open` | `{ clip }` | A clip was double-clicked; the piano roll opens note clips this way |

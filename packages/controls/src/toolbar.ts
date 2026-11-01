@@ -10,6 +10,7 @@ import { createInfoDialog, sessionInfo, type InfoRow } from './info.ts';
 import { createMeter } from './meter.ts';
 import type { StudioBrowser } from './browser.ts';
 import type { StudioMixer } from './mixer-view.ts';
+import type { StudioPianoRoll } from './piano-roll.ts';
 import { injectControlStyles } from './styles.ts';
 
 /** A toolbar button, the File menu, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
@@ -73,6 +74,8 @@ export interface ToolbarOptions {
   mixer?: StudioMixer;
   /** A browser for the browser button to show and hide; the button is left out without one */
   browser?: StudioBrowser;
+  /** A piano roll for the piano roll button to show and hide; the button is left out without one */
+  pianoRoll?: StudioPianoRoll;
   /** Rows for the info dialog; gets the default rows to extend or replace */
   info?: (rows: InfoRow[], context: ToolbarContext) => InfoRow[];
   /** The app saving projects: names its own project format, and is written into every project */
@@ -113,6 +116,7 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'snap',
   '|',
   'mixer',
+  'pianoRoll',
   'meter',
   'info',
 ];
@@ -140,6 +144,7 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   meter: 'Output level',
   info: 'Session info',
   mixer: 'Mixer',
+  pianoRoll: 'Piano roll',
   browser: 'Browser: sounds and plugins',
   file: 'File',
   saveProject: 'Save project',
@@ -178,6 +183,7 @@ export class StudioToolbar {
   private readonly infoRows?: ToolbarOptions['info'];
   private readonly mixer?: StudioMixer;
   private readonly browser?: StudioBrowser;
+  private readonly pianoRoll?: StudioPianoRoll;
   private readonly plugins?: PluginRack;
   private readonly recorder?: Recorder;
   private infoDialog?: ReturnType<typeof createInfoDialog>;
@@ -202,6 +208,7 @@ export class StudioToolbar {
     this.infoRows = options.info;
     this.mixer = options.mixer;
     this.browser = options.browser;
+    this.pianoRoll = options.pianoRoll;
     this.plugins = options.plugins;
     this.recorder = options.engine ? options.recorder : undefined;
     this.root = this.doc.createElement('div');
@@ -213,7 +220,7 @@ export class StudioToolbar {
     const items = (options.items ?? DEFAULT_TOOLBAR).filter(
       (item) =>
         actions.has(item) ||
-        (item === 'mixer' ? !!this.mixer : item === 'browser' ? !!this.browser : item === 'record' ? !!this.recorder : this.engine || !AUDIO.includes(item as ToolbarItem) || ((item === 'export' || item === 'file') && this.onSave)),
+        (item === 'mixer' ? !!this.mixer : item === 'pianoRoll' ? !!this.pianoRoll : item === 'browser' ? !!this.browser : item === 'record' ? !!this.recorder : this.engine || !AUDIO.includes(item as ToolbarItem) || ((item === 'export' || item === 'file') && this.onSave)),
     );
 
     for (const [i, item] of items.entries()) {
@@ -308,6 +315,7 @@ export class StudioToolbar {
     set('split', (b) => (b.disabled = !timeline.canSplit));
     set('mixer', (b) => b.setAttribute('aria-pressed', String(!!this.mixer?.visible)));
     set('browser', (b) => b.setAttribute('aria-pressed', String(!!this.browser?.visible)));
+    set('pianoRoll', (b) => b.setAttribute('aria-pressed', String(!!this.pianoRoll?.visible)));
     set('record', (b) => {
       b.setAttribute('aria-pressed', String(!!this.recorder?.isRecording));
       b.disabled = !timeline.state.tracks.length;
@@ -400,6 +408,9 @@ export class StudioToolbar {
         break;
       case 'browser':
         this.browser?.toggle();
+        break;
+      case 'pianoRoll':
+        this.pianoRoll?.toggle();
         break;
     }
 
@@ -655,6 +666,7 @@ export class StudioToolbar {
 
     if (this.mixer) this.unsubscribe.push(this.mixer.on('toggle', refresh));
     if (this.browser) this.unsubscribe.push(this.browser.on('toggle', refresh));
+    if (this.pianoRoll) this.unsubscribe.push(this.pianoRoll.on('toggle', refresh));
     if (this.recorder) {
       for (const event of ['arm', 'start', 'stop'] as const) this.unsubscribe.push(this.recorder.on(event, refresh));
     }

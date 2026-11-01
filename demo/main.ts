@@ -11,6 +11,7 @@ import {
   sessionSource,
   StudioBrowser,
   StudioMixer,
+  StudioPianoRoll,
   StudioTimeline,
   StudioToolbar,
   trackStrip,
@@ -38,6 +39,8 @@ const timeline = new StudioTimeline('#timeline', {
 const wams = { base: new URL('/wams/', location.href).href };
 const catalog = curatedWams(wams);
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
+// Opens on a double-click on a note clip, or from the toolbar
+const pianoRoll = new StudioPianoRoll('#timeline', { timeline, engine, hidden: true });
 const drawWaveform = (id: string, buffer: AudioBuffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks));
 const browser = new StudioBrowser('#timeline', {
   timeline,
@@ -58,6 +61,7 @@ const toolbar = new StudioToolbar('#toolbar', {
   timeline,
   engine,
   mixer,
+  pianoRoll,
   browser,
   recorder,
   plugins,
@@ -70,4 +74,4 @@ timeline.showAutomation('keys', 'volume');
 linkPlayback(timeline, engine);
 linkRecorder(timeline, recorder, { waveforms });
 
-Object.assign(window, { timeline, engine, mixer, browser, recorder, plugins, toolbar, StudioToolbar });
+Object.assign(window, { timeline, engine, mixer, pianoRoll, browser, recorder, plugins, toolbar, StudioToolbar });
