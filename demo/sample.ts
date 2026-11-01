@@ -1,4 +1,4 @@
-import { makeClip, Waveforms, type StudioTimeline } from '../src/index.ts';
+import { makeClip, Waveforms, type StudioTimeline } from '@toneflix/studio';
 
 const rate = 22050;
 

@@ -1,6 +1,5 @@
-import type { Peaks } from '../peaks.ts';
-import type { Clip } from '../types.ts';
-import { drawWaveform } from '../waveform.ts';
+import type { Clip, Peaks } from '@toneflix/studio-core';
+import { drawWaveform } from '@toneflix/studio-waveforms';
 
 /** Width of one waveform canvas in CSS pixels. Long clips use several. */
 export const TILE = 1024;

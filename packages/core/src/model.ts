@@ -1,7 +1,6 @@
 import { Emitter } from './emitter.ts';
 import { History } from './history.ts';
-import type { Peaks } from './peaks.ts';
-import type { Source, TimelineState } from './types.ts';
+import type { Peaks, Source, TimelineState } from './types.ts';
 
 export interface ModelEvents extends Record<string, unknown> {
   /** The tracks or clips changed. `final` is false while a drag is still going. */

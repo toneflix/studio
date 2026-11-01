@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
-import type { StudioTimeline } from '../../../src/index.ts';
+import type { StudioTimeline } from '@toneflix/studio';
 
 const props = withDefaults(defineProps<{ height?: number }>(), { height: 420 });
 const host = ref<HTMLElement>();
@@ -9,7 +9,7 @@ const canUndo = ref(false);
 const canRedo = ref(false);
 
 onMounted(async () => {
-  const { StudioTimeline, uid } = await import('../../../src/index.ts');
+  const { StudioTimeline, uid } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const view = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },

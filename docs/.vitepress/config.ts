@@ -8,6 +8,11 @@ export default defineConfig({
   appearance: 'dark',
   lastUpdated: true,
   head: [['meta', { name: 'theme-color', content: '#0a0c10' }]],
+  vite: {
+    // Use package sources, so the docs never need a build of the library first.
+    resolve: { conditions: ['@toneflix/source'] },
+    ssr: { resolve: { conditions: ['@toneflix/source'], externalConditions: ['@toneflix/source'] } },
+  },
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
@@ -19,6 +24,7 @@ export default defineConfig({
         text: 'Guide',
         items: [
           { text: 'Getting started', link: '/guide/getting-started' },
+          { text: 'Packages', link: '/guide/packages' },
           { text: 'Editing', link: '/guide/editing' },
           { text: 'Waveforms', link: '/guide/waveforms' },
           { text: 'Undo history', link: '/guide/history' },

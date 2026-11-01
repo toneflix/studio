@@ -1,21 +1,28 @@
 import {
   addTrack,
+  type Clip,
+  clipEnd,
   duplicateClips,
+  Emitter,
+  Grid,
+  type GridOptions,
+  type History,
   moveClips,
+  nearestSnap,
+  type Peaks,
   removeClips,
   setFades,
+  type Source,
   splitClips,
+  stackOrder,
   timelineEnd,
+  TimelineModel,
+  type TimelineState,
+  type TimeRange,
+  type Track,
   trimEnd,
   trimStart,
-} from '../edits.ts';
-import { Emitter } from '../emitter.ts';
-import { Grid, nearestSnap, type GridOptions } from '../grid.ts';
-import { History } from '../history.ts';
-import { TimelineModel } from '../model.ts';
-import { stackOrder } from '../overlap.ts';
-import type { Peaks } from '../peaks.ts';
-import { clipEnd, type Clip, type Source, type TimeRange, type TimelineState, type Track } from '../types.ts';
+} from '@toneflix/studio-core';
 import { ClipView } from './clip-view.ts';
 import { injectStyles } from './styles.ts';
 

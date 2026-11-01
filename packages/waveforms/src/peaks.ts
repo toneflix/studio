@@ -1,17 +1,4 @@
-/** Min/max pairs of an audio file at one resolution, scaled to 16-bit. */
-export interface PeakLevel {
-  samplesPerPeak: number;
-  /** min, max, min, max… */
-  data: Int16Array;
-}
-
-/** A waveform overview of audio at several resolutions, finest first. */
-export interface Peaks {
-  sampleRate: number;
-  /** Audio length in samples */
-  length: number;
-  levels: PeakLevel[];
-}
+import type { PeakLevel, Peaks } from '@toneflix/studio-core';
 
 /**
  * Min/max peaks of the channels mixed down, `samplesPerPeak` samples per pair.

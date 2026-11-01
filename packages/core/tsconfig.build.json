@@ -1,13 +1,16 @@
 {
-  "extends": "./tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
     "allowImportingTsExtensions": false,
     "rewriteRelativeImportExtensions": true,
     "declaration": true,
+    "customConditions": [],
     "outDir": "dist",
     "rootDir": "src",
     "types": []
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

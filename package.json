@@ -1,52 +1,23 @@
 {
-  "name": "@toneflix/studio",
+  "name": "toneflix-studio",
+  "private": true,
   "version": "0.1.0",
-  "description": "The studio engine for the web: multitrack audio editing that feels like a desktop DAW, in any browser app.",
   "license": "MIT",
-  "author": "Toneflix <code@toneflix.com.ng>",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/toneflix/studio.git"
-  },
-  "keywords": [
-    "daw",
-    "audio",
-    "waveform",
-    "timeline",
-    "web-audio",
-    "music"
-  ],
   "type": "module",
-  "sideEffects": false,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist",
-    "README.md",
-    "LICENSE"
-  ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "pnpm -r build",
     "typecheck": "tsc -p tsconfig.json",
     "lint": "eslint .",
-    "test": "node --test \"test/**/*.test.ts\"",
+    "test": "node --conditions=@toneflix/source --test \"packages/*/test/**/*.test.ts\"",
     "demo": "vite demo",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
-  },
-  "homepage": "https://github.com/toneflix/studio#readme",
-  "bugs": {
-    "url": "https://github.com/toneflix/studio/issues"
+    "docs:preview": "vitepress preview docs",
+    "version:set": "node scripts/set-version.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@toneflix/studio": "workspace:*",
     "@types/node": "^26.6.6",
     "@typescript/native": "npm:typescript@^7.0.2",
     "eslint": "^10.14.0",
@@ -59,9 +30,5 @@
   "engines": {
     "node": ">=22.18"
   },
-  "packageManager": "pnpm@12.16.1",
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  }
+  "packageManager": "pnpm@12.16.1"
 }

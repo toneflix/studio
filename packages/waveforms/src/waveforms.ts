@@ -1,6 +1,6 @@
 import { PeaksCache, type PeaksStore } from './peaks-cache.ts';
 import { PeaksWorker } from './peaks-worker.ts';
-import type { Peaks } from './peaks.ts';
+import type { Peaks } from '@toneflix/studio-core';
 
 type AudioLike = Parameters<PeaksWorker['compute']>[0];
 
