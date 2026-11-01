@@ -56,6 +56,8 @@ interface Session {
   sink: GainNode;
   loop: AudioEngine['loop'];
   stopAtEnd: boolean;
+  /** The input was opened for this take, so it is let go when the take ends */
+  ownsInput: boolean;
   done?: () => void;
 }
 
@@ -197,18 +199,24 @@ export class Recorder extends Emitter<RecorderEvents> {
     return Math.min(1, peak);
   }
 
-  /** Start recording onto a track, opening the input first if needed. */
+  /**
+   * Start recording onto a track. An input that isn't open yet is opened for the
+   * take and let go when it ends; one opened with `open()` stays open until `close()`.
+   */
   async start(options: StartRecordingOptions = {}) {
     const track = options.track ?? this.armedTrack;
 
     if (this.session) return;
     if (!track) throw new Error('Arm a track or pass one to record onto');
 
-    if (!this.input) await this.open();
+    const ownsInput = !this.input;
+
+    if (ownsInput) await this.open();
 
     try {
       await loadCapture(this.engine.context);
     } catch (error) {
+      if (ownsInput) this.close();
       this.emit('error', { error });
       throw error;
     }
@@ -235,6 +243,7 @@ export class Recorder extends Emitter<RecorderEvents> {
       sink,
       loop: engine.loop,
       stopAtEnd: engine.stopAtEnd,
+      ownsInput,
     };
 
     // A take runs straight on, so playback neither loops nor stops at the last clip
@@ -268,6 +277,8 @@ export class Recorder extends Emitter<RecorderEvents> {
     session.node.port.onmessage = null;
     this.engine.stopAtEnd = session.stopAtEnd;
     if (session.loop) this.engine.setLoop(session.loop);
+    // An input opened just for this take is let go, so the browser stops using the mic
+    if (session.ownsInput && !this.monitoring) this.close();
 
     const { builder } = session;
     let take: Take | null = null;
