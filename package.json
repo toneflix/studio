@@ -1,7 +1,7 @@
 {
   "name": "@toneflix/studio",
   "version": "0.1.0",
-  "description": "A browser DAW timeline: stems, freely movable clips, canvas waveforms and one undo history.",
+  "description": "The studio engine for the web: multitrack audio editing that feels like a desktop DAW, in any browser app.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
   "repository": {

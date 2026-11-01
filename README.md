@@ -1,6 +1,11 @@
 # @toneflix/studio
 
-A browser DAW timeline from [Toneflix Music](https://toneflix.net): lanes of audio clips you can split, drag freely by the body, stack over each other, move between lanes, trim, fade and snap, with canvas waveforms and one undo history for the whole editor. No dependencies, no framework.
+**The studio engine for the web.** Give any web app a real multitrack editor. Your users arrange, cut and shape audio as freely as in a desktop DAW, right in the browser.
+
+- **Edit without limits.** Split anything, drag clips anywhere, layer them and move them between tracks. Nothing snaps back unless you ask it to.
+- **Fast with big sessions.** Waveforms are drawn in the background and cached on the device, so long recordings open instantly the next time.
+- **Fits any stack.** No framework and no dependencies. Restyle it with CSS variables and drop in your own track controls.
+- **Open by design.** MIT licensed. Project exchange with the desktop DAWs musicians already use is on the roadmap.
 
 > Status: early. This release has the timeline and waveforms. Playback and recording come next.
 
