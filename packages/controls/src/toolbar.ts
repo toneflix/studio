@@ -11,8 +11,8 @@ import { createMeter } from './meter.ts';
 import type { StudioMixer } from './mixer-view.ts';
 import { injectControlStyles } from './styles.ts';
 
-/** A toolbar button, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
-export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo' | 'save' | 'close'> | 'display' | 'meter' | '|';
+/** A toolbar button, the File menu, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
+export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo' | 'save' | 'close' | 'chevron'> | 'file' | 'display' | 'meter' | '|';
 
 export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature' | 'save' | 'close' | 'appProject' | 'reaperProject', string>;
 
@@ -85,6 +85,8 @@ export interface ToolbarOptions {
 }
 
 export const DEFAULT_TOOLBAR: ToolbarItem[] = [
+  'file',
+  '|',
   'play',
   'stop',
   'record',
@@ -107,9 +109,6 @@ export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'snap',
   '|',
   'mixer',
-  'openProject',
-  'saveProject',
-  'export',
   'meter',
   'info',
 ];
@@ -130,22 +129,23 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   zoomOut: 'Zoom out',
   fit: 'Fit to view',
   snap: 'Snap',
-  export: 'Export WAV',
+  export: 'Export mix (WAV)',
   display: 'Playhead position',
   tempo: 'Tempo',
   timeSignature: 'Time signature',
   meter: 'Output level',
   info: 'Session info',
   mixer: 'Mixer',
+  file: 'File',
   saveProject: 'Save project',
-  openProject: 'Open a project',
-  appProject: '{app} project (.{ext}), with plugins',
-  reaperProject: 'REAPER project (.zip), without plugins',
+  openProject: 'Open project…',
+  appProject: 'Save as {app} project (.{ext})',
+  reaperProject: 'Save as REAPER project (.zip), without plugins',
   save: 'Save',
   close: 'Close',
 };
 
-const AUDIO: ToolbarItem[] = ['play', 'stop', 'record', 'loop', 'metronome', 'export', 'meter', 'saveProject', 'openProject'];
+const AUDIO: ToolbarItem[] = ['play', 'stop', 'record', 'loop', 'metronome', 'export', 'meter', 'saveProject', 'openProject', 'file'];
 const SNAPS: [SnapTo, string][] = [
   ['off', 'Off'],
   ['bar', 'Bar'],
@@ -206,7 +206,7 @@ export class StudioToolbar {
     const items = (options.items ?? DEFAULT_TOOLBAR).filter(
       (item) =>
         actions.has(item) ||
-        (item === 'mixer' ? !!this.mixer : item === 'record' ? !!this.recorder : this.engine || !AUDIO.includes(item as ToolbarItem) || (item === 'export' && this.onSave)),
+        (item === 'mixer' ? !!this.mixer : item === 'record' ? !!this.recorder : this.engine || !AUDIO.includes(item as ToolbarItem) || ((item === 'export' || item === 'file') && this.onSave)),
     );
 
     for (const [i, item] of items.entries()) {
@@ -220,7 +220,8 @@ export class StudioToolbar {
       } else if (item === 'snap') this.place(item, this.snapPicker());
       else if (item === 'display') this.place(item, this.display());
       else if (item === 'meter') this.place(item, this.outputMeter());
-      else this.place(item, this.button(item as Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter'>));
+      else if (item === 'file') this.place(item, this.fileButton());
+      else this.place(item, this.button(item as Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter' | 'file'>));
     }
 
     for (const action of actions.values()) this.addAction(action);
@@ -381,7 +382,7 @@ export class StudioToolbar {
         this.pickFormat();
         break;
       case 'openProject':
-        this.openProject();
+        this.openProject(this.buttons.get('openProject'));
         break;
       case 'info':
         this.showInfo();
@@ -432,21 +433,52 @@ export class StudioToolbar {
   /** Ask which format to save in when there is a choice, then save. */
   private pickFormat() {
     const button = this.buttons.get('saveProject');
-    const { formats, app } = this.project;
-    const save = (format: ProjectFormat) => void this.busy(button, () => this.saveProject(format));
+    const formats = this.project.formats;
 
-    if (formats.length === 1 || !button) return save(formats[0]!);
+    if (formats.length === 1 || !button) return void this.busy(button, () => this.saveProject(formats[0]!));
 
     const box = button.getBoundingClientRect();
+
+    openMenu(this.doc, { x: box.left, y: box.bottom + 4 }, this.saveItems(button), this.labels.saveProject);
+  }
+
+  /** A menu item to save in each format the toolbar offers. */
+  private saveItems(button: HTMLButtonElement | undefined) {
+    const { formats, app } = this.project;
     const label = (format: ProjectFormat) =>
       format === 'app' ? this.labels.appProject.replace('{app}', app.name).replace('{ext}', app.extension ?? DEFAULT_APP.extension) : this.labels.reaperProject;
 
-    openMenu(
-      this.doc,
-      { x: box.left, y: box.bottom + 4 },
-      formats.map((format) => ({ label: label(format), onSelect: () => save(format) })),
-      this.labels.saveProject,
-    );
+    return formats.map((format) => ({ label: label(format), onSelect: () => void this.busy(button, () => this.saveProject(format)) }));
+  }
+
+  /** The File button, which opens a menu to open and save projects and export the mix. */
+  private fileButton() {
+    const button = this.doc.createElement('button');
+    const text = this.doc.createElement('span');
+
+    button.type = 'button';
+    button.className = 'tfs-tool tfs-tool--menu';
+    button.dataset.tool = 'file';
+    button.setAttribute('aria-haspopup', 'menu');
+    text.textContent = this.labels.file;
+    button.append(text, renderIcon(this.doc, 'chevron', this.icons));
+    button.addEventListener('click', () => {
+      const box = button.getBoundingClientRect();
+      const exportLabel = this.onSave ? this.labels.save : this.labels.export;
+
+      openMenu(
+        this.doc,
+        { x: box.left, y: box.bottom + 4 },
+        [
+          ...(this.engine ? [{ label: this.labels.openProject, onSelect: () => this.openProject(button) }, ...this.saveItems(button)] : []),
+          { label: exportLabel, onSelect: () => void this.busy(button, () => (this.onSave ? this.onSave(this.context) : this.download())) },
+        ],
+        this.labels.file,
+      );
+    });
+    this.buttons.set('file', button);
+
+    return button;
   }
 
   /** Download the session as a project; the app format keeps the plugins. */
@@ -464,7 +496,7 @@ export class StudioToolbar {
   }
 
   /** Pick an app project, a zipped REAPER project, or an .rpp with its audio files, and open it. */
-  private openProject() {
+  private openProject(button: HTMLButtonElement | undefined) {
     const engine = this.engine;
     if (!engine) return;
 
@@ -477,7 +509,7 @@ export class StudioToolbar {
       const files = [...(input.files ?? [])];
       if (!files.length) return;
 
-      void this.busy(this.buttons.get('openProject'), async () => {
+      void this.busy(button, async () => {
         const result = await openProject(files.length === 1 ? files[0]! : files, this.timeline, engine, {
           onSource: this.project.onProjectSource,
           plugins: this.plugins,
@@ -558,7 +590,7 @@ export class StudioToolbar {
     return meter.element;
   }
 
-  private button(item: Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter'>) {
+  private button(item: Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter' | 'file'>) {
     const button = this.doc.createElement('button');
 
     button.type = 'button';

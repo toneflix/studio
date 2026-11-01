@@ -28,6 +28,7 @@ const icons: Record<string, string> = {
   mixer: 'sliders-vertical',
   saveProject: 'folder-down',
   openProject: 'folder-open',
+  chevron: 'chevron-down',
 };
 
 /** Shape attributes changed from Lucide's: the record dot is drawn smaller, as on hardware. */

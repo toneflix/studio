@@ -11,10 +11,13 @@ Pick the app format to keep working later, and REAPER to finish a song in a desk
 
 ## From the toolbar
 
-The toolbar has two buttons for this, beside the mixer button:
+The toolbar's **File** menu has:
 
-- **Save project** asks which format to save in, then downloads the file.
-- **Open a project** takes either format back: an app project, a zip with an `.rpp` and its audio, or an `.rpp` picked together with its audio files.
+- **Open project…**, which takes either format back: an app project, a zip with an `.rpp` and its audio, or an `.rpp` picked together with its audio files.
+- **Save as {app} project** and **Save as REAPER project**, which download the file.
+- **Export mix (WAV)**.
+
+The `openProject` and `saveProject` items put the same actions on buttons of their own; with more than one format, the save button asks which.
 
 ```ts
 new StudioToolbar('#toolbar', {
