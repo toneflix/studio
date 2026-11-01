@@ -1,19 +1,11 @@
 # Third-party notices
 
-The `plugins/sequencer-party` folder holds unchanged copies of three plugins from
-[burns-audio-wam](https://github.com/boourns/burns-audio-wam) 0.2.54 by Tom Burns
-(`dist/plugins/delay`, `distortion` and `simpleEQ`), published on npm as `burns-audio-wam`.
-Each `index.js` is a bundle that also contains the code below.
+Two plugins in `plugins/toneflix` are JavaScript ports of Faust code:
 
-| Code | Licence | Source |
-| --- | --- | --- |
-| burns-audio-wam (the plugins) | MIT, Copyright (c) Tom Burns | https://github.com/boourns/burns-audio-wam |
-| @webaudiomodules/sdk and @webaudiomodules/sdk-parammgr | MIT, Copyright (c) WebAudioModules Working Group | https://github.com/webaudiomodules/sdk |
-| `RingBuffer.js` in @webaudiomodules/sdk | Mozilla Public License 2.0, see `licenses/MPL-2.0.txt` | https://github.com/webaudiomodules/sdk/blob/main/src/RingBuffer.js |
-| preact | MIT, Copyright (c) 2015-present Jason Miller | https://github.com/preactjs/preact |
-| css-loader runtime | MIT, Copyright JS Foundation and other contributors | https://github.com/webpack-contrib/css-loader |
-
-The MPL-2.0 code is distributed unchanged; its source form is available at the link above.
+| Plugin | Ported from | Licence | Source |
+| --- | --- | --- | --- |
+| `kbverb.js` | KBVerb, Copyright (c) Corey Kereliuk | MIT | `kbverb.dsp` in [wam-community](https://www.npmjs.com/package/wam-community) 0.4.9, `plugins/wimmics/kbverb` |
+| `stone-phaser.js` | Stone Phaser 1.2.2 by Jean Pierre Cimalando | CC0-1.0 (offered as CC0-1.0 or BSL-1.0) | https://github.com/jpcima/stone-phaser |
 
 ## MIT License
 

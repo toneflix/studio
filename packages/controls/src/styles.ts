@@ -123,6 +123,7 @@ export const CONTROL_STYLES = `
 .tfs-browser-preview[aria-busy='true'] { opacity: 0.5; }
 .tfs-browser-kind { display: grid; place-items: center; width: 26px; height: 26px; flex: none; color: var(--tfs-display-muted, #9a9aa2); }
 .tfs-browser-kind .tfs-icon { width: 15px; height: 15px; }
+.tfs-browser-image { flex: none; width: 44px; height: 33px; border-radius: 4px; object-fit: cover; background: rgba(255, 255, 255, 0.06); }
 .tfs-browser-text { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; }
 .tfs-browser-name, .tfs-browser-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tfs-browser-name { font-weight: 600; }
