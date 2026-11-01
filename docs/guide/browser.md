@@ -35,7 +35,7 @@ Each addition is one undo step. Plugin items need `plugins`, a `PluginRack`.
 
 | Source | What it lists |
 | --- | --- |
-| `sessionSource(timeline, engine)` | The sounds the session's clips use, to place them again |
+| `sessionSource(timeline, engine)` | Loaded: the sounds the session's clips use, to place them again |
 | `filesSource(document)` | Audio files people import from their device; they stay in the page and nothing is uploaded |
 | `pluginSource(catalog)` | Plugins from a list of `{ name, url }`, like the mixer's `catalog` |
 | `listSource(id, label, items)` | Any fixed list, or a function that gives one; search and paging happen in the browser |

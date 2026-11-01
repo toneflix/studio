@@ -84,7 +84,7 @@ export const listSource = (
 };
 
 /** The sounds the session's clips use, to place them again. */
-export const sessionSource = (timeline: StudioTimeline, engine: AudioEngine, label = 'In this project'): LibrarySource =>
+export const sessionSource = (timeline: StudioTimeline, engine: AudioEngine, label = 'Loaded'): LibrarySource =>
   listSource('session', label, () => {
     const names = new Map<string, string>();
 
