@@ -54,7 +54,8 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `setZoom(pxPerSecond, anchor?)` | Zoom, keeping the `anchor` time in place |
 | `fit()` | Zoom to fit every clip |
 | `timeAt(clientX)` | The time under a point on screen |
-| `split(time?)` | Split at a time (the playhead by default) |
+| `split(time?)` | Split the selected clips at a time (the playhead by default), or a selected range at its edges; nothing happens when nothing is selected |
+| `canSplit` | Whether there's a selection or range to split |
 | `deleteSelected()` / `duplicateSelected()` | |
 | `nudge(seconds, tracks?)` | Move the selected clips |
 | `undo()` / `redo()` | |

@@ -99,7 +99,7 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   stop: 'Stop',
   loop: 'Loop the selected range',
   metronome: 'Metronome',
-  split: 'Split at the playhead (S)',
+  split: 'Split the selection at the playhead, or a range at its edges (S)',
   duplicate: 'Duplicate (Ctrl+D)',
   delete: 'Delete (Del)',
   undo: 'Undo (Ctrl+Z)',
@@ -258,6 +258,7 @@ export class StudioToolbar {
     set('redo', (b) => (b.disabled = !timeline.history.canRedo));
     set('duplicate', (b) => (b.disabled = !timeline.selection.length));
     set('delete', (b) => (b.disabled = !timeline.selection.length));
+    set('split', (b) => (b.disabled = !timeline.canSplit));
     set('mixer', (b) => b.setAttribute('aria-pressed', String(!!this.mixer?.visible)));
 
     for (const { action, button } of this.actions.values()) {
@@ -479,7 +480,7 @@ export class StudioToolbar {
   private listen() {
     const refresh = () => this.refresh();
 
-    this.unsubscribe.push(this.timeline.history.on('change', refresh), this.timeline.on('select', refresh), this.timeline.on('change', refresh));
+    this.unsubscribe.push(this.timeline.history.on('change', refresh), this.timeline.on('select', refresh), this.timeline.on('range', refresh), this.timeline.on('change', refresh));
 
     if (this.mixer) this.unsubscribe.push(this.mixer.on('toggle', refresh));
 

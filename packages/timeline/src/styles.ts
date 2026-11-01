@@ -71,6 +71,14 @@ export const STYLES = `
 .tfs-playhead { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--tfs-playhead); }
 .tfs-playhead::before { content: ''; position: absolute; top: 0; left: -5px; border: 5px solid transparent; border-top: 7px solid var(--tfs-playhead); }
 .tfs-range { position: absolute; background: var(--tfs-range); border-left: 1px solid var(--tfs-select); border-right: 1px solid var(--tfs-select); }
+.tfs-range-edge { position: absolute; top: 0; bottom: 0; width: 9px; pointer-events: auto; cursor: ew-resize; touch-action: none; }
+.tfs-range-edge[data-range-edge='start'] { left: -5px; }
+.tfs-range-edge[data-range-edge='end'] { right: -5px; }
+.tfs-range-mark { position: absolute; top: 0; bottom: 0; z-index: 1; display: none; background: color-mix(in srgb, var(--tfs-select) 22%, transparent); pointer-events: none; }
+.tfs-range-grip { position: absolute; top: 3px; bottom: 3px; width: 7px; border-radius: 2px; background: var(--tfs-select); pointer-events: auto; cursor: ew-resize; touch-action: none; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4); }
+.tfs-range-grip::after { content: ''; position: absolute; left: 3px; top: 30%; bottom: 30%; width: 1px; background: rgba(0, 0, 0, 0.45); }
+.tfs-range-grip[data-range-edge='start'] { left: -4px; }
+.tfs-range-grip[data-range-edge='end'] { right: -4px; }
 .tfs-loop { position: absolute; top: 0; bottom: 0; box-sizing: border-box; background: color-mix(in srgb, var(--tfs-loop) 28%, transparent); border-left: 2px solid var(--tfs-loop); border-right: 2px solid var(--tfs-loop); pointer-events: none; }
 .tfs-snap { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--tfs-select); opacity: 0.7; }
 `;
