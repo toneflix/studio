@@ -28,6 +28,17 @@ new StudioToolbar('#toolbar', {
 
 Without an `engine`, the playback buttons and the meter are left out.
 
+### Record
+
+Given a `recorder`, the toolbar gets a red record button after stop, and `trackStrip(engine, { recorder })` adds an R button to each track that arms it. See [Recording](./recording).
+
+```ts
+const recorder = new Recorder(engine);
+
+new StudioToolbar('#toolbar', { timeline, engine, recorder });
+new StudioTimeline('#editor', { renderHeader: trackStrip(engine, { recorder }) });
+```
+
 ### Transport display
 
 The `display` item shows where the playhead is in bars, beats and sixteenths (`3.2.1`) and in minutes and seconds, with the tempo and time signature beside them. Type a new tempo or pick a time signature there to change the timeline's grid and the metronome together.
@@ -166,9 +177,9 @@ import { setDefaultIcons } from '@toneflix/studio';
 setDefaultIcons({ play: playSvg, pause: pauseSvg, stop: stopSvg });
 ```
 
-Mute and solo show the letters M and S unless you give them icons.
+Mute and solo show the letters M and S unless you give them icons. The arm button always shows R.
 
-Icon names: `play`, `pause`, `stop`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute`, `solo`, `info`, `save`, `close` and `mixer`. Icons use `currentColor`, so they take the button's text colour. Play, pause and stop are solid shapes; the rest are outlines.
+Icon names: `play`, `pause`, `stop`, `record`, `loop`, `metronome`, `split`, `duplicate`, `delete`, `undo`, `redo`, `zoomIn`, `zoomOut`, `fit`, `snap`, `export`, `mute`, `solo`, `info`, `save`, `close` and `mixer`. Icons use `currentColor`, so they take the button's text colour. Play, pause, stop and record are solid shapes; the rest are outlines.
 
 ## Styling
 
@@ -184,6 +195,7 @@ Set these CSS variables on the toolbar or any parent of it:
 | `--tfs-toolbar-active-text` | `#03141c` | Icons on the active colour |
 | `--tfs-toolbar-size` | `32px` | Button size |
 | `--tfs-mute` / `--tfs-solo` | `#f5b53d` / `#03bfff` | Mute and solo when on |
+| `--tfs-record` | `#ff4d5e` | The record button, and armed tracks |
 | `--tfs-meter-off` | `rgba(255,255,255,.07)` | Unlit part of the meters |
 | `--tfs-display-bg` | `#0b0d10` | Transport display background |
 | `--tfs-display-text` / `--tfs-display-muted` | `#e8e8ea` / `#7d8590` | Display numbers and captions |

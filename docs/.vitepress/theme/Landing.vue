@@ -9,7 +9,6 @@ const engine = shallowRef<AudioEngine>();
 const toolbar = shallowRef<StudioToolbar>();
 const actions = ref<HTMLElement>();
 let unlink = () => {};
-let stopExtras = () => {};
 const copied = ref(false);
 const install = 'pnpm add @toneflix/studio';
 
@@ -40,7 +39,7 @@ const uses = ['Music apps', 'Podcast editors', 'Classrooms', 'AI audio tools', '
 
 const roadmap = [
   { stage: 'Available', title: 'Edit, mix and play', text: 'Free clip editing, cached waveforms, one undo history, and playback with a mixer, live plugins, loops and a metronome.' },
-  { stage: 'Next', title: 'Recording', text: 'Record over the mix with latency compensation and overdub, with waveforms drawn live.' },
+  { stage: 'Available', title: 'Recording', text: 'Record over the mix onto any track, lined up with what was heard, with the waveform drawn as you record.' },
   { stage: 'Planned', title: 'DAW project exchange', text: 'Open and save sessions that travel to and from desktop studios.' },
 ];
 
@@ -55,11 +54,13 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, linkPlayback, PluginRack, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid } = await import('@toneflix/studio');
+  const { AudioEngine, linkPlayback, linkRecorder, PluginRack, Recorder, StudioMixer, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import('@toneflix/studio');
   const { loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const audio = new AudioEngine();
+  const recorder = new Recorder(audio);
   const plugins = new PluginRack(audio);
+  const waveforms = new Waveforms();
   const plugin = (name: string, file: string) => ({ name, url: new URL(withBase(`/plugins/${file}`), location.href).href });
   const view = new StudioTimeline(host.value!, {
     grid: { bpm: 120, meter: [4, 4], snap: 'beat' },
@@ -67,7 +68,7 @@ onMounted(async () => {
     pxPerSecond: narrow ? 24 : 52,
     palette: ['#03bfff', '#8b7cff', '#ff5c8a', '#2fd07f', '#f5b53d'],
     createTrack: () => ({ id: uid('t'), name: 'New track' }),
-    renderHeader: trackStrip(audio),
+    renderHeader: trackStrip(audio, { recorder }),
   });
 
   const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog: [plugin('Echo', 'echo.js'), plugin('Drive', 'drive.js')], hidden: true });
@@ -76,12 +77,19 @@ onMounted(async () => {
     timeline: view,
     engine: audio,
     mixer,
+    recorder,
     plugins,
-    items: ['play', 'stop', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
+    items: ['play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
   });
-  loadSample(view, { engine: audio });
-  unlink = linkPlayback(view, audio);
-  stopExtras = () => {
+  loadSample(view, { engine: audio, waveforms });
+
+  const unlinkPlayback = linkPlayback(view, audio);
+  const unlinkRecorder = linkRecorder(view, recorder, { waveforms });
+
+  unlink = () => {
+    unlinkPlayback();
+    unlinkRecorder();
+    recorder.destroy();
     mixer.destroy();
     plugins.destroy();
   };
@@ -91,7 +99,6 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   unlink();
-  stopExtras();
   toolbar.value?.destroy();
   engine.value?.destroy();
   timeline.value?.destroy();
@@ -135,7 +142,7 @@ onBeforeUnmount(() => {
       </div>
       <div ref="actions" class="window-actions" />
       <div ref="host" class="window-body" />
-      <p class="window-hint">It's live. Press play, drag a clip while it plays, or click the ruler and press S to split. The sliders button opens the mixer, where + adds a plugin.</p>
+      <p class="window-hint">It's live. Press play, drag a clip while it plays, click the ruler and press S to split, or arm a track with R and record. The sliders button opens the mixer, where + adds a plugin.</p>
     </section>
 
     <section class="features">

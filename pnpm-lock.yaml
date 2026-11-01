@@ -217,6 +217,9 @@ importers:
       '@toneflix/studio-plugins':
         specifier: workspace:^
         version: link:../plugins
+      '@toneflix/studio-recorder':
+        specifier: workspace:^
+        version: link:../recorder
       '@toneflix/studio-timeline':
         specifier: workspace:^
         version: link:../timeline
@@ -224,6 +227,15 @@ importers:
   packages/core: {}
 
   packages/plugins:
+    dependencies:
+      '@toneflix/studio-audio':
+        specifier: workspace:^
+        version: link:../audio
+      '@toneflix/studio-core':
+        specifier: workspace:^
+        version: link:../core
+
+  packages/recorder:
     dependencies:
       '@toneflix/studio-audio':
         specifier: workspace:^
@@ -246,6 +258,9 @@ importers:
       '@toneflix/studio-plugins':
         specifier: workspace:^
         version: link:../plugins
+      '@toneflix/studio-recorder':
+        specifier: workspace:^
+        version: link:../recorder
       '@toneflix/studio-timeline':
         specifier: workspace:^
         version: link:../timeline

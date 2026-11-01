@@ -60,6 +60,7 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `nudge(seconds, tracks?)` | Move the selected clips |
 | `undo()` / `redo()` | |
 | `setGrid({ bpm?, meter?, snap?, show? })` | |
+| `readonly` | Whether editing is off |
 | `setOptions({ readonly?, follow?, snapToClips?, trackHeight?, resizeTracks?, keyboard? })` | |
 | `heightOf(track)` | The track's row height in pixels |
 | `colorOf(track)` | The track's colour, its own or from the palette |

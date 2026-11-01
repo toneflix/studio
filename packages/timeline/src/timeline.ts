@@ -249,6 +249,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     this.schedule();
   }
 
+  get readonly() {
+    return this.options.readonly;
+  }
+
   setOptions(options: Partial<Pick<TimelineOptions, 'readonly' | 'follow' | 'snapToClips' | 'trackHeight' | 'resizeTracks' | 'keyboard'>>) {
     Object.assign(this.options, options);
     for (const view of this.clipViews.values()) view.invalidate();
