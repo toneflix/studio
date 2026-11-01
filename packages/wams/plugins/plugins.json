@@ -42,6 +42,7 @@
       "space"
     ],
     "path": "toneflix/reverb.js",
+    "thumbnail": "toneflix/reverb.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -58,6 +59,7 @@
       "compressor"
     ],
     "path": "toneflix/compressor.js",
+    "thumbnail": "toneflix/compressor.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -75,6 +77,7 @@
       "master"
     ],
     "path": "toneflix/limiter.js",
+    "thumbnail": "toneflix/limiter.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -92,6 +95,7 @@
       "noise"
     ],
     "path": "toneflix/gate.js",
+    "thumbnail": "toneflix/gate.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -109,6 +113,7 @@
       "filter"
     ],
     "path": "toneflix/eq.js",
+    "thumbnail": "toneflix/eq.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -125,6 +130,7 @@
       "chorus"
     ],
     "path": "toneflix/chorus.js",
+    "thumbnail": "toneflix/chorus.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -141,6 +147,7 @@
       "phaser"
     ],
     "path": "toneflix/phaser.js",
+    "thumbnail": "toneflix/phaser.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -158,6 +165,7 @@
       "ambient"
     ],
     "path": "toneflix/kbverb.js",
+    "thumbnail": "toneflix/kbverb.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
@@ -175,6 +183,7 @@
       "analog"
     ],
     "path": "toneflix/stone-phaser.js",
+    "thumbnail": "toneflix/stone-phaser.png",
     "version": "1.0.0",
     "isInstrument": false,
     "license": "MIT",
