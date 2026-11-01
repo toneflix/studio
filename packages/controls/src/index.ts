@@ -6,3 +6,6 @@ export * from './toolbar.ts';
 export * from './display.ts';
 export * from './meter.ts';
 export * from './info.ts';
+export * from './fader.ts';
+export * from './knob.ts';
+export * from './mixer-view.ts';

@@ -43,11 +43,11 @@ export const CONTROL_STYLES = `
 .tfs-strip-body { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: 5px; min-width: 0; padding: 0 8px; }
 .tfs-strip-top { display: flex; align-items: center; gap: 3px; min-width: 0; }
 .tfs-strip-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 600; }
-.tfs-strip .tfs-tool { width: 20px; height: 18px; flex: none; border: 1px solid var(--tfs-line); border-radius: 3px; color: var(--tfs-muted); font: 700 10px/1 system-ui, sans-serif; }
-.tfs-strip .tfs-tool:hover { background: rgba(255, 255, 255, 0.08); color: var(--tfs-text); }
-.tfs-strip .tfs-tool .tfs-icon { width: 12px; height: 12px; }
-.tfs-strip .tfs-tool[aria-pressed='true'][data-tool='mute'] { border-color: transparent; background: var(--tfs-mute, #f5b53d); color: #1a1406; }
-.tfs-strip .tfs-tool[aria-pressed='true'][data-tool='solo'] { border-color: transparent; background: var(--tfs-solo, #4da3ff); color: #08131f; }
+.tfs-strip .tfs-tool, .tfs-channel .tfs-tool { width: 20px; height: 18px; flex: none; border: 1px solid var(--tfs-line); border-radius: 3px; color: var(--tfs-muted); font: 700 10px/1 system-ui, sans-serif; }
+.tfs-strip .tfs-tool:hover, .tfs-channel .tfs-tool:hover { background: rgba(255, 255, 255, 0.08); color: var(--tfs-text); }
+.tfs-strip .tfs-tool .tfs-icon, .tfs-channel .tfs-tool .tfs-icon { width: 12px; height: 12px; }
+.tfs-strip .tfs-tool[aria-pressed='true'][data-tool='mute'], .tfs-channel .tfs-tool[aria-pressed='true'][data-tool='mute'] { border-color: transparent; background: var(--tfs-mute, #f5b53d); color: #1a1406; }
+.tfs-strip .tfs-tool[aria-pressed='true'][data-tool='solo'], .tfs-channel .tfs-tool[aria-pressed='true'][data-tool='solo'] { border-color: transparent; background: var(--tfs-solo, #4da3ff); color: #08131f; }
 .tfs-strip input[type='range'] { width: 100%; height: 14px; margin: 0; accent-color: var(--clip, var(--tfs-clip)); }
 
 @container (max-height: 60px) { .tfs-strip input[type='range'] { display: none; } }
@@ -86,6 +86,29 @@ export const CONTROL_STYLES = `
 .tfs-dialog dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 24px; margin: 0; padding: 16px; }
 .tfs-dialog dt { color: var(--tfs-display-muted, #7d8590); }
 .tfs-dialog dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.tfs-meter--vertical { flex-direction: row; width: 9px; background: linear-gradient(to right, var(--tfs-meter-off, rgba(255, 255, 255, 0.07)) 4px, transparent 4px) 0 0 / 5px 100%; }
+.tfs-meter--vertical i { width: 4px; height: auto; background: linear-gradient(to top, #2fd07f 0%, #2fd07f 70%, #f5b53d 85%, #ff5a5f 100%); }
+
+.tfs-mixer { display: flex; height: var(--tfs-mixer-height, 320px); box-sizing: border-box; border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
+.tfs-mixer[hidden] { display: none; }
+.tfs-mixer-strips { display: flex; flex: 1; min-width: 0; overflow-x: auto; }
+.tfs-channel { display: flex; flex: none; flex-direction: column; align-items: center; gap: 8px; width: var(--tfs-channel-width, 84px); padding-top: 10px; box-sizing: border-box; border-right: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-channel-bg, #1a1a1e); }
+.tfs-channel--master { border-right: 0; border-left: 2px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-channel-master-bg, #202026); }
+.tfs-channel-buttons { display: flex; gap: 4px; }
+.tfs-channel-body { display: flex; flex: 1; min-height: 0; gap: 3px; justify-content: center; }
+.tfs-channel-scale { position: relative; width: 20px; margin: 9px 0; font: 9px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--tfs-display-muted, #7d8590); }
+.tfs-channel-scale span { position: absolute; right: 0; transform: translateY(50%); }
+.tfs-channel-body .tfs-meter--vertical { margin: 9px 0; }
+.tfs-fader { width: 22px; height: 100%; margin: 0; padding: 0; writing-mode: vertical-lr; direction: rtl; appearance: none; -webkit-appearance: none; background: linear-gradient(to right, transparent 9px, #050506 9px 13px, transparent 13px); cursor: ns-resize; }
+.tfs-fader::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 18px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 3px; background: linear-gradient(#5a5a62, #3a3a40 45%, #d8d8de 47% 53%, #3a3a40 55%, #2c2c31); box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5); }
+.tfs-fader::-moz-range-thumb { width: 20px; height: 16px; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 3px; background: linear-gradient(#5a5a62, #3a3a40 45%, #d8d8de 47% 53%, #3a3a40 55%, #2c2c31); }
+.tfs-fader:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #4da3ff); outline-offset: 2px; }
+.tfs-channel-db { min-width: 44px; padding: 2px 4px; box-sizing: border-box; border-radius: 4px; background: var(--tfs-display-bg, #0b0d10); font: 11px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: center; font-variant-numeric: tabular-nums; }
+.tfs-channel-name { width: 100%; padding: 5px 4px; box-sizing: border-box; overflow: hidden; background: var(--clip, #8d8d96); color: #fff; font-weight: 600; text-align: center; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35); }
+.tfs-knob { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #4a4a52, #26262b 70%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4); cursor: ns-resize; touch-action: none; }
+.tfs-knob:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #4da3ff); outline-offset: 2px; }
+.tfs-knob-dial { position: absolute; inset: 0; border-radius: 50%; }
+.tfs-knob-dial::after { content: ''; position: absolute; left: 50%; top: 3px; width: 2px; height: 9px; margin-left: -1px; border-radius: 1px; background: var(--clip, #e8e8ea); }
 `;
 
 /** Add the control styles to a document once. */
