@@ -82,6 +82,8 @@ browser.on('error', ({ item, error }) => toast(`Could not add ${item?.name}: ${e
 
 A source with an `action`, like the files source's Import files button, gets a button above its list; the list reloads after it runs.
 
+A source with `remove` gets a remove button on each item, for things like a person's own uploads. Ask first inside it if you need to: return `false` to keep the item, and its row goes otherwise. An error is sent as the `error` event.
+
 ## Community plugins and security
 
 `wamCommunitySource` lists plugins from the [Web Audio Modules community](https://www.webaudiomodules.com/community/plugins.json), or from a list in the same shape at `url`. Their paths start from the `plugins/` folder beside the list, as the community lays it out; pass `base` for another layout. Each plugin's thumbnail shows in its row. The browser never fetches it unless you add the source, and it shows only the plugins `allow` accepts.

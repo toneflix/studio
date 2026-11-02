@@ -135,6 +135,9 @@ export const CONTROL_STYLES = `
 .tfs-browser-add { opacity: 0.6; }
 .tfs-browser-item:hover .tfs-browser-add, .tfs-browser-add:focus-visible { opacity: 1; }
 .tfs-browser-add[hidden] { display: none; }
+.tfs-browser-remove { opacity: 0; }
+.tfs-browser-item:hover .tfs-browser-remove, .tfs-browser-remove:focus-visible { opacity: 0.7; }
+@media (hover: none) { .tfs-browser-remove { opacity: 0.6; } }
 .tfs-browser-status { padding: 12px 14px; color: var(--tfs-display-muted, #9a9aa2); }
 .tfs-browser-status--failed { color: var(--tfs-menu-danger, #ff6b7a); }
 @media (max-width: 480px) { .tfs-browser--overlay { width: 100%; } }
