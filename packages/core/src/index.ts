@@ -11,3 +11,4 @@ export * from './notes.ts';
 export * from './steps.ts';
 export * from './samples.ts';
 export * from './take.ts';
+export * from './patterns.ts';

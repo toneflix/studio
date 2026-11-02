@@ -17,11 +17,16 @@ const clamp = (value: number, min: number, max: number) => Math.min(max, Math.ma
 /** The picked notes, or every note when none are picked. */
 const targets = (notes: readonly Note[], picked: ReadonlySet<number>) => (picked.size ? picked : new Set(notes.keys()));
 
-/** Replace a note clip's notes. */
-export const replaceNotes = (state: TimelineState, id: string, notes: readonly Note[]): TimelineState => ({
-  ...state,
-  clips: state.clips.map((clip): Clip => (clip.id === id && clip.notes ? { ...clip, notes } : clip)),
-});
+/**
+ * Replace a note clip's notes. Note clips that share its source are copies of one
+ * pattern, so they all get the notes.
+ */
+export const replaceNotes = (state: TimelineState, id: string, notes: readonly Note[]): TimelineState => {
+  const source = state.clips.find((clip) => clip.id === id && clip.notes)?.source;
+  if (source === undefined) return state;
+
+  return { ...state, clips: state.clips.map((clip): Clip => (clip.notes && clip.source === source ? { ...clip, notes } : clip)) };
+};
 
 /**
  * Move notes by a time and a number of semitones. The shift is held back so the

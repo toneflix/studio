@@ -110,8 +110,8 @@ export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms
         makeClip({ id: `${id}-1`, track: id, source: id, name: id[0]!.toUpperCase() + id.slice(1), start: i * 2, offset: 0, duration: audio.duration, fadeIn: i === 3 ? 1 : 0 }),
       ),
       makeNoteClip({ id: 'lead-1', track: 'lead', name: 'Lead', start: 8, duration: 8, notes: lead() }),
-      makeNoteClip({ id: 'beat-1', track: 'beat', name: 'Beat', start: 4, duration: 4, notes: beat() }),
-      makeNoteClip({ id: 'beat-2', track: 'beat', name: 'Beat', start: 8, duration: 8, notes: [...beat(), ...beat().map((note) => ({ ...note, start: note.start + 4 }))] }),
+      // One two-bar pattern, played three times: editing any copy edits them all
+      ...[4, 8, 12].map((start, i) => ({ ...makeNoteClip({ id: `beat-${i + 1}`, track: 'beat', name: 'Beat', start, duration: 4, notes: beat() }), source: 'notes:beat' })),
     ],
   });
 
