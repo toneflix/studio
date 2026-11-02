@@ -2,13 +2,14 @@ import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
 import { DEFAULT_APP, openProject, saveProject, type AppIdentity, type OpenedProject, type ProjectFormat } from '@toneflix/studio-exchange';
 import type { SnapTo } from '@toneflix/studio-core';
 import type { PluginRack } from '@toneflix/studio-plugins';
-import type { Recorder } from '@toneflix/studio-recorder';
+import type { NoteRecorder, Recorder } from '@toneflix/studio-recorder';
 import { openMenu, resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { createDisplay } from './display.ts';
 import { renderIcon, type Icon, type IconName, type IconSet } from './icons.ts';
 import { createInfoDialog, sessionInfo, type InfoRow } from './info.ts';
 import { createMeter } from './meter.ts';
 import type { StudioBrowser } from './browser.ts';
+import type { StudioKeys } from './keys.ts';
 import type { StudioMixer } from './mixer-view.ts';
 import { injectControlStyles } from './styles.ts';
 
@@ -65,8 +66,12 @@ export interface ToolbarOptions {
    * for example to upload the mix or store the project. The button waits while it runs.
    */
   onSave?: (context: ToolbarContext) => void | Promise<void>;
-  /** Records onto the armed track; the record button is left out without one */
+  /** Records onto the armed track; the record button is left out without it or `notes` */
   recorder?: Recorder;
+  /** Records notes played on the keys when the armed track is an instrument track */
+  notes?: NoteRecorder;
+  /** Keys for the `keys` item to show and hide, and to show when recording notes */
+  keys?: StudioKeys;
   /** Plugins to include when exporting the mix */
   plugins?: PluginRack;
   /** A mixer view for the mixer button to show and hide; the button is left out without one */
@@ -140,6 +145,7 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   meter: 'Output level',
   info: 'Session info',
   mixer: 'Mixer',
+  keys: 'Keys',
   browser: 'Browser: sounds and plugins',
   file: 'File',
   saveProject: 'Save project',
@@ -180,6 +186,8 @@ export class StudioToolbar {
   private readonly browser?: StudioBrowser;
   private readonly plugins?: PluginRack;
   private readonly recorder?: Recorder;
+  private readonly notes?: NoteRecorder;
+  private readonly keys?: StudioKeys;
   private infoDialog?: ReturnType<typeof createInfoDialog>;
 
   constructor(target: ContainerTarget, options: ToolbarOptions) {
@@ -204,6 +212,8 @@ export class StudioToolbar {
     this.browser = options.browser;
     this.plugins = options.plugins;
     this.recorder = options.engine ? options.recorder : undefined;
+    this.notes = options.engine ? options.notes : undefined;
+    this.keys = options.keys;
     this.root = this.doc.createElement('div');
     this.root.className = 'tfs-toolbar';
     this.root.setAttribute('role', 'toolbar');
@@ -213,7 +223,7 @@ export class StudioToolbar {
     const items = (options.items ?? DEFAULT_TOOLBAR).filter(
       (item) =>
         actions.has(item) ||
-        (item === 'mixer' ? !!this.mixer : item === 'browser' ? !!this.browser : item === 'record' ? !!this.recorder : this.engine || !AUDIO.includes(item as ToolbarItem) || ((item === 'export' || item === 'file') && this.onSave)),
+        (item === 'mixer' ? !!this.mixer : item === 'keys' ? !!this.keys : item === 'browser' ? !!this.browser : item === 'record' ? !!(this.recorder || this.notes) : this.engine || !AUDIO.includes(item as ToolbarItem) || ((item === 'export' || item === 'file') && this.onSave)),
     );
 
     for (const [i, item] of items.entries()) {
@@ -308,8 +318,9 @@ export class StudioToolbar {
     set('split', (b) => (b.disabled = !timeline.canSplit));
     set('mixer', (b) => b.setAttribute('aria-pressed', String(!!this.mixer?.visible)));
     set('browser', (b) => b.setAttribute('aria-pressed', String(!!this.browser?.visible)));
+    set('keys', (b) => b.setAttribute('aria-pressed', String(!!this.keys?.visible)));
     set('record', (b) => {
-      b.setAttribute('aria-pressed', String(!!this.recorder?.isRecording));
+      b.setAttribute('aria-pressed', String(!!this.recorder?.isRecording || !!this.notes?.isRecording));
       b.disabled = !timeline.state.tracks.length;
     });
 
@@ -401,25 +412,39 @@ export class StudioToolbar {
       case 'browser':
         this.browser?.toggle();
         break;
+      case 'keys':
+        this.keys?.toggle();
+        break;
     }
 
     this.refresh();
   }
 
-  /** Stop recording, or record onto the armed track, arming the selected clip's track or the first one if none is. */
+  /**
+   * Stop recording, or record onto the armed track, arming the selected clip's track
+   * or the first one if none is. An instrument track records the notes played on the keys.
+   */
   private async record() {
-    const recorder = this.recorder;
-    if (!recorder) return;
-    if (recorder.isRecording) return void recorder.stop();
+    const { recorder, notes } = this;
+    if (recorder?.isRecording) return void recorder.stop();
+    if (notes?.isRecording) return void notes.stop();
 
     const state = this.timeline.state;
     const selected = state.clips.find((clip) => this.timeline.selection.includes(clip.id));
+    const fallback = recorder ? state.tracks[0] : state.tracks.find((track) => track.instrument);
 
-    if (!recorder.armed) recorder.arm(selected?.track ?? state.tracks[0]?.id ?? null);
-    if (!recorder.armed) return;
+    if (recorder && !recorder.armed) recorder.arm(selected?.track ?? fallback?.id ?? null);
 
-    // Failures reach the app through the recorder's error event
-    await recorder.start().catch(() => undefined);
+    const track = recorder ? recorder.armed : (selected?.track ?? fallback?.id ?? null);
+    if (!track) return;
+
+    if (notes && state.tracks.find((t) => t.id === track)?.instrument) {
+      this.keys?.show();
+      await notes.start(track);
+    } else if (recorder) {
+      // Failures reach the app through the recorder's error event
+      await recorder.start().catch(() => undefined);
+    }
   }
 
   /** The selected range, or four bars from the bar under the playhead. */
@@ -655,6 +680,10 @@ export class StudioToolbar {
 
     if (this.mixer) this.unsubscribe.push(this.mixer.on('toggle', refresh));
     if (this.browser) this.unsubscribe.push(this.browser.on('toggle', refresh));
+    if (this.keys) this.unsubscribe.push(this.keys.on('toggle', refresh));
+    if (this.notes) {
+      for (const event of ['start', 'stop'] as const) this.unsubscribe.push(this.notes.on(event, refresh));
+    }
     if (this.recorder) {
       for (const event of ['arm', 'start', 'stop'] as const) this.unsubscribe.push(this.recorder.on(event, refresh));
     }

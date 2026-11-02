@@ -6,7 +6,7 @@
 
 - **Edit without limits.** Split anything, drag clips anywhere, layer them and move them between tracks. Nothing snaps back unless you ask it to.
 - **Hear every edit.** Playback follows the timeline as you work, with a mixer, effects, loops, a metronome and mixdown to WAV.
-- **Play instruments.** Instrument tracks play note clips through a built-in synth, drum kit or sampler, or any Web Audio Module instrument. Draw and edit their notes in a piano roll, or program beats in a step sequencer with swing, with a mouse or on a phone. Load your own samples onto drum pads and sampler keys.
+- **Play instruments.** Instrument tracks play note clips through a built-in synth, drum kit or sampler, or any Web Audio Module instrument. Draw and edit their notes in a piano roll, or program beats in a step sequencer with swing, with a mouse or on a phone. Load your own samples onto drum pads and sampler keys. Play and record notes on on-screen keys, the computer keyboard or a MIDI device.
 - **Record over the mix.** Arm a track and record a voice or instrument while the music plays. Takes land where they were performed, with the waveform drawn as you go.
 - **Plugins, live.** Put Web Audio Module plugins on any track or the master and hear them as you play, with their own editors. They are saved with the project and printed into the mix.
 - **Fast with big sessions.** Waveforms are drawn in the background and cached on the device, so long recordings open instantly the next time.
@@ -80,11 +80,11 @@ Install `@toneflix/studio` for everything, or only the parts your app uses. Ever
 | [`@toneflix/studio-core`](packages/core) | Tracks, clips, pure edits (`splitClips`, `moveClips`, `trimStart`, `setFades`…), snapping, `TimelineModel` and `History`. No DOM or audio, so it also runs on servers and in tests |
 | [`@toneflix/studio-waveforms`](packages/waveforms) | `Waveforms`, `PeaksWorker`, `PeaksCache` and `drawWaveform`: peaks off the main thread, cached on the device |
 | [`@toneflix/studio-audio`](packages/audio) | `AudioEngine`: playback with a mixer, effects, volume and pan automation, loops, a metronome and offline mixdown |
-| [`@toneflix/studio-recorder`](packages/recorder) | `Recorder`: records a microphone or line input onto a track, lined up with what was playing |
+| [`@toneflix/studio-recorder`](packages/recorder) | `Recorder`: records a microphone or line input onto a track, lined up with what was playing; `NoteRecorder` records notes played live |
 | [`@toneflix/studio-plugins`](packages/plugins) | `PluginRack`: Web Audio Module (WAM 2) plugins on tracks and the master, live, with their editors, saved with the project and in the mixdown |
 | [`@toneflix/studio-wams`](packages/wams) | `curatedWams` and `curatedWamSource`: reviewed Web Audio Module effects, served pinned from jsDelivr |
 | [`@toneflix/studio-exchange`](packages/exchange) | `saveProject` and `openProject`: sessions in the app's own format with plugins, or to and from REAPER, with tracks, clips, fades, automation, markers, tempo and the audio |
-| [`@toneflix/studio-controls`](packages/controls) | `StudioToolbar`, `trackStrip`, `StudioMixer` and `StudioBrowser`: playback, recording and editing buttons, track arm, mute, solo and volume, a mixer with plugin slots, and a browser of sounds and plugins from any source, with Lucide icons you can replace |
+| [`@toneflix/studio-controls`](packages/controls) | `StudioToolbar`, `trackStrip`, `StudioMixer`, `StudioBrowser`, `StudioPianoRoll` and `StudioKeys`: playback, recording and editing buttons, track arm, mute, solo and volume, a mixer with plugin slots, a browser of sounds and plugins from any source, a piano roll and step sequencer, and keys with MIDI input, with Lucide icons you can replace |
 | [`@toneflix/studio-timeline`](packages/timeline) | `StudioTimeline`, the editor view. Restyle it with the `--tfs-*` CSS variables or fill track headers with `renderHeader` |
 
 ## Develop

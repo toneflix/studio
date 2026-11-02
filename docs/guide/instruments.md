@@ -106,6 +106,35 @@ engine.setBuffer('my-kick', kickBuffer); // the audio, by source id, as for clip
 
 A sample is `{ source, name?, root?, tune?, gain? }`. The engine looks each one up by `source` as it plays, so set its buffer before or after. App projects save the samples' audio with the clips', and `sourcesInUse(state)` lists every source a session needs. Pass `onSource` to the piano roll to get each loaded sample's audio, for example to upload it.
 
+## Keys and MIDI
+
+`StudioKeys` plays an instrument track live: on an on-screen keyboard with a mouse or touch, from the computer keyboard, or from MIDI devices. Pass it to the piano roll as `keys` to give the piano roll a **Keys** button, which shows the keys on the open clip's track.
+
+```ts
+import { linkNoteRecorder, NoteRecorder, StudioKeys, StudioPianoRoll, StudioToolbar } from '@toneflix/studio';
+
+const notes = new NoteRecorder(engine);
+const keys = new StudioKeys('#editor', { timeline, engine, recorder, notes, hidden: true });
+
+new StudioPianoRoll('#editor', { timeline, engine, keys, hidden: true });
+new StudioToolbar('#toolbar', { timeline, engine, recorder, notes, keys });
+linkNoteRecorder(timeline, notes);
+```
+
+| Input | What it does |
+| --- | --- |
+| Press, or slide across, the on-screen keys | Plays them; several fingers play a chord, and lower on a key is louder |
+| <kbd>A</kbd> to <kbd>;</kbd>, with <kbd>W</kbd> <kbd>E</kbd> <kbd>T</kbd> <kbd>Y</kbd> <kbd>U</kbd> <kbd>O</kbd> <kbd>P</kbd> as the black keys | Play the keys from the lowest C shown, while the keys are open. These letters play notes instead of the timeline's shortcuts then |
+| <kbd>Z</kbd> / <kbd>X</kbd>, or − / + | Octave down or up |
+| **MIDI** | Asks the browser for MIDI devices and plays every one; Note On and Note Off on any channel |
+| **Velocity** | How hard the computer keys and screen keys play; MIDI devices send their own |
+
+The keys play the track picked in the **Track** menu, or else the armed track, the selected clip's track, or the first instrument track. `keys.setTrack(id)` picks one, `press(pitch, velocity?)` and `release(pitch)` play notes from your own code, and the `note` event reports every note. MIDI needs a secure page (https or localhost) and a browser with Web MIDI, such as Chrome or Edge; the button is left out elsewhere.
+
+### Recording notes
+
+With a `NoteRecorder`, the record button records notes when the armed track (or, without an audio `Recorder`, the selected clip's track) is an instrument track. It opens the keys, starts playback, and records what is played on any input. The take grows on the track as a note clip in whole bars, and lands as one undo step when recording stops. Notes are moved earlier by the output latency, so they sit where they were heard.
+
 ## Built-in instruments
 
 | Id | Instrument | Settings (`state`) |

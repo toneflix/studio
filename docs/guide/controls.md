@@ -30,7 +30,7 @@ Without an `engine`, the playback buttons and the meter are left out.
 
 ### Record
 
-Given a `recorder`, the toolbar gets a red record button after stop, and `trackStrip(engine, { recorder })` adds an R button to each track that arms it. See [Recording](./recording).
+Given a `recorder`, the toolbar gets a red record button after stop, and `trackStrip(engine, { recorder })` adds an R button to each track that arms it. See [Recording](./recording). Given `notes`, a `NoteRecorder`, recording an instrument track records the notes played on the `keys` instead; see [Keys and MIDI](./instruments#keys-and-midi). The `keys` item is a button that shows and hides the keys; it isn't in the default items.
 
 ```ts
 const recorder = new Recorder(engine);

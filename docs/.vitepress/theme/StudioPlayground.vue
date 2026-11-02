@@ -9,10 +9,11 @@ let cleanup = () => {};
 
 onMounted(async () => {
   const studio = await import('@toneflix/studio');
-  const { AudioEngine, linkPlayback, linkRecorder, PluginRack, Recorder, StudioBrowser, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = studio;
+  const { AudioEngine, linkNoteRecorder, linkPlayback, linkRecorder, NoteRecorder, PluginRack, Recorder, StudioBrowser, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = studio;
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
   const engine = new AudioEngine();
   const recorder = new Recorder(engine);
+  const notes = new NoteRecorder(engine);
   const plugins = new PluginRack(engine);
 
   engine.setInstruments(plugins.instruments());
@@ -27,7 +28,8 @@ onMounted(async () => {
   });
   const catalog = studio.curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog, hidden: true });
-  const pianoRoll = new StudioPianoRoll(host.value!, { timeline, engine, hidden: true });
+  const keys = new StudioKeys(host.value!, { timeline, engine, recorder, notes, hidden: true });
+  const pianoRoll = new StudioPianoRoll(host.value!, { timeline, engine, keys, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline,
     engine,
@@ -46,7 +48,9 @@ onMounted(async () => {
     engine,
     mixer,
     browser,
+    keys,
     recorder,
+    notes,
     plugins,
     onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks)),
   });
@@ -56,11 +60,15 @@ onMounted(async () => {
 
   const unlink = linkPlayback(timeline, engine);
   const unlinkRecorder = linkRecorder(timeline, recorder, { waveforms });
+  const unlinkNotes = linkNoteRecorder(timeline, notes);
 
   cleanup = () => {
     unlink();
     unlinkRecorder();
+    unlinkNotes();
     recorder.destroy();
+    notes.destroy();
+    keys.destroy();
     toolbar.destroy();
     plugins.destroy();
     mixer.destroy();

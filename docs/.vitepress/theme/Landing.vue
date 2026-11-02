@@ -54,13 +54,14 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, curatedWams, curatedWamSource, importAudioFiles, linkPlayback, linkRecorder, listSource, PluginRack, Recorder, sessionSource, StudioBrowser, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
+  const { AudioEngine, curatedWams, curatedWamSource, importAudioFiles, linkNoteRecorder, linkPlayback, linkRecorder, listSource, NoteRecorder, PluginRack, Recorder, sessionSource, StudioBrowser, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
     '@toneflix/studio'
   );
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
   const narrow = host.value!.clientWidth < 640;
   const audio = new AudioEngine();
   const recorder = new Recorder(audio);
+  const notes = new NoteRecorder(audio);
   const plugins = new PluginRack(audio);
 
   audio.setInstruments(plugins.instruments());
@@ -78,7 +79,8 @@ onMounted(async () => {
 
   const catalog = curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog, hidden: true });
-  const pianoRoll = new StudioPianoRoll(host.value!, { timeline: view, engine: audio, hidden: true });
+  const keys = new StudioKeys(host.value!, { timeline: view, engine: audio, recorder, notes, hidden: true });
+  const pianoRoll = new StudioPianoRoll(host.value!, { timeline: view, engine: audio, keys, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline: view,
     engine: audio,
@@ -93,7 +95,9 @@ onMounted(async () => {
     engine: audio,
     mixer,
     browser,
+    keys,
     recorder,
+    notes,
     plugins,
     items: ['file', 'browser', '|', 'play', 'stop', 'record', 'loop', 'metronome', '|', 'display', '|', 'split', 'duplicate', 'delete', '|', 'undo', 'redo', '|', 'zoomOut', 'fit', 'zoomIn', '|', 'mixer', 'meter'],
     onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
@@ -103,11 +107,15 @@ onMounted(async () => {
 
   const unlinkPlayback = linkPlayback(view, audio);
   const unlinkRecorder = linkRecorder(view, recorder, { waveforms });
+  const unlinkNotes = linkNoteRecorder(view, notes);
 
   unlink = () => {
     unlinkPlayback();
     unlinkRecorder();
+    unlinkNotes();
     recorder.destroy();
+    notes.destroy();
+    keys.destroy();
     mixer.destroy();
     pianoRoll.destroy();
     browser.destroy();

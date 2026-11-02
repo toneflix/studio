@@ -22,6 +22,7 @@ import {
 } from '@toneflix/studio-core';
 import { openMenu, resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { renderIcon, type IconSet } from './icons.ts';
+import type { StudioKeys } from './keys.ts';
 import { mayCarrySample, pickAudioFile, sampleInputOf, StepGrid, type SampleInput, type StepGridLabels } from './step-grid.ts';
 import { injectControlStyles } from './styles.ts';
 
@@ -44,6 +45,8 @@ export interface PianoRollLabels extends StepGridLabels {
   velocity: string;
   /** A sampler track's samples menu */
   samples: string;
+  /** Shows the keys, to play the open clip's track live */
+  playKeys: string;
   /** Adds a sample on a key; `{note}` is the key last played */
   addSampleOn: string;
   /** Shown when no note clip is open */
@@ -69,6 +72,7 @@ export const DEFAULT_PIANO_ROLL_LABELS: PianoRollLabels = {
   keys: 'Keys',
   velocity: 'Velocity',
   samples: 'Samples',
+  playKeys: 'Keys',
   addSampleOn: 'Add sample on {note}…',
   loadSample: 'Load sample…',
   builtInSound: 'Use built-in sound',
@@ -99,6 +103,8 @@ export interface PianoRollOptions {
   stepsForDrums?: boolean;
   /** Gets the decoded audio of each sample loaded, for example to upload it */
   onSource?: (id: string, buffer: AudioBuffer) => void;
+  /** Keys for a Keys button to show and hide; they play the open clip's track */
+  keys?: StudioKeys;
 }
 
 export interface PianoRollEvents extends Record<string, unknown> {
@@ -267,6 +273,23 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.samplesButton.textContent = this.labels.samples;
     this.samplesButton.setAttribute('aria-haspopup', 'menu');
     this.samplesButton.addEventListener('click', () => this.openSamplesMenu());
+    if (options.keys) {
+      const keys = options.keys;
+      const toggle = el('button', 'tfs-roll-text', bar);
+      const pressed = () => toggle.setAttribute('aria-pressed', String(keys.visible));
+
+      toggle.type = 'button';
+      toggle.textContent = this.labels.playKeys;
+      toggle.addEventListener('click', () => {
+        const clip = this.clip;
+
+        if (!keys.visible && clip) keys.setTrack(clip.track);
+        keys.toggle();
+      });
+      pressed();
+      this.unsubscribe.push(keys.on('toggle', pressed));
+    }
+
     el('span', 'tfs-roll-gap', bar);
     button('close', bar).addEventListener('click', () => this.hide());
     this.buttons.quantize.addEventListener('click', () => this.quantize());

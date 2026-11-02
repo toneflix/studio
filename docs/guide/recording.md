@@ -25,6 +25,8 @@ With that in place:
 - While recording, the take grows on its track with its waveform. Editing is paused until the take ends.
 - The finished take lands as one undo step, named Take 1, Take 2 and so on. Undo removes it.
 
+An instrument track records notes instead, played on the keys or a MIDI device; see [Keys and MIDI](./instruments#keys-and-midi).
+
 The first recording asks the user for the microphone. Browsers only allow that on secure pages (https or localhost).
 
 ## Without the toolbar

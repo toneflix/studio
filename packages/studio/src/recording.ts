@@ -1,5 +1,5 @@
-import { addClips, makeClip, type Peaks } from '@toneflix/studio-core';
-import type { Recorder, Take } from '@toneflix/studio-recorder';
+import { addClips, makeClip, makeNoteClip, uid, type Grid, type Note, type Peaks } from '@toneflix/studio-core';
+import type { NoteRecorder, NoteTakeResult, Recorder, Take } from '@toneflix/studio-recorder';
 import type { StudioTimeline } from '@toneflix/studio-timeline';
 import { computePeakData, makePeaks, type Waveforms } from '@toneflix/studio-waveforms';
 
@@ -96,6 +96,93 @@ export const linkRecorder = (timeline: StudioTimeline, recorder: Recorder, optio
       timeline.model.commit('Record');
 
       options.waveforms?.get(`take:${take.id}`, () => take.buffer).then((final) => timeline.setSource({ id: take.id }, final));
+      options.onTake?.(take);
+    }),
+  ];
+
+  return () => {
+    cancelAnimationFrame(frame);
+    for (const off of unlisten) off();
+  };
+};
+
+export interface LinkNoteRecorderOptions {
+  /** Name of the clip a take makes, from its number in this session */
+  name?: (take: number) => string;
+  /** Called with each finished take */
+  onTake?: (take: NoteTakeResult) => void;
+}
+
+/** Whole bars around a stretch of time: from the bar `from` falls in to the end of the bar `to` falls in. */
+const barsAround = (grid: Grid, from: number, to: number) => {
+  const first = grid.barTime(grid.position(from).bar);
+  const last = grid.position(Math.max(from, to - 1e-6)).bar;
+
+  return { start: first, end: grid.barTime(last + 1) };
+};
+
+/**
+ * Shows note recording on a timeline: the take grows as a note clip in whole bars
+ * while recording, and lands as one undo step. Editing is paused while recording.
+ * Returns a function that unlinks them.
+ */
+export const linkNoteRecorder = (timeline: StudioTimeline, recorder: NoteRecorder, options: LinkNoteRecorderOptions = {}) => {
+  const name = options.name ?? ((n: number) => `Take ${n}`);
+  let count = 0;
+  let live: { id: string; track: string; from: number; readonly: boolean } | null = null;
+  let frame = 0;
+
+  const draw = (notes: Note[], to: number) => {
+    if (!live) return;
+
+    const { id, track, from } = live;
+    const end = Math.max(to, ...notes.map((n) => n.start + n.duration));
+    const bars = barsAround(timeline.grid, from, end);
+    const clip = makeNoteClip({
+      id,
+      track,
+      name: name(count),
+      start: bars.start,
+      duration: bars.end - bars.start,
+      notes: notes.map((n) => ({ ...n, start: n.start - bars.start })),
+    });
+
+    timeline.model.draft('Record notes', (state) => addClips(state, [clip]));
+  };
+
+  const tick = () => {
+    frame = requestAnimationFrame(tick);
+    if (live) draw(recorder.notes(), recorder.engine.time);
+  };
+
+  const unlisten = [
+    recorder.on('start', ({ track, from }) => {
+      count++;
+      live = { id: uid('c'), track, from, readonly: timeline.readonly };
+      timeline.setOptions({ readonly: true });
+      frame = requestAnimationFrame(tick);
+    }),
+    recorder.on('stop', ({ take }) => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+
+      const was = live;
+
+      live = null;
+      if (!was) return;
+
+      timeline.setOptions({ readonly: was.readonly });
+
+      if (!take) {
+        timeline.model.cancel();
+
+        return;
+      }
+
+      live = was;
+      draw(take.notes, take.to);
+      live = null;
+      timeline.model.commit('Record notes');
       options.onTake?.(take);
     }),
   ];
