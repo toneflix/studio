@@ -44,6 +44,9 @@ import {
   trimStart,
   uid,
   updateTrack,
+  linkedClips,
+  unlinkClip,
+  usePattern as switchPattern,
 } from '@toneflix/studio-core';
 import { ClipView } from './clip-view.ts';
 import { resolveContainer, type ContainerTarget } from './container.ts';
@@ -87,6 +90,8 @@ export interface TimelineOptions {
   editTracks?: boolean;
   /** Names for the add track button and the track menu, for example to translate them */
   trackLabels?: Partial<TrackLabels>;
+  /** Names in a clip's right-click menu */
+  clipLabels?: Partial<ClipLabels>;
   /**
    * Instrument tracks the add track button offers beside an audio track. The built-in
    * synth and drums by default; an empty list leaves only audio tracks.
@@ -204,6 +209,29 @@ export const DEFAULT_TRACK_LABELS: TrackLabels = {
   clearAutomation: 'Clear automation',
 };
 
+export interface ClipLabels {
+  menu: string;
+  /** Opens a note clip in the piano roll */
+  editNotes: string;
+  /** Gives a note clip a pattern of its own */
+  makeUnique: string;
+  split: string;
+  duplicate: string;
+  delete: string;
+  /** A clip's badge tooltip when it plays a pattern other clips play too; `{n}` is how many */
+  linked: string;
+}
+
+export const DEFAULT_CLIP_LABELS: ClipLabels = {
+  menu: 'Clip options',
+  editNotes: 'Edit notes',
+  makeUnique: 'Make unique',
+  split: 'Split at playhead',
+  duplicate: 'Duplicate',
+  delete: 'Delete',
+  linked: 'Plays the same pattern as {n} clips; editing one edits them all',
+};
+
 /** Fired by an element in a track header to open that track's menu, for custom headers. */
 export const TRACK_MENU_EVENT = 'tfs-track-menu';
 
@@ -309,9 +337,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private frame = 0;
   private resize?: ResizeObserver;
   private unsubscribe: (() => void)[] = [];
-  private options: Required<Omit<TimelineOptions, 'model' | 'history' | 'grid' | 'renderHeader' | 'createTrack' | 'trackLabels' | 'rulerLabels' | 'importAudio'>> &
+  private options: Required<Omit<TimelineOptions, 'model' | 'history' | 'grid' | 'renderHeader' | 'createTrack' | 'trackLabels' | 'clipLabels' | 'rulerLabels' | 'importAudio'>> &
     Pick<TimelineOptions, 'renderHeader' | 'createTrack' | 'importAudio'>;
   private readonly trackLabels: TrackLabels;
+  private readonly clipLabels: ClipLabels;
   private readonly rulerLabels: RulerLabels;
   private markerStrip!: HTMLDivElement;
   private barLabels!: HTMLDivElement;
@@ -355,6 +384,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       instrumentTracks: options.instrumentTracks ?? DEFAULT_INSTRUMENT_TRACKS,
     };
     this.trackLabels = { ...DEFAULT_TRACK_LABELS, ...options.trackLabels };
+    this.clipLabels = { ...DEFAULT_CLIP_LABELS, ...options.clipLabels };
     this.rulerLabels = { ...DEFAULT_RULER_LABELS, ...options.rulerLabels };
     this.grid.setTempo(this.model.state.tempo);
     this.pps = clamp(this.options.pxPerSecond, this.options.minPxPerSecond, this.options.maxPxPerSecond);
@@ -694,6 +724,30 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   }
 
   /** Change the notes of a note clip, as one undo step. */
+  /**
+   * Give a note clip a pattern of its own, so editing it leaves its copies alone, as one
+   * undo step. Pass `notes` to start the new pattern with them instead of a copy.
+   * Returns the new pattern's source.
+   */
+  makeUnique(id: string, notes?: Clip['notes'] & {}) {
+    let source: string | null = null;
+
+    this.model.apply('Make unique', (state) => {
+      const result = unlinkClip(state, id, { notes });
+
+      source = result.source;
+
+      return result.state;
+    });
+
+    return source;
+  }
+
+  /** Make a note clip play another pattern on the timeline, by its source, as one undo step. */
+  usePattern(id: string, source: string) {
+    this.model.apply('Change pattern', (state) => switchPattern(state, id, source));
+  }
+
   setNotes(id: string, notes: Clip['notes'] & {}, label = 'Edit notes') {
     if (!this.state.clips.some((clip) => clip.id === id && clip.notes)) return;
 
@@ -752,7 +806,17 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       automation: track.automation,
       name: `${track.name} copy`,
     };
-    const clips = this.state.clips.filter((clip) => clip.track === id).map((clip) => makeClip({ ...clip, id: undefined, track: copy.id }));
+    // The copy's note clips get patterns of their own, still shared among themselves
+    const sources = new Map<string, string>();
+    const sourceOf = (clip: Clip) => {
+      if (!clip.notes) return clip.source;
+      if (!sources.has(clip.source)) sources.set(clip.source, `notes:${uid('p')}`);
+
+      return sources.get(clip.source)!;
+    };
+    const clips = this.state.clips
+      .filter((clip) => clip.track === id)
+      .map((clip) => makeClip({ ...clip, id: undefined, track: copy.id, source: sourceOf(clip) }));
 
     this.model.apply('Duplicate track', (state) => addClips(insertTrack(state, copy, index + 1), clips));
 
@@ -806,6 +870,32 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   }
 
   /** Open a track's menu at a point on the page, or under its header. */
+  /** Open a clip's menu at a point: edit notes, make unique, split, duplicate and delete. */
+  showClipMenu(id: string, at: { x: number; y: number }) {
+    const clip = this.state.clips.find((c) => c.id === id);
+    if (!clip) return;
+
+    const labels = this.clipLabels;
+    const edit = !this.options.readonly;
+    const linked = clip.notes ? linkedClips(this.state, id).length : 0;
+    const time = this.playheadTime;
+
+    if (!this.selected.has(id)) this.select([id]);
+
+    openMenu(
+      this.doc,
+      at,
+      [
+        ...(clip.notes ? [{ label: labels.editNotes, onSelect: () => this.emit('open', { clip: id }) }] : []),
+        ...(linked > 1 ? [{ label: labels.makeUnique, disabled: !edit, onSelect: () => this.makeUnique(id) }] : []),
+        { label: labels.split, disabled: !edit || time <= clip.start || time >= clipEnd(clip), onSelect: () => this.split(time) },
+        { label: labels.duplicate, disabled: !edit, onSelect: () => this.duplicateSelected() },
+        { label: labels.delete, danger: true, disabled: !edit, onSelect: () => this.deleteSelected() },
+      ],
+      `${labels.menu}: ${clip.name ?? ''}`,
+    );
+  }
+
   showTrackMenu(id: string, at?: { x: number; y: number }) {
     const index = this.state.tracks.findIndex((track) => track.id === id);
     const row = this.trackRows.get(id);
@@ -1405,6 +1495,9 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private renderClips(state: TimelineState) {
     const seen = new Set<string>();
     const colors = new Map(state.tracks.map((track, index) => [track.id, this.trackColor(track, index)]));
+    const copies = new Map<string, number>();
+
+    for (const clip of state.clips) if (clip.notes) copies.set(clip.source, (copies.get(clip.source) ?? 0) + 1);
 
     for (const track of state.tracks) {
       const lane = this.trackRows.get(track.id)!.lane;
@@ -1422,6 +1515,16 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         if (view.el.parentElement !== lane) lane.append(view.el);
 
         view.layout(clip, this.pps, z + 1, this.selected.has(clip.id), clip.color ?? colors.get(track.id)!);
+        const linked = clip.notes ? (copies.get(clip.source) ?? 0) : 0;
+
+        if (linked > 1) {
+          view.el.dataset.linked = String(linked);
+          view.el.title = this.clipLabels.linked.replace('{n}', String(linked));
+        } else if (view.el.dataset.linked) {
+          delete view.el.dataset.linked;
+          view.el.removeAttribute('title');
+        }
+
         view.el.classList.toggle('tfs-clip--dragging', this.gesture?.kind === 'move' && this.gesture.started && this.gesture.ids.has(clip.id));
       });
     }
@@ -1596,6 +1699,13 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     on(this.content, 'pointerup', (e) => this.onPointerUp(e));
     on(this.content, 'pointercancel', () => this.cancelGesture());
     on(this.root, 'keydown', (e) => this.onKey(e));
+    on(this.content, 'contextmenu', (e) => {
+      const clip = (e.target as HTMLElement).closest<HTMLElement>('.tfs-clip')?.dataset.clip;
+      if (!clip) return;
+
+      e.preventDefault();
+      this.showClipMenu(clip, { x: e.clientX, y: e.clientY });
+    });
     on(this.rows, 'contextmenu', (e) => {
       const id = this.headerTrack(e.target);
       if (!id || !this.tracksEditable) return;

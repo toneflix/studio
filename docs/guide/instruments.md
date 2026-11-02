@@ -36,9 +36,23 @@ The add track button asks what to add: an empty audio track, audio from a file o
 | --- | --- |
 | `timeline.addNoteClip(track, time, bars?)` | Adds an empty note clip at the bar `time` falls in |
 | `timeline.setNotes(clip, notes)` | Replaces a note clip's notes |
+| `timeline.makeUnique(clip, notes?)` | Gives a note clip a pattern of its own |
+| `timeline.usePattern(clip, source)` | Makes a note clip play another pattern |
 | `timeline.setInstrument(track, choice)` | Picks a track's instrument, or changes its settings |
 
 Each one is a single undo step.
+
+## Patterns
+
+Note clips that are copies of each other play one pattern: duplicate a note clip (Ctrl+D, or Duplicate in its right-click menu) or split it, and every copy plays the same notes. Editing any copy, in the piano roll or the step sequencer, changes them all, so a beat or a riff can be built once and placed through the song. Copies show a badge with how many there are, and changing a pattern's length in **Bars** changes the copies that show all of it.
+
+| To | Do this |
+| --- | --- |
+| Edit one copy on its own | **Make unique** in the clip's right-click menu or the piano roll's pattern menu. It gets a numbered pattern, like Beat 2 |
+| Start a fresh pattern in a clip's place | **New empty pattern** in the pattern menu |
+| Switch a clip to another pattern on its track | Pick the pattern in the pattern menu, which opens from the clip's name in the piano roll |
+
+A note clip's `source` names its pattern, so clips with the same `source` share it. A duplicated track gets patterns of its own.
 
 ## Piano roll
 
