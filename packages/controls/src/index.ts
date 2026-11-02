@@ -14,3 +14,5 @@ export * from './library.ts';
 export * from './browser.ts';
 export * from './piano-roll.ts';
 export * from './keys.ts';
+export * from './instrument-panel.ts';
+export * from './floating-window.ts';

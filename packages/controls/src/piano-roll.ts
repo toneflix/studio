@@ -22,6 +22,7 @@ import {
 } from '@toneflix/studio-core';
 import { openMenu, resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { renderIcon, type IconSet } from './icons.ts';
+import type { StudioInstrumentPanel } from './instrument-panel.ts';
 import type { StudioKeys } from './keys.ts';
 import { mayCarrySample, pickAudioFile, sampleInputOf, StepGrid, type SampleInput, type StepGridLabels } from './step-grid.ts';
 import { injectControlStyles } from './styles.ts';
@@ -50,6 +51,8 @@ export interface PianoRollLabels extends StepGridLabels {
   samples: string;
   /** Shows the keys, to play the open clip's track live */
   playKeys: string;
+  /** Opens the open clip's instrument settings */
+  sound: string;
   /** Adds a sample on a key; `{note}` is the key last played */
   addSampleOn: string;
   /** Shown when no note clip is open */
@@ -78,6 +81,7 @@ export const DEFAULT_PIANO_ROLL_LABELS: PianoRollLabels = {
   velocity: 'Velocity',
   samples: 'Samples',
   playKeys: 'Keys',
+  sound: 'Sound',
   addSampleOn: 'Add sample on {note}…',
   loadSample: 'Load sample…',
   builtInSound: 'Use built-in sound',
@@ -110,6 +114,8 @@ export interface PianoRollOptions {
   onSource?: (id: string, buffer: AudioBuffer) => void;
   /** Keys for a Keys button to show and hide; they play the open clip's track */
   keys?: StudioKeys;
+  /** Settings windows for a Sound button, which opens the open clip's instrument */
+  instrumentPanel?: StudioInstrumentPanel;
 }
 
 export interface PianoRollEvents extends Record<string, unknown> {
@@ -185,6 +191,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
   private readonly viewButtons: Record<'notes' | 'steps', HTMLButtonElement>;
   private readonly samplesButton: HTMLButtonElement;
   private readonly playButton: HTMLButtonElement;
+  private soundButton: HTMLButtonElement | null = null;
   private readonly icons?: Partial<IconSet>;
   /** While the open clip loops on its own: the loop, position and isolation to go back to */
   private preview: { loop: AudioEngine['loop']; clip: string; time: number; isolated: readonly string[] | null } | null = null;
@@ -302,6 +309,22 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
       });
       pressed();
       this.unsubscribe.push(keys.on('toggle', pressed));
+    }
+
+    if (options.instrumentPanel) {
+      const panel = options.instrumentPanel;
+      const sound = el('button', 'tfs-roll-text', bar);
+      const pressed = () => sound.setAttribute('aria-pressed', String(!!this.clip && panel.isOpen(this.clip.track)));
+
+      sound.type = 'button';
+      sound.textContent = this.labels.sound;
+      sound.addEventListener('click', () => {
+        const clip = this.clip;
+
+        if (clip) panel.toggle(clip.track);
+      });
+      this.soundButton = sound;
+      this.unsubscribe.push(panel.on('toggle', pressed), this.on('open', pressed));
     }
 
     el('span', 'tfs-roll-gap', bar);
@@ -1202,6 +1225,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
 
     for (const b of Object.values(this.buttons)) b.disabled = !clip;
     this.renderPlay();
+    if (this.soundButton) this.soundButton.disabled = !clip;
 
     this.root.classList.toggle('tfs-roll--steps', this.view === 'steps');
     this.samplesButton.hidden = !clip || this.sampling() !== 'zones';

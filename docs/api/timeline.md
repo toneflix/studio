@@ -72,6 +72,7 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `duplicateTrack(id)` | Copy a track and its clips just below it; returns the copy |
 | `moveTrack(id, index)` | |
 | `showTrackMenu(id, at?)` | Open a track's menu, under its header or at `{ x, y }` |
+| `addTrackMenuItems(items)` | Add items to every track menu above Delete: `items(track)` returns `{ label, onSelect, disabled?, danger? }` entries. Returns a function that takes them out |
 | `showAutomation(id, 'volume' \| 'pan' \| null)` / `automationView(id)` | Open, switch or hide a track's automation lane |
 | `setAutomation(id, param, points)` | Replace a track's points for volume or pan, as one undo step; `[]` clears them |
 | `removeAutomationPoint(id, param, index)` | |

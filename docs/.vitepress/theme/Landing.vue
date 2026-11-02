@@ -54,7 +54,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, curatedWams, curatedWamSource, importAudioFiles, linkNoteRecorder, linkPlayback, linkRecorder, listSource, NoteRecorder, PluginRack, Recorder, sessionSource, StudioBrowser, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
+  const { AudioEngine, curatedWams, curatedWamSource, importAudioFiles, linkNoteRecorder, linkPlayback, linkRecorder, listSource, NoteRecorder, PluginRack, Recorder, sessionSource, StudioBrowser, StudioInstrumentPanel, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
     '@toneflix/studio'
   );
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
@@ -80,7 +80,8 @@ onMounted(async () => {
   const catalog = curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog, hidden: true });
   const keys = new StudioKeys(host.value!, { timeline: view, engine: audio, recorder, notes, hidden: true });
-  const pianoRoll = new StudioPianoRoll(host.value!, { timeline: view, engine: audio, keys, hidden: true });
+  const instruments = new StudioInstrumentPanel({ timeline: view, engine: audio });
+  const pianoRoll = new StudioPianoRoll(host.value!, { timeline: view, engine: audio, keys, instrumentPanel: instruments, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline: view,
     engine: audio,
@@ -118,6 +119,7 @@ onMounted(async () => {
     keys.destroy();
     mixer.destroy();
     pianoRoll.destroy();
+    instruments.destroy();
     browser.destroy();
     plugins.destroy();
   };

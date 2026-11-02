@@ -1,5 +1,6 @@
 import type { PluginRack, PluginSlot } from '@toneflix/studio-plugins';
-import { renderIcon, type IconSet } from './icons.ts';
+import { openFloatingWindow } from './floating-window.ts';
+import { type IconSet } from './icons.ts';
 
 /** A plugin offered in the add menu. */
 export interface PluginChoice {
@@ -36,81 +37,31 @@ export interface InsertsOptions {
 
 const editors = new WeakMap<PluginSlot, { close: () => void }>();
 
-/** Stacking order of editor windows; the last one touched is on top. */
-let topLayer = 1000;
-
 /** A floating window with a plugin's own editor in it. Opening it again brings it forward. */
 export const openPluginEditor = async (doc: Document, rack: PluginRack, slot: PluginSlot, options: Pick<InsertsOptions, 'labels' | 'icons'> = {}) => {
   const open = editors.get(slot);
   if (open) return open;
 
   const labels = options.labels ?? DEFAULT_INSERTS_LABELS;
-  const win = doc.createElement('div');
-  const bar = doc.createElement('div');
-  const title = doc.createElement('span');
-  const close = doc.createElement('button');
-  const body = doc.createElement('div');
   let editor: Element | null = null;
-
-  win.className = 'tfs-plugin-window';
-  win.setAttribute('role', 'dialog');
-  win.setAttribute('aria-label', slot.name);
-  bar.className = 'tfs-plugin-window-bar';
-  title.textContent = slot.vendor ? `${slot.name} · ${slot.vendor}` : slot.name;
-  close.type = 'button';
-  close.className = 'tfs-tool';
-  close.title = labels.close;
-  close.setAttribute('aria-label', labels.close);
-  close.append(renderIcon(doc, 'close', options.icons));
-  body.className = 'tfs-plugin-window-body';
-  body.textContent = labels.loading;
-  bar.append(title, close);
-  win.append(bar, body);
-  doc.body.append(win);
-
-  const count = doc.querySelectorAll('.tfs-plugin-window').length;
-
-  win.style.left = `${40 + count * 24}px`;
-  win.style.top = `${60 + count * 24}px`;
-
-  // Drag by the title bar
-  bar.addEventListener('pointerdown', (e) => {
-    if (e.target !== bar && e.target !== title) return;
-
-    const x = e.clientX - win.offsetLeft;
-    const y = e.clientY - win.offsetTop;
-    const move = (m: PointerEvent) => {
-      win.style.left = `${Math.max(0, m.clientX - x)}px`;
-      win.style.top = `${Math.max(0, m.clientY - y)}px`;
-    };
-    const up = () => {
-      bar.removeEventListener('pointermove', move);
-      bar.removeEventListener('pointerup', up);
-    };
-
-    bar.setPointerCapture(e.pointerId);
-    bar.addEventListener('pointermove', move);
-    bar.addEventListener('pointerup', up);
-  });
-  // Raise without moving the node, so clicks and slider drags inside keep working
-  win.style.zIndex = String(++topLayer);
-  win.addEventListener('pointerdown', () => {
-    if (Number(win.style.zIndex) < topLayer) win.style.zIndex = String(++topLayer);
-  });
-
-  const handle = {
-    close: () => {
+  const win = openFloatingWindow(doc, {
+    title: slot.vendor ? `${slot.name} · ${slot.vendor}` : slot.name,
+    close: labels.close,
+    icons: options.icons,
+    onClose: () => {
       editors.delete(slot);
       off();
       if (editor) rack.closeEditor(slot, editor);
-      win.remove();
     },
-  };
+  });
+  const body = win.body;
+  const handle = { close: () => win.close() };
   const off = rack.on('change', () => {
     if (!rack.chainIds.some((id) => rack.slots(id).includes(slot))) handle.close();
   });
 
-  close.addEventListener('click', handle.close);
+  win.element.setAttribute('aria-label', slot.name);
+  body.textContent = labels.loading;
   editors.set(slot, handle);
 
   try {
