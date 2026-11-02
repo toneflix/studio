@@ -32,6 +32,9 @@ export interface PianoRollLabels extends StepGridLabels {
   notesView: string;
   stepsView: string;
   close: string;
+  /** Loops the open clip on its own */
+  playClip: string;
+  stopClip: string;
   snap: string;
   /** Snap choices */
   snapOff: string;
@@ -61,6 +64,8 @@ export const DEFAULT_PIANO_ROLL_LABELS: PianoRollLabels = {
   swing: 'Swing',
   accent: 'Accent',
   close: 'Close',
+  playClip: 'Play clip (Space)',
+  stopClip: 'Stop clip (Space)',
   snap: 'Snap',
   snapOff: 'Off',
   bar: 'Bar',
@@ -179,6 +184,10 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
   private readonly steps: StepGrid;
   private readonly viewButtons: Record<'notes' | 'steps', HTMLButtonElement>;
   private readonly samplesButton: HTMLButtonElement;
+  private readonly playButton: HTMLButtonElement;
+  private readonly icons?: Partial<IconSet>;
+  /** While the open clip loops on its own: the loop, position and isolation to go back to */
+  private preview: { loop: AudioEngine['loop']; clip: string; time: number; isolated: readonly string[] | null } | null = null;
   private readonly onSource?: PianoRollOptions['onSource'];
   /** The key last pressed, where a sampler's next sample goes */
   private lastKey = 60;
@@ -217,6 +226,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.beatWidth = options.beatWidth ?? 64;
     this.stepsForDrums = options.stepsForDrums ?? true;
     this.onSource = options.onSource;
+    this.icons = options.icons;
     injectControlStyles(doc);
 
     this.root = el('div', 'tfs-roll');
@@ -250,6 +260,10 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     views.setAttribute('role', 'group');
     this.titleEl.after(views);
     this.viewButtons = { notes: viewButton('notes', this.labels.notesView), steps: viewButton('steps', this.labels.stepsView) };
+    this.playButton = el('button', 'tfs-tool tfs-roll-play', bar);
+    this.playButton.type = 'button';
+    this.playButton.addEventListener('click', () => this.togglePreview());
+    views.after(this.playButton);
     snapLabel.append(this.labels.snap);
     this.snapSelect = el('select', '', snapLabel);
 
@@ -363,6 +377,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
       if (clip) this.view = this.stepsForDrums && this.isDrums(clip) ? 'steps' : 'notes';
       this.frameKey = '';
       this.render();
+      this.followPreview();
       this.emit('open', { clip: next });
     }
 
@@ -378,6 +393,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
   }
 
   hide() {
+    this.stopPreview();
     this.setVisible(false);
   }
 
@@ -400,6 +416,80 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.snapSelect.value = snap;
     this.frameKey = '';
     this.render();
+  }
+
+  /** Whether the open clip is looping on its own. */
+  get previewing() {
+    return !!this.preview;
+  }
+
+  /**
+   * Loop the open clip on its own, like a pattern, from its start. Stopping puts
+   * the loop and play position back as they were.
+   */
+  playPreview() {
+    const clip = this.clip;
+    if (!clip) return;
+
+    const engine = this.engine;
+
+    this.preview ??= { loop: engine.loop, time: engine.time, isolated: engine.isolated, clip: clip.id };
+    this.preview.clip = clip.id;
+    engine.isolate([clip.id]);
+    engine.setLoop({ start: clip.start, end: clip.start + clip.duration });
+    void engine.play(clip.start);
+    this.renderPlay();
+  }
+
+  stopPreview() {
+    const preview = this.preview;
+    if (!preview) return;
+
+    const engine = this.engine;
+
+    this.preview = null;
+    engine.pause();
+    engine.isolate(preview.isolated);
+    engine.setLoop(preview.loop);
+    engine.seek(preview.time);
+    this.renderPlay();
+  }
+
+  togglePreview() {
+    if (this.preview) this.stopPreview();
+    else this.playPreview();
+  }
+
+  /** Keep a running preview on the open clip's place and length as they change. */
+  private followPreview() {
+    const preview = this.preview;
+    if (!preview) return;
+
+    const clip = this.clip;
+    if (!clip) return this.stopPreview();
+    if (clip.id !== preview.clip) return this.playPreview();
+
+    const loop = this.engine.loop;
+    const end = clip.start + clip.duration;
+
+    if (loop && Math.abs(loop.start - clip.start) < 1e-6 && Math.abs(loop.end - end) < 1e-6) return;
+
+    const time = this.engine.time;
+
+    this.engine.setLoop({ start: clip.start, end });
+    if (time < clip.start || time >= end) this.engine.seek(clip.start);
+  }
+
+  private renderPlay() {
+    const playing = !!this.preview;
+    const label = playing ? this.labels.stopClip : this.labels.playClip;
+    const button = this.playButton;
+
+    button.replaceChildren(renderIcon(this.doc, playing ? 'stop' : 'play', this.icons));
+    button.title = label;
+    button.setAttribute('aria-label', label);
+    button.setAttribute('aria-pressed', String(playing));
+    button.disabled = !this.clip;
   }
 
   /** Show the notes on keys, or as a step sequencer grid. */
@@ -626,6 +716,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
 
         if ([...this.picked].some((i) => i >= count)) this.picked.clear();
 
+        this.followPreview();
         this.render();
       }),
       timeline.on('open', ({ clip }) => {
@@ -638,9 +729,16 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
       }),
       timeline.on('zoom', () => this.render()),
       engine.on('play', () => this.follow()),
-      engine.on('pause', () => this.placePlayhead()),
+      engine.on('pause', () => {
+        // Pausing from anywhere else ends the clip preview too
+        this.stopPreview();
+        this.placePlayhead();
+      }),
       engine.on('seek', () => this.placePlayhead()),
-      engine.on('end', () => this.placePlayhead()),
+      engine.on('end', () => {
+        this.stopPreview();
+        this.placePlayhead();
+      }),
     );
 
     area.addEventListener('pointerdown', (e) => this.onAreaDown(e));
@@ -692,6 +790,14 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     }
 
     area.addEventListener('keydown', (e) => this.onKey(e));
+    // Space loops the open clip while focus is anywhere in the piano roll
+    this.root.addEventListener('keydown', (e) => {
+      if (e.key !== ' ' || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTyping(e.target) || (e.target instanceof HTMLElement && ['BUTTON', 'SELECT'].includes(e.target.tagName))) return;
+
+      e.preventDefault();
+      this.togglePreview();
+    });
     this.scroller.addEventListener(
       'wheel',
       (e) => {
@@ -1095,6 +1201,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.titleEl.textContent = clip ? `${clip.name ?? track?.name ?? ''}` : this.labels.title;
 
     for (const b of Object.values(this.buttons)) b.disabled = !clip;
+    this.renderPlay();
 
     this.root.classList.toggle('tfs-roll--steps', this.view === 'steps');
     this.samplesButton.hidden = !clip || this.sampling() !== 'zones';

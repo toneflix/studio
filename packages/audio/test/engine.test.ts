@@ -110,6 +110,22 @@ test('a loop schedules the clips again on every lap', async () => {
   engine.destroy();
 });
 
+test('isolated clips play on their own until every clip is heard again', async () => {
+  const { engine, started } = setup();
+  const events: unknown[] = [];
+
+  engine.on('isolate', ({ clips }) => events.push(clips));
+  engine.isolate(['b1']);
+  await engine.play(0);
+  assert.deepEqual(engine.isolated, ['b1']);
+  assert.deepEqual(started(), [['bass', 2, 0, 4]]);
+
+  engine.isolate(null);
+  assert.deepEqual(started().slice(1).map(([id]) => id), ['drums', 'bass']);
+  assert.deepEqual(events, [['b1'], null]);
+  engine.destroy();
+});
+
 test('pause stops what is scheduled and keeps the position', async () => {
   const { engine, context, sources } = setup();
 
