@@ -22,6 +22,8 @@ export interface AudioEngineEvents extends Record<string, unknown> {
   pause: { time: number };
   seek: { time: number };
   loop: { loop: Loop | null };
+  /** Only these clips are heard, or every clip when null */
+  isolate: { clips: readonly string[] | null };
   /** Playback reached the end of the last clip and paused */
   end: { time: number };
   /** An instrument track's instrument is ready, or failed to load */
@@ -75,6 +77,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
   private readonly voices = new Set<Playing>();
   private current: TimelineState = { tracks: [], clips: [] };
   private loopRange: Loop | null = null;
+  private only: ReadonlySet<string> | null = null;
   private playing = false;
   /** Timeline time that playback began from */
   private origin = 0;
@@ -119,6 +122,11 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
 
   get loop() {
     return this.loopRange;
+  }
+
+  /** The clips heard on their own, or null when every clip is heard. */
+  get isolated(): readonly string[] | null {
+    return this.only && [...this.only];
   }
 
   /** The play position on the timeline. */
@@ -240,6 +248,17 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     this.emit('loop', { loop: this.loopRange });
   }
 
+  /**
+   * Hear only some clips, like a pattern played on its own, or every clip again
+   * with null. Track mute, solo and automation still apply.
+   */
+  isolate(clips: Iterable<string> | null) {
+    this.only = clips ? new Set(clips) : null;
+    if (this.playing) this.restart();
+
+    this.emit('isolate', { clips: this.isolated });
+  }
+
   /** Mix the timeline down to an AudioBuffer, faster than real time. */
   async render(options: RenderOptions = {}) {
     const from = Math.max(0, options.from ?? 0);
@@ -317,7 +336,8 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
   }
 
   private scheduleBetween(from: number, to: number, clockStart: number) {
-    const ranges = heardRanges(this.current);
+    const only = this.only;
+    const ranges = only ? heardRanges(this.current).filter((range) => only.has(range.clip.id)) : heardRanges(this.current);
     const clicks: (Click & { when: number })[] = [];
     const now = this.context.currentTime;
 

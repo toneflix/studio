@@ -253,7 +253,7 @@ export const CONTROL_STYLES = `
 .tfs-roll-text[aria-pressed='true'] { border-color: transparent; background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
 .tfs-steps { display: none; flex: 1 1 auto; flex-direction: column; min-height: 0; }
 .tfs-roll--steps .tfs-steps { display: flex; }
-.tfs-roll--steps .tfs-roll-scroller, .tfs-roll--steps .tfs-roll-bar .tfs-tool:not(:last-child), .tfs-roll--empty .tfs-steps { display: none; }
+.tfs-roll--steps .tfs-roll-scroller, .tfs-roll--steps .tfs-roll-bar .tfs-tool:not(:last-child):not(.tfs-roll-play), .tfs-roll--empty .tfs-steps { display: none; }
 .tfs-steps-bar { display: flex; flex: none; align-items: center; gap: 12px; padding: 6px 12px; overflow-x: auto; scrollbar-width: none; }
 .tfs-steps-swing input { width: 110px; accent-color: var(--tfs-toolbar-active, #03bfff); }
 .tfs-steps-value { min-width: 32px; color: var(--tfs-toolbar-text, #e8e8ea); font-variant-numeric: tabular-nums; }

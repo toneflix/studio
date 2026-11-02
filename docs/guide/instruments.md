@@ -61,10 +61,13 @@ pianoRoll.edit(clip.id); // or open one yourself
 | Drag on an empty spot with a mouse | Picks the notes in a box; Shift or Ctrl adds to the picked notes |
 | Drag a stalk in the velocity lane | Sets that note's velocity, or moves every picked note's velocity together |
 | Press a key on the left | Plays that note through the track's instrument |
+| The play button beside Notes and Steps, or Space | Loops the open clip on its own from its start, without the rest of the song; again to stop |
 | Delete, Ctrl+A, Ctrl+D, Q | Delete, pick all, duplicate and quantize the picked notes |
 | Arrow keys | Move picked notes a semitone (an octave with Shift) or one snap step |
 
 Notes snap to the piano roll's own grid (1/16 by default), which follows the timeline's tempo changes. **Quantize** puts the starts of the picked notes, or of every note, on that grid. Every finished edit is one step in the timeline's undo history. On drum tracks the keys show the drum names. On touch screens the rows grow, a drag on an empty spot scrolls, and a tap draws.
+
+The play button works in both views, so a beat or a riff can be shaped while it repeats. It sets the engine's loop to the clip and plays only that clip, follows the clip as it grows or moves, and switches to another clip when you open one. Stopping it, or pausing from the toolbar, puts the earlier loop and play position back. From code: `pianoRoll.playPreview()`, `stopPreview()`, `togglePreview()` and `previewing`.
 
 It slides up over the bottom of its container, like the mixer; pass `docked: true` to place it in the page flow. Set `--tfs-roll-height` (340px) to size it. The note helpers it uses, such as `moveNotes`, `quantizeNotes` and `duplicateNotes`, are exported for your own editors.
 
@@ -79,6 +82,7 @@ The piano roll's **Steps** view shows a note clip as a step sequencer: a row per
 | **Accent**, then click a step | New hits play at full velocity; clicking a normal hit accents it |
 | **Bars** | Makes the clip, and so the pattern, 1 to 16 bars long |
 | **Swing** | Delays every second step, from 50% (straight) to 75% |
+| The play button, or Space | Loops the pattern on its own while you build it |
 
 A step is the snap when it is finer than a beat, a sixteenth otherwise. The grid is a view of the clip's notes, so steps drawn here show in the piano roll and the other way round; a note counts as on a step when it starts within a quarter of a step of it. Swing moves the notes already on swung steps, and new hits land swung. The playing step lights up during playback. Each change is one undo step.
 
