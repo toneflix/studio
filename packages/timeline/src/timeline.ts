@@ -50,7 +50,7 @@ import {
 } from '@toneflix/studio-core';
 import { ClipView } from './clip-view.ts';
 import { resolveContainer, type ContainerTarget } from './container.ts';
-import { closeMenu, openMenu } from './menu.ts';
+import { closeMenu, openMenu, type MenuItem } from './menu.ts';
 import { injectStyles } from './styles.ts';
 
 export interface TimelineOptions {
@@ -341,6 +341,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     Pick<TimelineOptions, 'renderHeader' | 'createTrack' | 'importAudio'>;
   private readonly trackLabels: TrackLabels;
   private readonly clipLabels: ClipLabels;
+  private readonly trackMenuExtras = new Set<(track: Track) => MenuItem[]>();
   private readonly rulerLabels: RulerLabels;
   private markerStrip!: HTMLDivElement;
   private barLabels!: HTMLDivElement;
@@ -869,7 +870,6 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     input.select();
   }
 
-  /** Open a track's menu at a point on the page, or under its header. */
   /** Open a clip's menu at a point: edit notes, make unique, split, duplicate and delete. */
   showClipMenu(id: string, at: { x: number; y: number }) {
     const clip = this.state.clips.find((c) => c.id === id);
@@ -896,6 +896,14 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     );
   }
 
+  /** Add items of your own to every track menu, above Delete. Returns a function that takes them out. */
+  addTrackMenuItems(items: (track: Track) => MenuItem[]) {
+    this.trackMenuExtras.add(items);
+
+    return () => void this.trackMenuExtras.delete(items);
+  }
+
+  /** Open a track's menu at a point on the page, or under its header. */
   showTrackMenu(id: string, at?: { x: number; y: number }) {
     const index = this.state.tracks.findIndex((track) => track.id === id);
     const row = this.trackRows.get(id);
@@ -922,6 +930,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
         { label: labels.moveUp, disabled: index === 0, onSelect: () => this.moveTrack(id, index - 1) },
         { label: labels.moveDown, disabled: index === last, onSelect: () => this.moveTrack(id, index + 1) },
         ...this.automationItems(id),
+        ...[...this.trackMenuExtras].flatMap((items) => items(this.state.tracks[index]!)),
         { label: labels.delete, danger: true, onSelect: () => this.removeTrack(id) },
       ],
       `${labels.menu}: ${this.state.tracks[index]!.name}`,

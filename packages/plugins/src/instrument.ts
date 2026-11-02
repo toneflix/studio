@@ -7,6 +7,8 @@ const midi = (time: number, bytes: [number, number, number]) => ({ type: 'wam-mi
 export class WamInstrument implements Instrument {
   readonly output: AudioNode;
   readonly plugin: WebAudioModule;
+  /** Some WAM instruments make their sound on the main thread, so offline renders wait for them */
+  readonly mainThread = true;
 
   constructor(plugin: WebAudioModule) {
     this.plugin = plugin;

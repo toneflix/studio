@@ -15,7 +15,7 @@ From `@toneflix/studio-audio`, also exported by `@toneflix/studio`.
 | `engine.seek(time)` | |
 | `engine.setLoop({ start, end } \| null)` | |
 | `engine.isolate(clipIds \| null)` | Hear only those clips, like a pattern played on its own; null hears every clip. `isolated` reads it, and the `isolate` event reports changes |
-| `engine.render(options?)` | Offline mix to an `AudioBuffer`: `from`, `to`, `sampleRate`, `channels`, `effects(track, context)`, which may be async |
+| `engine.render(options?)` | Offline mix to an `AudioBuffer`: `from`, `to`, `sampleRate`, `channels`, `effects(track, context)`, which may be async. Pauses briefly after each note of an instrument with `mainThread`, so WAM instruments that play from the main thread are heard |
 | `engine.time`, `isPlaying`, `loop`, `state` | |
 | `engine.stopAtEnd` | Read or change the `stopAtEnd` option |
 | `engine.positionAt(contextTime)` | The timeline time playing at a context time, counted on from where playback began without wrapping at the loop; null while paused |
@@ -66,11 +66,13 @@ From `@toneflix/studio-controls`, also exported by `@toneflix/studio`. See [Tool
 | `new StudioToolbar(container, options)` | `timeline`, `engine?`, `recorder?`, `plugins?` (in the exported mix), `items?`, `icons?`, `labels?`, `exportName?`, `actions?`, `onSave?`, `info?`, `mixer?`, `browser?`; `addAction()`, `removeAction()`, `showInfo()`, `refresh()`, `destroy()` |
 | `sessionInfo(timeline)` | The info dialog's default rows |
 | `new StudioMixer(container, options)` | `timeline`, `engine`, `plugins?`, `catalog?`, `pickPlugin?`, `icons?`, `labels?`, `maxVolume?` (2), `hidden?`, `docked?`; `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; event `toggle` |
-| `new StudioPianoRoll(container, options)` | `timeline`, `engine`, `snap?` ('1/16'), `beatWidth?` (64), `stepsForDrums?` (true), `onSource?`, `keys?`, `icons?`, `labels?`, `hidden?`, `docked?`; `edit(clip \| null)`, `clip`, `setView('notes' \| 'steps')`, `playPreview()`, `stopPreview()`, `togglePreview()`, `previewing`, `select(indices)`, `selection`, `setSnap()`, `quantize()`, `useSample(pitch, file \| sound \| null)`, `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; events `toggle`, `open`, `select`. See [Instruments and notes](../guide/instruments#piano-roll) |
+| `new StudioPianoRoll(container, options)` | `timeline`, `engine`, `snap?` ('1/16'), `beatWidth?` (64), `stepsForDrums?` (true), `onSource?`, `keys?`, `instrumentPanel?` (adds a Sound button), `icons?`, `labels?`, `hidden?`, `docked?`; `edit(clip \| null)`, `clip`, `setView('notes' \| 'steps')`, `playPreview()`, `stopPreview()`, `togglePreview()`, `previewing`, `select(indices)`, `selection`, `setSnap()`, `quantize()`, `useSample(pitch, file \| sound \| null)`, `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; events `toggle`, `open`, `select`. See [Instruments and notes](../guide/instruments#piano-roll) |
+| `new StudioInstrumentPanel(options)` | `timeline`, `engine`, `instruments?` (picker choices, the built-in synth, drums and sampler by default), `trackMenu?` (true), `icons?`, `labels?`; `open(track)`, `close(track)`, `toggle(track)`, `isOpen(track)`, `openTracks`, `destroy()`; event `toggle`. See [Instrument settings](../guide/instruments#instrument-settings) |
+| `openFloatingWindow(document, options)` | The draggable window plugin editors and instrument settings open in: `title`, `close`, `icons?`, `onClose?`; returns `element`, `body`, `raise()`, `fit()`, `close()` |
 | `new StudioKeys(container, options)` | `timeline`, `engine`, `recorder?`, `notes?`, `octave?` (3), `computerKeys?` (true), `icons?`, `labels?`, `hidden?`, `docked?`; `track`, `setTrack(id \| null)`, `octave`, `setOctave(n)`, `press(pitch, velocity?)`, `release(pitch)`, `releaseAll()`, `show()`, `hide()`, `toggle()`, `visible`, `destroy()`; events `toggle`, `note`, `midi`. See [Keys and MIDI](../guide/instruments#keys-and-midi) |
 | `faderToGain(position, max?)` / `gainToFader(gain, max?)` | The fader curve |
 | `formatDb(gain)` / `formatPan(pan)` | Readouts like `-3.5` and `L 40` |
-| `createKnob(document, options)` | The rotary knob the mixer uses for pan |
+| `createKnob(document, options)` | The rotary knob the mixer and instrument settings use: `label`, `min`, `max`, `initial`, `step`, `format`, `log?`, `onInput`, `onCommit?` (once a drag, key press or reset is done) |
 | `DEFAULT_TOOLBAR`, `DEFAULT_LABELS` | The default buttons and their names |
 | `trackStrip(engine, options?)` | A `renderHeader` for the timeline; `icons?`, `labels?`, `maxVolume?` (1.5), `meter?` (true), `recorder?` (adds the R arm button) |
 | `createMeter(document, engine, channel)` | A level meter for a channel; returns `{ element, stop }` |

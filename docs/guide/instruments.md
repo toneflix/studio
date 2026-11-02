@@ -161,6 +161,29 @@ With a `NoteRecorder`, the record button records notes when the armed track (or,
 | `drums` | Drum machine made of oscillators and noise, on General MIDI drum notes: kick 36, snare 38, clap 39, closed hat 42, open hat 46, toms 45, 47 and 50, crash 49, ride 51, cowbell 56. A note with a sample plays the sample | `volume`, `tune`, `decay`, `samples` (by note number) |
 | `sampler` | Plays samples repitched from their root notes, the nearest root for each note | `samples` (a list), `attack`, `release`, `volume` |
 
+## Instrument settings
+
+`StudioInstrumentPanel` opens a window of knobs for an instrument track. It adds **Instrument settings…** to instrument tracks' menus, and gives the piano roll a **Sound** button when you pass it as `instrumentPanel`.
+
+```ts
+import { StudioInstrumentPanel, StudioPianoRoll } from '@toneflix/studio';
+
+const instruments = new StudioInstrumentPanel({ timeline, engine });
+const pianoRoll = new StudioPianoRoll('#editor', { timeline, engine, instrumentPanel: instruments });
+
+instruments.open('lead'); // or from code
+```
+
+| Instrument | Controls |
+| --- | --- |
+| Synth | Wave (saw, square, triangle, sine), detune, cutoff, resonance, filter envelope, attack, decay, sustain, release, volume |
+| Drums | Tune, decay, volume |
+| Sampler | Attack, release, volume |
+
+Drag a knob up or down, or use the arrow keys, to hear the change at once; letting go saves it as one undo step. Double-click a knob to reset it, and **Reset** puts every setting back. Cutoff and the envelope times turn in equal ratios, so the low end has room. The picker at the top switches the track to another instrument; pass `instruments` to offer your own, such as WAM instruments by URL. A WAM instrument shows its own editor, and its settings are saved to the track when the window closes. Each track gets one window, which can be dragged by its title and stays on screen on phones.
+
+`INSTRUMENT_PARAMS` and `INSTRUMENT_DEFAULTS` from `@toneflix/studio-audio` describe the same settings, to build controls of your own.
+
 Saving as a REAPER project turns note clips into MIDI items, as [Project files and REAPER](./projects) explains.
 
 ## WAM instruments
@@ -174,6 +197,8 @@ engine.setInstruments(plugins.instruments());
 timeline.setInstrument('lead', { id: 'https://example.com/wams/synth/index.js' });
 ```
 
-`engine.instrument(track)` gives a track's instrument once it has loaded, with `noteOn` and `noteOff` for keys played live. Some WAM instruments play only live and stay silent in offline renders like Export mix, so test one in an export before you offer it. The built-in instruments render either way.
+`engine.instrument(track)` gives a track's instrument once it has loaded, with `noteOn` and `noteOff` for keys played live.
 
-To make your own instrument, implement `Instrument` (`output`, `play`, `noteOn`, `noteOff`, `stopAll`, `destroy`) and pass an `InstrumentFactory` to `engine.setInstruments`. Its fourth argument looks up a sample's audio by source id.
+Some WAM instruments, like Synth-101, make their sound on the main thread once a note reaches them, which an offline render normally runs past. WAM instruments say so with `mainThread`, and `engine.render` (and so Export mix) then pauses for a few milliseconds just after each of their notes, so they play in the export as they do live. An export with WAM instruments takes about a second per 60 notes longer; the built-in instruments need no pauses.
+
+To make your own instrument, implement `Instrument` (`output`, `play`, `noteOn`, `noteOff`, `stopAll`, `destroy`, and `mainThread` if it plays notes from the main thread) and pass an `InstrumentFactory` to `engine.setInstruments`. Its fourth argument looks up a sample's audio by source id.
