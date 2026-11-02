@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-plugins",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Plugins for Toneflix Studio: hosts Web Audio Modules (WAM 2) as live track and master inserts, with their own editors, state and offline mixdown.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
