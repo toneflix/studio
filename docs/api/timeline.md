@@ -98,4 +98,10 @@ Renders into `container`, which should have a height. The timeline fills it. Pas
 | `seek` | `{ time }` | Someone clicked to move the playhead |
 | `zoom` | `{ pxPerSecond }` | The zoom changed |
 | `automation` | `{ track, param }` | An automation lane opened, switched or closed (`param` is `null`) |
-| `open` | `{ clip }` | A clip was double-clicked; the piano roll opens note clips this way |
+| `open` | `{ clip }` | A clip was double-clicked or double-tapped; the piano roll opens note clips this way |
+
+## Helpers
+
+| Export | Description |
+| --- | --- |
+| `onDoubleTap(element, handler)` | Calls `handler` on a double click, or a double tap with a finger or pen (iOS sends no `dblclick` for touches). Returns a function that stops listening |

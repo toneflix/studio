@@ -30,7 +30,7 @@ A note's `pitch` is a MIDI note number (60 is middle C), its `start` counts in s
 
 ## Adding tracks and clips
 
-The add track button asks what to add: an empty audio track, audio from a file on the device (with the `importAudio` option, see [Editing](./editing)), an instrument track, a drum track or a sampler track. Double-click an empty spot on an instrument track's lane to add a one-bar note clip there. Pass `instrumentTracks` to change the kinds on offer, or an empty list to offer only audio tracks.
+The add track button asks what to add: an empty audio track, audio from a file on the device (with the `importAudio` option, see [Editing](./editing)), an instrument track, a drum track or a sampler track. Double-click or double-tap an empty spot on an instrument track's lane to add a one-bar note clip there. Pass `instrumentTracks` to change the kinds on offer, or an empty list to offer only audio tracks.
 
 | Method | What it does |
 | --- | --- |
@@ -199,7 +199,7 @@ instruments.open('lead'); // or from code
 | Drums | Tune, decay, volume |
 | Sampler | Attack, release, volume; for each sample its root note, mode (gate, one-shot, loop) and loop points |
 
-Drag a knob up or down, or use the arrow keys, to hear the change at once; letting go saves it as one undo step. Double-click a knob to reset it, and **Reset** puts every setting back. Cutoff and the envelope times turn in equal ratios, so the low end has room. The picker at the top switches the track to another instrument; pass `instruments` to offer your own, such as WAM instruments by URL. A WAM instrument shows its own editor, and its settings are saved to the track when the window closes. Each track gets one window, which can be dragged by its title and stays on screen on phones.
+Drag a knob up or down, or use the arrow keys, to hear the change at once; letting go saves it as one undo step. Double-click or double-tap a knob to reset it, and **Reset** puts every setting back. Cutoff and the envelope times turn in equal ratios, so the low end has room. The picker at the top switches the track to another instrument; pass `instruments` to offer your own, such as WAM instruments by URL. A WAM instrument shows its own editor, and its settings are saved to the track when the window closes. Each track gets one window, which can be dragged by its title and stays on screen on phones.
 
 `INSTRUMENT_PARAMS` and `INSTRUMENT_DEFAULTS` from `@toneflix/studio-audio` describe the same settings, to build controls of your own.
 

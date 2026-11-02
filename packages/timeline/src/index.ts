@@ -2,3 +2,4 @@ export { StudioTimeline, DEFAULT_TRACK_LABELS, TRACK_MENU_EVENT, type TimelineOp
 export { openMenu, closeMenu, type MenuItem } from './menu.ts';
 export { STYLES, injectStyles } from './styles.ts';
 export { resolveContainer, type ContainerTarget } from './container.ts';
+export { onDoubleTap } from './double-tap.ts';

@@ -49,6 +49,7 @@ import {
   usePattern as switchPattern,
 } from '@toneflix/studio-core';
 import { ClipView } from './clip-view.ts';
+import { onDoubleTap } from './double-tap.ts';
 import { resolveContainer, type ContainerTarget } from './container.ts';
 import { closeMenu, openMenu, type MenuItem } from './menu.ts';
 import { injectStyles } from './styles.ts';
@@ -1764,29 +1765,33 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
       this.showAutomationMenu(id, { x: box.left, y: box.bottom + 2 });
     });
-    on(this.rows, 'dblclick', (e) => {
-      if (!(e.target as HTMLElement).closest('.tfs-track-name')) return;
+    this.unsubscribe.push(
+      onDoubleTap(this.rows, (e) => {
+        if (!(e.target as HTMLElement).closest('.tfs-track-name')) return;
 
-      const id = this.headerTrack(e.target);
+        const id = this.headerTrack(e.target);
 
-      if (id && this.tracksEditable) {
-        closeMenu();
-        this.editTrackName(id);
-      }
-    });
+        if (id && this.tracksEditable) {
+          closeMenu();
+          this.editTrackName(id);
+        }
+      }),
+    );
     // A clip opens; an empty spot on an instrument track's lane gets a note clip. Found by
     // position, since a drag's pointer capture can move the event's target off the lane.
-    on(this.root, 'dblclick', (e) => {
-      if ((e.target as HTMLElement).closest('.tfs-header, .tfs-ruler-row')) return;
-      if (e.clientX < this.ruler.getBoundingClientRect().left) return;
+    this.unsubscribe.push(
+      onDoubleTap(this.root, (e) => {
+        if ((e.target as HTMLElement).closest('.tfs-header, .tfs-ruler-row')) return;
+        if (e.clientX < this.ruler.getBoundingClientRect().left) return;
 
-      const track = this.trackAt(e.clientY);
-      const time = this.timeAt(e.clientX);
-      const clip = track && [...this.state.clips].reverse().find((c) => c.track === track.id && time >= c.start && time < clipEnd(c));
+        const track = this.trackAt(e.clientY);
+        const time = this.timeAt(e.clientX);
+        const clip = track && [...this.state.clips].reverse().find((c) => c.track === track.id && time >= c.start && time < clipEnd(c));
 
-      if (clip) this.emit('open', { clip: clip.id });
-      else if (track?.instrument && !this.options.readonly) this.addNoteClip(track.id, time);
-    });
+        if (clip) this.emit('open', { clip: clip.id });
+        else if (track?.instrument && !this.options.readonly) this.addNoteClip(track.id, time);
+      }),
+    );
     on(this.scroller, 'wheel', (e) => this.onWheel(e), { passive: false });
 
     if (typeof ResizeObserver !== 'undefined') {
