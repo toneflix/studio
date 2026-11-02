@@ -102,12 +102,12 @@ export const CONTROL_STYLES = `
 @media (prefers-reduced-motion: reduce) { .tfs-browser--overlay { animation: none; } }
 .tfs-browser-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 6px 6px 14px; }
 .tfs-browser-head h2 { margin: 0; font-size: 13px; font-weight: 600; }
-.tfs-browser-tabs { display: flex; gap: 4px; padding: 0 10px 8px; overflow-x: auto; scrollbar-width: none; }
+.tfs-browser-tabs { display: flex; flex: none; gap: 4px; padding: 1px 10px 8px; overflow-x: auto; scrollbar-width: none; }
 .tfs-browser-tabs[hidden] { display: none; }
-.tfs-browser-tab { flex: none; padding: 5px 10px; border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); border-radius: 999px; background: none; color: var(--tfs-display-muted, #9a9aa2); font: 600 11px/1 system-ui, sans-serif; cursor: pointer; }
+.tfs-browser-tab { flex: none; padding: 5px 10px; border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); border-radius: 999px; background: none; color: var(--tfs-display-muted, #9a9aa2); font: 600 11px/1 system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
 .tfs-browser-tab:hover { color: inherit; }
 .tfs-browser-tab[aria-selected='true'] { border-color: transparent; background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
-.tfs-browser-search { display: block; padding: 0 10px 8px; }
+.tfs-browser-search { display: block; flex: none; padding: 0 10px 8px; }
 .tfs-browser-search input { width: 100%; height: 30px; box-sizing: border-box; padding: 0 10px; border: 1px solid var(--tfs-toolbar-line, rgba(255, 255, 255, 0.1)); border-radius: 6px; background: rgba(255, 255, 255, 0.04); color: inherit; font: inherit; outline: none; }
 .tfs-browser-search input:focus { border-color: var(--tfs-toolbar-active, #03bfff); }
 .tfs-browser-action, .tfs-browser-more { margin: 0 10px 8px; padding: 7px 10px; border: 1px dashed var(--tfs-toolbar-line, rgba(255, 255, 255, 0.18)); border-radius: 6px; background: none; color: inherit; font: 600 12px/1 system-ui, sans-serif; cursor: pointer; }
