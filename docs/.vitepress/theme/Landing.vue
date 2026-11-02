@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
       </div>
       <div ref="actions" class="window-actions" />
       <div ref="host" class="window-body" />
-      <p class="window-hint">It's live. Press play, drag a clip while it plays, click the ruler and press S to split, or arm a track with R and record. The sliders button opens the mixer, where + adds a plugin. Double-click the Lead clip to draw notes in the piano roll.</p>
+      <p class="window-hint">Drag a clip while it plays, click the ruler and press S to split, or arm a track with R and record. The sliders button opens the mixer, where + adds a plugin. Double-click the Lead clip to draw notes in the piano roll.</p>
     </section>
 
     <section class="features">
