@@ -276,7 +276,7 @@ export const CONTROL_STYLES = `
   .tfs-roll-snap select, .tfs-roll-text { height: 36px; }
   .tfs-roll-note::after { width: 5px; }
 }
-@media (max-width: 600px) { .tfs-roll { --tfs-roll-keys: 44px; height: var(--tfs-roll-height, 60vh); } .tfs-roll--drums, .tfs-roll--sampled { --tfs-roll-keys: 80px; } }
+@media (max-width: 600px) { .tfs-roll { --tfs-roll-keys: 44px; height: var(--tfs-roll-height, 60vh); } .tfs-roll-bar { flex-wrap: wrap; row-gap: 2px; } .tfs-roll--drums, .tfs-roll--sampled { --tfs-roll-keys: 80px; } }
 .tfs-roll-views { display: inline-flex; flex: none; padding: 2px; margin-right: 6px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); }
 .tfs-roll-view { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--tfs-display-muted, #9a9aa2); font: 600 12px/1 system-ui, sans-serif; cursor: pointer; }
 .tfs-roll-view[aria-pressed='true'] { background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
