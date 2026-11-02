@@ -7,6 +7,7 @@ import {
   communityWamInstruments,
   communityWams,
   communityWamSource,
+  communityWamsImportMap,
   CURATED_WAMS,
   curatedWams,
   curatedWamSource,
@@ -66,7 +67,7 @@ test('community effects go to the browser, instruments to the instrument picker'
   assert.ok(effects.includes('Simple Delay'));
   assert.ok(!effects.includes('Synth-101'));
   assert.deepEqual(
-    communityWamInstruments({ base: 'https://example.com/p/' }),
+    communityWamInstruments({ base: { 'burns-audio-wam': 'https://example.com/p/' } }),
     [{ label: 'Synth-101', instrument: { id: 'https://example.com/p/synth101/index.js' } }],
   );
 });
@@ -76,4 +77,20 @@ test('mouse-only editors are known by module URL', () => {
 
   assert.equal(isMouseOnlyWam(urls['Simple Delay']!), true);
     assert.equal(isMouseOnlyWam('https://example.com/other.js'), false);
+});
+
+test('the import map points the misplaced Wimmics imports at the real files', () => {
+  const base = 'https://unpkg.com/wam-community@0.4.9/dist/plugins/';
+
+  assert.deepEqual(communityWamsImportMap(), {
+    imports: { [`${base}wimmics/utils/sdk-parammgr/src/sdk/`]: `${base}wimmics/utils/sdk/` },
+  });
+});
+
+test('the demo pages carry the import map', () => {
+  const map = JSON.stringify(communityWamsImportMap());
+  const root = join(import.meta.dirname, '../../..');
+
+  assert.ok(readFileSync(join(root, 'demo/index.html'), 'utf8').includes(map));
+  assert.ok(readFileSync(join(root, 'docs/.vitepress/config.ts'), 'utf8').includes('communityWamsImportMap'));
 });

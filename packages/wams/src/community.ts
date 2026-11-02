@@ -1,12 +1,15 @@
 /**
- * The npm package the vetted plugins load from, at the version they were tested at.
- * It is the Sequencer Party plugins' own package: the `wam-community` package holds the
- * same files but is over jsDelivr's 150 MB package limit, so jsDelivr does not serve it.
+ * Where the vetted plugins load from, by package, pinned to the versions they were
+ * tested at. The Sequencer Party plugins come from their own package on jsDelivr. The
+ * Wimmics ones are only in `wam-community`, which is over jsDelivr's 150 MB package
+ * limit, so they come from unpkg.
  */
-export const COMMUNITY_WAMS_PACKAGE = 'burns-audio-wam@0.2.54';
+export const COMMUNITY_WAM_PACKAGES = {
+  'burns-audio-wam': 'https://cdn.jsdelivr.net/npm/burns-audio-wam@0.2.54/dist/plugins/',
+  'wam-community': 'https://unpkg.com/wam-community@0.4.9/dist/plugins/',
+} as const;
 
-/** The `plugins` folder of that package on jsDelivr. */
-export const communityWamsBase = (pkg = COMMUNITY_WAMS_PACKAGE) => `https://cdn.jsdelivr.net/npm/${pkg}/dist/plugins/`;
+export type CommunityWamPackage = keyof typeof COMMUNITY_WAM_PACKAGES;
 
 /** A plugin from the Web Audio Modules community that passed the same tests as the curated ones. */
 export interface CommunityWam {
@@ -15,6 +18,8 @@ export interface CommunityWam {
   vendor: string;
   description: string;
   keywords: string[];
+  /** The package it loads from */
+  package: CommunityWamPackage;
   /** Its module, relative to the package's `plugins` folder */
   path: string;
   /** A picture of its editor, relative to the `plugins` folder */
@@ -26,7 +31,8 @@ export interface CommunityWam {
   homepage: string;
 }
 
-const burns = (plugin: Omit<CommunityWam, 'vendor' | 'license' | 'homepage' | 'mouseOnly' | 'thumbnail'>): CommunityWam => ({
+const burns = (plugin: Omit<CommunityWam, 'vendor' | 'license' | 'homepage' | 'mouseOnly' | 'thumbnail' | 'package'>): CommunityWam => ({
+  package: 'burns-audio-wam',
   vendor: 'Sequencer Party',
   license: 'MIT',
   homepage: 'https://github.com/boourns/burns-audio-wam',
@@ -35,9 +41,30 @@ const burns = (plugin: Omit<CommunityWam, 'vendor' | 'license' | 'homepage' | 'm
   ...plugin,
 });
 
+const wimmics = (plugin: Omit<CommunityWam, 'vendor' | 'license' | 'homepage' | 'mouseOnly' | 'thumbnail' | 'package' | 'isInstrument'>): CommunityWam => ({
+  package: 'wam-community',
+  vendor: 'Wimmics',
+  license: 'Not stated',
+  homepage: 'https://github.com/webaudiomodules/wam-community',
+  mouseOnly: false,
+  isInstrument: false,
+  thumbnail: plugin.path.replace(/[^/]+$/, 'screenshot.png'),
+  ...plugin,
+});
+
+/**
+ * An import map for the page, needed by the Wimmics plugins: `wam-community` 0.4.9
+ * imports two files from a folder they are not in, and the map points those imports
+ * at where the files are. Put it in a `<script type="importmap">` before any module
+ * script, since browsers only read an import map before modules load.
+ */
+export const communityWamsImportMap = (base: string = COMMUNITY_WAM_PACKAGES['wam-community']) => ({
+  imports: { [`${base}wimmics/utils/sdk-parammgr/src/sdk/`]: `${base}wimmics/utils/sdk/` },
+});
+
 /**
  * Community plugins that loaded, sounded, kept their settings, exported as heard and
- * could be fully used with a mouse and by touch, at `COMMUNITY_WAMS_PACKAGE`.
+ * could be fully used with a mouse and by touch, at the versions in `COMMUNITY_WAM_PACKAGES`.
  * They are loaded from the community's own files, not copied into this package.
  */
 export const COMMUNITY_WAMS: readonly CommunityWam[] = [
