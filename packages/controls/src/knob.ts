@@ -1,8 +1,10 @@
+import { onDoubleTap } from '@toneflix/studio-timeline';
+
 export interface KnobOptions {
   label: string;
   min: number;
   max: number;
-  /** Where a double click puts it back */
+  /** Where a double click or double tap puts it back */
   initial: number;
   /** Change for one arrow key press */
   step: number;
@@ -83,7 +85,7 @@ export const createKnob = (doc: Document, options: KnobOptions) => {
     element.addEventListener('pointerup', up);
     element.addEventListener('pointercancel', up);
   });
-  element.addEventListener('dblclick', () => {
+  onDoubleTap(element, () => {
     const before = value;
 
     change(options.initial);

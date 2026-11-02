@@ -1,7 +1,7 @@
 import type { AudioEngine, ChannelSettings } from '@toneflix/studio-audio';
 import { Emitter, type Track } from '@toneflix/studio-core';
 import type { PluginRack } from '@toneflix/studio-plugins';
-import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
+import { onDoubleTap, resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { faderToGain, formatDb, formatPan, gainToFader } from './fader.ts';
 import { renderIcon, type IconSet } from './icons.ts';
 import { createInserts, DEFAULT_INSERTS_LABELS, type InsertsLabels, type PluginChoice } from './inserts.ts';
@@ -261,7 +261,7 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
     fader.step = '0.001';
     fader.setAttribute('aria-label', `${labels.volume} ${name}`);
     fader.addEventListener('input', () => set({ volume: faderToGain(Number(fader.value), this.maxVolume) }));
-    fader.addEventListener('dblclick', () => set({ volume: 1 }));
+    onDoubleTap(fader, () => set({ volume: 1 }));
     readout.className = 'tfs-channel-db';
     title.className = 'tfs-channel-name';
     title.textContent = name;

@@ -112,7 +112,7 @@ The save button shows even without an engine; `mix()` needs one.
 
 ## Track strips
 
-`trackStrip` fills each track header with a tab in the track's colour, its name, M (mute) and S (solo) buttons, a volume slider and a level meter. Double-click the slider to set it back to full volume. Set `meter: false` to leave the meter out.
+`trackStrip` fills each track header with a tab in the track's colour, its name, M (mute) and S (solo) buttons, a volume slider and a level meter. Double-click or double-tap the slider to set it back to full volume. Set `meter: false` to leave the meter out.
 
 Drag the bottom edge of a track to make it taller or shorter, and double-click the edge to give it the default height again. Short tracks hide the volume slider.
 
@@ -141,8 +141,8 @@ Given a `mixer`, the toolbar gets a mixer button that shows and hides it. You ca
 
 | Control | |
 | --- | --- |
-| Fader | Drag, click or use the arrow keys. Double-click for 0 dB. The top is +6 dB; set `maxVolume` to change it |
-| Pan knob | Drag up or down, or use the arrow keys. Double-click to centre it |
+| Fader | Drag, click or use the arrow keys. Double-click or double-tap for 0 dB. The top is +6 dB; set `maxVolume` to change it |
+| Pan knob | Drag up or down, or use the arrow keys. Double-click or double-tap to centre it |
 
 Given a `PluginRack` as `plugins`, each strip gets insert slots for plugins above the pan knob, and `catalog` lists the plugins its + button offers. See [Plugins](./plugins).
 
