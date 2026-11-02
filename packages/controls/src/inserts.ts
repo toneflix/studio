@@ -33,12 +33,36 @@ export interface InsertsOptions {
   pick?: (track: string | null) => Promise<PluginChoice | null>;
   labels?: InsertsLabels;
   icons?: Partial<IconSet>;
+  /** The element plugin editors and the add menu stay inside, such as the studio's container; the page by default */
+  container?: HTMLElement;
 }
+
+/**
+ * Put the add menu by its button, inside the container's visible box: below the
+ * button, or above when there is more room there, scrolling when it is still too long.
+ */
+const placeMenu = (menu: HTMLElement, button: HTMLElement, container?: HTMLElement) => {
+  const view = menu.ownerDocument.defaultView;
+  const box = button.getBoundingClientRect();
+  const bounds = container?.getBoundingClientRect();
+  const top = Math.max(0, bounds?.top ?? 0) + 8;
+  const bottom = Math.min(view?.innerHeight ?? 0, bounds?.bottom ?? Infinity) - 8;
+  const left = Math.max(0, bounds?.left ?? 0) + 8;
+  const right = Math.min(view?.innerWidth ?? 0, bounds?.right ?? Infinity) - 8;
+  const below = bottom - box.bottom - 2;
+  const above = box.top - top - 2;
+  const height = menu.scrollHeight;
+  const down = height <= below || below >= above;
+
+  menu.style.maxHeight = `${Math.max(80, down ? below : above)}px`;
+  menu.style.left = `${Math.max(left, Math.min(box.left, right - menu.offsetWidth))}px`;
+  menu.style.top = down ? `${box.bottom + 2}px` : `${box.top - 2 - Math.min(height, above)}px`;
+};
 
 const editors = new WeakMap<PluginSlot, { close: () => void }>();
 
 /** A floating window with a plugin's own editor in it. Opening it again brings it forward. */
-export const openPluginEditor = async (doc: Document, rack: PluginRack, slot: PluginSlot, options: Pick<InsertsOptions, 'labels' | 'icons'> = {}) => {
+export const openPluginEditor = async (doc: Document, rack: PluginRack, slot: PluginSlot, options: Pick<InsertsOptions, 'labels' | 'icons' | 'container'> = {}) => {
   const open = editors.get(slot);
   if (open) return open;
 
@@ -48,6 +72,7 @@ export const openPluginEditor = async (doc: Document, rack: PluginRack, slot: Pl
     title: slot.vendor ? `${slot.name} · ${slot.vendor}` : slot.name,
     close: labels.close,
     icons: options.icons,
+    container: options.container,
     onClose: () => {
       editors.delete(slot);
       off();
@@ -149,11 +174,8 @@ export const createInserts = (doc: Document, rack: PluginRack, track: string | n
       menu.append(item);
     }
 
-    const box = add.getBoundingClientRect();
-
-    menu.style.left = `${box.left}px`;
-    menu.style.top = `${box.bottom + 2}px`;
     doc.body.append(menu);
+    placeMenu(menu, add, options.container);
     doc.addEventListener('pointerdown', outside, true);
   });
 

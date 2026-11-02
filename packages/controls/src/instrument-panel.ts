@@ -171,6 +171,7 @@ export class StudioInstrumentPanel extends Emitter<InstrumentPanelEvents> {
       title: found.name,
       close: this.labels.close,
       icons: this.icons,
+      container: this.timeline.root.parentElement ?? undefined,
       onClose: () => {
         const panel = this.panels.get(track);
 

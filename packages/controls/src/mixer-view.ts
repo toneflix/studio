@@ -73,6 +73,7 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
   private readonly maxVolume: number;
   private readonly plugins?: Pick<MixerOptions, 'plugins' | 'catalog' | 'pickPlugin'>;
   private readonly doc: Document;
+  private readonly container: HTMLElement;
   private readonly lane: HTMLDivElement;
   private readonly strips = new Map<string, Strip>();
   private readonly master: Strip;
@@ -84,6 +85,7 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
     const container = resolveContainer(target);
 
     this.doc = container.ownerDocument;
+    this.container = container;
     this.timeline = options.timeline;
     this.engine = options.engine;
     this.icons = options.icons ?? {};
@@ -267,7 +269,7 @@ export class StudioMixer extends Emitter<MixerViewEvents> {
     pan.element.classList.add('tfs-channel-pan');
     body.append(scale, fader, meter.element);
     const inserts = this.plugins?.plugins
-      ? createInserts(doc, this.plugins.plugins, id, { catalog: this.plugins.catalog, pick: this.plugins.pickPlugin, labels: labels.inserts, icons: this.icons })
+      ? createInserts(doc, this.plugins.plugins, id, { catalog: this.plugins.catalog, pick: this.plugins.pickPlugin, labels: labels.inserts, icons: this.icons, container: this.container })
       : null;
 
     element.append(...(inserts ? [inserts.element] : []), pan.element, buttons, body, readout, title);

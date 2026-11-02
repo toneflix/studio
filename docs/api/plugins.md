@@ -26,5 +26,5 @@ Events: `change { track }`, `error { track, url, error }`.
 | --- | --- |
 | `initializeWamHost(context)` | Sets a context up to host WAM plugins once; resolves to `[groupId, groupKey]` |
 | `openPluginEditor(document, rack, slot, options?)` | From `@toneflix/studio-controls`. The plugin window the mixer opens; returns `{ close }` |
-| `createInserts(document, rack, track, options?)` | From `@toneflix/studio-controls`. A strip's insert slots: `catalog`, `pick`, `labels`, `icons`; returns `{ element, stop }` |
+| `createInserts(document, rack, track, options?)` | From `@toneflix/studio-controls`. A strip's insert slots: `catalog`, `pick`, `labels`, `icons`, `container` (editors and the add menu stay inside it); returns `{ element, stop }` |
 | `WebAudioModule`, `WamNode`, `WamConstructor`, `WamParameterInfo`, `WamTransportData` | Types for the parts of the WAM 2 API the studio uses |
