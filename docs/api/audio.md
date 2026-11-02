@@ -15,7 +15,7 @@ From `@toneflix/studio-audio`, also exported by `@toneflix/studio`.
 | `engine.seek(time)` | |
 | `engine.setLoop({ start, end } \| null)` | |
 | `engine.isolate(clipIds \| null)` | Hear only those clips, like a pattern played on its own; null hears every clip. `isolated` reads it, and the `isolate` event reports changes |
-| `engine.render(options?)` | Offline mix to an `AudioBuffer`: `from`, `to`, `sampleRate`, `channels`, `effects(track, context)`, which may be async. Pauses briefly after each note of an instrument with `mainThread`, so WAM instruments that play from the main thread are heard |
+| `engine.render(options?)` | Offline mix to an `AudioBuffer`: `from`, `to`, `sampleRate`, `channels`, `effects(track, context, atStart)`, which may be async; tasks passed to `atStart` run once the render is running, before any sound. Pauses briefly after each note of an instrument with `mainThread`, so WAM instruments that play from the main thread are heard, and calls each instrument's `prepare()` at the start |
 | `engine.time`, `isPlaying`, `loop`, `state` | |
 | `engine.stopAtEnd` | Read or change the `stopAtEnd` option |
 | `engine.positionAt(contextTime)` | The timeline time playing at a context time, counted on from where playback began without wrapping at the loop; null while paused |

@@ -12,7 +12,7 @@ From `@toneflix/studio-plugins`, also in `@toneflix/studio`. See the [Plugins gu
 | `rack.slots(track)` | The chain, first first: `{ id, url, name, vendor, bypass, plugin }` |
 | `rack.chainIds` | Chains with plugins; null is the master |
 | `rack.snapshot()` / `restore(snapshot)` | `{ master: SavedPlugin[], tracks: Record<string, SavedPlugin[]> }`, each `{ url, bypass, state }` |
-| `rack.renderEffects` | Pass as `engine.render({ effects })` |
+| `rack.renderEffects` | Pass as `engine.render({ effects })`. Each plugin's settings are set again once the render runs, since many WAMs ignore the state they are made with in an offline context |
 | `rack.openEditor(slot)` / `closeEditor(slot, element)` | The plugin's own editor |
 | `rack.syncTransport()` | Send tempo, time signature, bar and play state to the plugins |
 | `rack.destroy()` | |

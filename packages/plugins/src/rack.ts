@@ -192,11 +192,21 @@ export class PluginRack extends Emitter<PluginRackEvents> {
 
   /**
    * Effects for `engine.render`: each chain made again in the render's context
-   * with the same settings, so the mixdown has the plugins in it.
+   * with the same settings, so the mixdown has the plugins in it. The settings are set
+   * again once the render runs, since many WAMs drop the ones they were made with offline.
    */
-  readonly renderEffects = async (track: string | null, context: BaseAudioContext): Promise<Effect[]> => {
+  readonly renderEffects = async (track: string | null, context: BaseAudioContext, atStart?: (task: () => unknown) => void): Promise<Effect[]> => {
     const slots = this.slots(track).filter((slot) => !slot.bypass);
-    const plugins = await Promise.all(slots.map(async (slot) => this.create(context, slot.url, await slot.plugin.audioNode.getState())));
+    const plugins = await Promise.all(
+      slots.map(async (slot) => {
+        const state = await slot.plugin.audioNode.getState();
+        const plugin = await this.create(context, slot.url, state);
+
+        atStart?.(() => plugin.audioNode.setState(state));
+
+        return plugin;
+      }),
+    );
 
     return plugins.map((plugin) => plugin.audioNode);
   };
@@ -225,7 +235,7 @@ export class PluginRack extends Emitter<PluginRackEvents> {
     return async (choice, context, track, samples) => {
       const known = await fallback(choice, context, track, samples);
 
-      return known ?? new WamInstrument(await this.create(context, choice.id, choice.state));
+      return known ?? new WamInstrument(await this.create(context, choice.id, choice.state), choice.state);
     };
   }
 
