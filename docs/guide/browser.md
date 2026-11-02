@@ -39,6 +39,7 @@ Each addition is one undo step. Plugin items need `plugins`, a `PluginRack`.
 | `filesSource(document)` | Audio files people import from their device; they stay in the page and nothing is uploaded |
 | `pluginSource(catalog)` | Plugins from a list of `{ name, url }`, like the mixer's `catalog` |
 | `curatedWamSource()` | The reviewed plugins of [`@toneflix/studio-wams`](./plugins#curated-plugins), pinned on jsDelivr |
+| `communityWamSource()` | The [vetted community effects](./plugins#vetted-community-plugins), pinned on jsDelivr |
 | `listSource(id, label, items)` | Any fixed list, or a function that gives one; search and paging happen in the browser |
 | `wamCommunitySource({ allow })` | The Web Audio Modules community list, filtered by `allow` (see below) |
 
@@ -93,7 +94,7 @@ A Web Audio Module is JavaScript that runs in your page, with your page's rights
 
 A plugin can't run in a sandboxed frame on another origin and still process the session's audio, since Web Audio nodes can't cross frames.
 
-Test a plugin before you allow it, too. Many community plugins only partly work: some fail to load, some editors ignore touch, and some sound different, or not at all, in an exported mix. This documentation and the demo offer only the curated plugins for that reason.
+Test a plugin before you allow it, too. Many community plugins only partly work: some fail to load, some editors ignore touch, and some sound different, or not at all, in an exported mix. This documentation and the demo offer only the curated plugins and the [vetted community plugins](./plugins#vetted-community-plugins) for that reason.
 
 ## Labels and styling
 

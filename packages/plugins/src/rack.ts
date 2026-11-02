@@ -2,6 +2,7 @@ import { builtInInstruments, type AudioEngine, type Effect, type InstrumentFacto
 import { WamInstrument } from './instrument.ts';
 import { Emitter, uid } from '@toneflix/studio-core';
 import { initializeWamHost } from './host.ts';
+import { touchAsMouse } from './touch.ts';
 import type { WamConstructor, WamTransportData, WebAudioModule } from './types.ts';
 
 /** A plugin in an insert chain. */
@@ -40,6 +41,8 @@ export interface PluginRackOptions {
   load?: (url: string) => Promise<WamConstructor>;
   /** Sets a context up for plugins; the built-in WAM host by default */
   host?: (context: BaseAudioContext) => Promise<[string, string]>;
+  /** Plugins whose editors only answer the mouse; touches on their editors are passed on as mouse input */
+  mouseOnly?: (url: string) => boolean;
 }
 
 export interface PluginRackEvents extends Record<string, unknown> {
@@ -65,6 +68,7 @@ export class PluginRack extends Emitter<PluginRackEvents> {
   readonly engine: AudioEngine;
   private readonly load: (url: string) => Promise<WamConstructor>;
   private readonly host: (context: BaseAudioContext) => Promise<[string, string]>;
+  private readonly mouseOnly: (url: string) => boolean;
   private readonly chains = new Map<Chain, PluginSlot[]>();
   private readonly modules = new Map<string, Promise<WamConstructor>>();
   private readonly unlisten: (() => void)[];
@@ -74,6 +78,7 @@ export class PluginRack extends Emitter<PluginRackEvents> {
     this.engine = engine;
     this.load = options.load ?? importModule;
     this.host = options.host ?? initializeWamHost;
+    this.mouseOnly = options.mouseOnly ?? (() => false);
 
     const transport = () => this.syncTransport();
 
@@ -212,8 +217,12 @@ export class PluginRack extends Emitter<PluginRackEvents> {
   };
 
   /** The plugin's own editor. Call `closeEditor` when it is taken off the page. */
-  openEditor(slot: PluginSlot) {
-    return slot.plugin.createGui();
+  async openEditor(slot: PluginSlot) {
+    const editor = await slot.plugin.createGui();
+
+    if (this.mouseOnly(slot.url)) touchAsMouse(editor);
+
+    return editor;
   }
 
   closeEditor(slot: PluginSlot, editor: Element) {
@@ -235,7 +244,7 @@ export class PluginRack extends Emitter<PluginRackEvents> {
     return async (choice, context, track, samples) => {
       const known = await fallback(choice, context, track, samples);
 
-      return known ?? new WamInstrument(await this.create(context, choice.id, choice.state), choice.state);
+      return known ?? new WamInstrument(await this.create(context, choice.id, choice.state), choice.state, this.mouseOnly(choice.id));
     };
   }
 

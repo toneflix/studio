@@ -9,12 +9,15 @@ export class WamInstrument implements Instrument {
   readonly plugin: WebAudioModule;
   /** Some WAM instruments make their sound on the main thread, so offline renders wait for them */
   readonly mainThread = true;
+  /** Its editor only answers the mouse, so hosts pass touches on as mouse input */
+  readonly mouseOnly: boolean;
   private state: unknown;
 
-  constructor(plugin: WebAudioModule, state?: unknown) {
+  constructor(plugin: WebAudioModule, state?: unknown, mouseOnly = false) {
     this.plugin = plugin;
     this.output = plugin.audioNode;
     this.state = state;
+    this.mouseOnly = mouseOnly;
   }
 
   /** Many WAMs drop the state they were made with in an offline context, so it is set again once the render runs. */

@@ -14,7 +14,7 @@ onMounted(async () => {
   const engine = new AudioEngine();
   const recorder = new Recorder(engine);
   const notes = new NoteRecorder(engine);
-  const plugins = new PluginRack(engine);
+  const plugins = new PluginRack(engine, { mouseOnly: (url) => studio.isMouseOnlyWam(url) });
 
   engine.setInstruments(plugins.instruments());
   const waveforms = new Waveforms();
@@ -26,10 +26,10 @@ onMounted(async () => {
     renderHeader: trackStrip(engine, { recorder }),
     importAudio: (files) => studio.importAudioFiles(timeline, engine, files, { onSource: (id, buffer) => void waveforms.get(`file:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks)) }),
   });
-  const catalog = studio.curatedWams(wams);
+  const catalog = [...studio.curatedWams(wams), ...studio.communityWams({ allow: (plugin) => !plugin.isInstrument })];
   const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog, hidden: true });
   const keys = new StudioKeys(host.value!, { timeline, engine, recorder, notes, hidden: true });
-  const instruments = new StudioInstrumentPanel({ timeline, engine });
+  const instruments = new StudioInstrumentPanel({ timeline, engine, instruments: [...studio.DEFAULT_INSTRUMENT_OPTIONS, ...studio.communityWamInstruments()] });
   const pianoRoll = new StudioPianoRoll(host.value!, { timeline, engine, keys, instrumentPanel: instruments, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline,
@@ -42,6 +42,7 @@ onMounted(async () => {
       studio.sessionSource(timeline, engine),
       studio.filesSource(document),
       studio.curatedWamSource(wams),
+      studio.communityWamSource(),
     ],
   });
   const toolbar = new StudioToolbar(bar.value!, {

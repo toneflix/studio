@@ -1,7 +1,8 @@
 import { INSTRUMENT_DEFAULTS, INSTRUMENT_PARAMS, loopPoints, type AudioEngine, type Instrument, type InstrumentParam } from '@toneflix/studio-audio';
 import { Emitter, noteName, updateTrack, type InstrumentChoice, type SampleRef, type Track } from '@toneflix/studio-core';
+import { touchAsMouse } from '@toneflix/studio-plugins';
 import type { StudioTimeline } from '@toneflix/studio-timeline';
-import { openFloatingWindow } from './floating-window.ts';
+import { openFloatingWindow, shrinkToFit } from './floating-window.ts';
 import type { IconSet } from './icons.ts';
 import { createKnob } from './knob.ts';
 import { injectControlStyles } from './styles.ts';
@@ -79,6 +80,8 @@ export interface InstrumentPanelEvents extends Record<string, unknown> {
 
 /** A WAM instrument, which brings its own editor. */
 interface WithEditor {
+  /** Its editor only answers the mouse */
+  mouseOnly?: boolean;
   plugin: {
     createGui(): Promise<Element>;
     destroyGui(gui: Element): void;
@@ -553,7 +556,9 @@ export class StudioInstrumentPanel extends Emitter<InstrumentPanelEvents> {
         if (released) return instrument.plugin.destroyGui(element);
 
         gui = element;
+        if (instrument.mouseOnly) touchAsMouse(element);
         holder.replaceChildren(element);
+        if (element instanceof HTMLElement) shrinkToFit(element);
         panel.window.fit();
       },
       () => {
