@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-recorder",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "Recording for Toneflix Studio: records a microphone or line input onto a track, lined up with playback.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",

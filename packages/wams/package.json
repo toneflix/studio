@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-wams",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "Reviewed Web Audio Module effects for Toneflix Studio, pinned and served from jsDelivr, with a browser tab and mixer catalog for them.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",

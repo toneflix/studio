@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "The studio engine for the web: multitrack audio editing that feels like a desktop DAW, in any browser app. Includes every Toneflix Studio package.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",

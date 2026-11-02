@@ -1,6 +1,6 @@
 {
   "name": "@toneflix/studio-timeline",
-  "version": "0.4.0",
+  "version": "0.6.0",
   "description": "The multitrack timeline editor of Toneflix Studio: drag, split, trim, fade and layer clips in any web app.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
