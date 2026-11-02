@@ -28,6 +28,20 @@ new StudioToolbar('#toolbar', {
 
 Without an `engine`, the playback buttons and the meter are left out.
 
+### On phones
+
+A full toolbar doesn't fit on a phone. With `compact`, the toolbar keeps a few items on the bar when the screen is narrower than 640 pixels, and moves the rest into a **More** (⋯) menu. Its buttons grow to 40 pixels there, for fingers.
+
+```ts
+new StudioToolbar('#toolbar', {
+  timeline,
+  engine,
+  compact: { width: 640, keep: ['file', 'browser', 'play', 'stop', 'record'] },
+});
+```
+
+`compact: true` keeps the defaults shown above (`COMPACT_KEEP`). `keep` takes item names and your actions' ids. The More menu lists every tucked button by its label, with a ✓ on those switched on, and the snap picker as a submenu; the transport display and output meter are left out while compact. Put `'more'` in `items` to place the More button; it goes last otherwise. `toolbar.compacted` says whether the toolbar is compact now.
+
 ### Record
 
 Given a `recorder`, the toolbar gets a red record button after stop, and `trackStrip(engine, { recorder })` adds an R button to each track that arms it. See [Recording](./recording). Given `notes`, a `NoteRecorder`, recording an instrument track records the notes played on the `keys` instead; see [Keys and MIDI](./instruments#keys-and-midi). The `keys` item is a button that shows and hides the keys; it isn't in the default items.

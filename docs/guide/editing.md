@@ -23,7 +23,7 @@ Clips are pieces of audio on a track. Each one says where it starts on the timel
 | Click a track's name, or right-click its header | Opens the track menu: rename, duplicate, add a track below, move up or down, delete |
 | Double-click or double-tap a track's name | Renames it; Enter keeps the name, Esc cancels |
 
-On touch screens, drag clips with a finger and swipe empty space to scroll. Range selection works from the ruler.
+On touch screens, drag clips with a finger and swipe empty space to scroll. Range selection works from the ruler. Pinch with two fingers to zoom in and out around the point between them, and hold a finger on a clip for half a second to open its menu.
 
 ## Tracks
 

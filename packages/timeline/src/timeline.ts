@@ -275,6 +275,9 @@ const SVG = 'http://www.w3.org/2000/svg';
 /** Space above and below the line in an automation lane, in pixels */
 const AUTO_PAD = 5;
 
+/** Milliseconds a finger rests on a clip to open its menu */
+const LONG_PRESS = 500;
+
 const formatValue = (param: AutomationParam, value: number) => {
   if (param === 'pan') {
     const amount = Math.round(Math.abs(value) * 100);
@@ -333,6 +336,12 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   private currentRange: TimeRange | null = null;
   private loopRange: { start: number; end: number } | null = null;
   private gesture: Gesture | null = null;
+  /** Fingers on the timeline, for pinch zoom */
+  private readonly fingers = new Map<number, { x: number; y: number }>();
+  private pinch: { distance: number; pps: number; time: number } | null = null;
+  private longPress?: ReturnType<typeof setTimeout>;
+  /** When a long press last opened a menu, so the browser's own long-press menu doesn't open another */
+  private longPressAt = 0;
   private lastGrip: { track: string; at: number } | null = null;
   private lastPoint: { track: string; index: number; at: number } | null = null;
   private frame = 0;
@@ -1207,6 +1216,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
   destroy() {
     closeMenu();
+    clearTimeout(this.longPress);
     cancelAnimationFrame(this.frame);
     this.resize?.disconnect();
     for (const off of this.unsubscribe) off();
@@ -1700,6 +1710,10 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     );
 
     on(this.scroller, 'scroll', () => this.paint(), { passive: true });
+    on(this.content, 'pointerdown', (e) => this.onFingerDown(e));
+    on(this.content, 'pointermove', (e) => this.onFingerMove(e));
+    on(this.content, 'pointerup', (e) => this.onFingerUp(e));
+    on(this.content, 'pointercancel', (e) => this.onFingerUp(e));
     on(this.content, 'pointerdown', (e) => this.onPointerDown(e));
     on(this.content, 'pointermove', (e) => this.onPointerMove(e));
     on(this.content, 'pointerup', (e) => this.onPointerUp(e));
@@ -1711,7 +1725,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       (e) => {
         const g = this.gesture;
 
-        if (g && g.kind !== 'click-clip' && !(g.kind === 'range' && g.touch)) e.preventDefault();
+        if (this.pinch || (g && g.kind !== 'click-clip' && !(g.kind === 'range' && g.touch))) e.preventDefault();
       },
       { passive: false },
     );
@@ -1721,6 +1735,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
       if (!clip) return;
 
       e.preventDefault();
+      if (Date.now() - this.longPressAt < 1000) return;
       this.showClipMenu(clip, { x: e.clientX, y: e.clientY });
     });
     on(this.rows, 'contextmenu', (e) => {
@@ -1820,8 +1835,65 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     return this.state.tracks.length + Math.floor((y - top) / this.options.trackHeight);
   }
 
+  /** Track fingers: two start a pinch zoom, and one held still on a clip opens its menu. */
+  private onFingerDown(e: PointerEvent) {
+    if (e.pointerType !== 'touch') return;
+
+    this.fingers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    clearTimeout(this.longPress);
+
+    if (this.fingers.size === 2) {
+      const [a, b] = [...this.fingers.values()] as [{ x: number; y: number }, { x: number; y: number }];
+
+      this.cancelGesture();
+      this.pinch = { distance: Math.max(1, Math.hypot(a.x - b.x, a.y - b.y)), pps: this.pps, time: this.timeAt((a.x + b.x) / 2) };
+
+      return;
+    }
+
+    const clip = (e.target as HTMLElement).closest<HTMLElement>('.tfs-clip')?.dataset.clip;
+    if (!clip || this.fingers.size > 1) return;
+
+    const at = { x: e.clientX, y: e.clientY };
+
+    this.longPress = setTimeout(() => {
+      const g = this.gesture;
+      if (this.pinch || (g && 'started' in g && g.started)) return;
+
+      this.cancelGesture();
+      this.longPressAt = Date.now();
+      this.select([clip]);
+      this.showClipMenu(clip, at);
+    }, LONG_PRESS);
+  }
+
+  private onFingerMove(e: PointerEvent) {
+    const finger = this.fingers.get(e.pointerId);
+    if (!finger) return;
+
+    if (Math.hypot(e.clientX - finger.x, e.clientY - finger.y) > 8) clearTimeout(this.longPress);
+
+    const pinch = this.pinch;
+    if (!pinch) return;
+
+    finger.x = e.clientX;
+    finger.y = e.clientY;
+
+    const [a, b] = [...this.fingers.values()] as [{ x: number; y: number }, { x: number; y: number }];
+
+    e.preventDefault();
+    this.setZoom(pinch.pps * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.distance), pinch.time);
+  }
+
+  private onFingerUp(e: PointerEvent) {
+    if (!this.fingers.delete(e.pointerId)) return;
+
+    clearTimeout(this.longPress);
+    if (this.fingers.size < 2) this.pinch = null;
+  }
+
   private onPointerDown(e: PointerEvent) {
-    if (e.button !== 0 || this.gesture) return;
+    if (e.button !== 0 || this.gesture || this.pinch) return;
 
     const target = e.target as HTMLElement;
     const grip = target.closest<HTMLElement>('.tfs-row-resize');
@@ -1950,7 +2022,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
   private onPointerMove(e: PointerEvent) {
     const g = this.gesture;
-    if (!g || g.id !== e.pointerId || g.kind === 'click-clip') return;
+    if (!g || g.id !== e.pointerId || g.kind === 'click-clip' || this.pinch) return;
 
     if (!g.started) {
       if (Math.abs(e.clientX - g.x) < 3 && Math.abs(e.clientY - ('y' in g ? g.y : e.clientY)) < 3) return;

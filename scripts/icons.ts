@@ -33,6 +33,7 @@ const icons: Record<string, string> = {
   plugin: 'plug',
   add: 'plus',
   keys: 'keyboard-music',
+  more: 'ellipsis',
 };
 
 /** Shape attributes changed from Lucide's: the record dot is drawn smaller, as on hardware. */

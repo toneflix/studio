@@ -3,7 +3,7 @@ import { DEFAULT_APP, openProject, saveProject, type AppIdentity, type OpenedPro
 import type { SnapTo } from '@toneflix/studio-core';
 import type { PluginRack } from '@toneflix/studio-plugins';
 import type { NoteRecorder, Recorder } from '@toneflix/studio-recorder';
-import { openMenu, resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
+import { openMenu, resolveContainer, type ContainerTarget, type MenuItem, type StudioTimeline } from '@toneflix/studio-timeline';
 import { createDisplay } from './display.ts';
 import { renderIcon, type Icon, type IconName, type IconSet } from './icons.ts';
 import { createInfoDialog, sessionInfo, type InfoRow } from './info.ts';
@@ -90,7 +90,23 @@ export interface ToolbarOptions {
   onProjectSource?: (id: string, buffer: AudioBuffer) => void;
   /** Called after a project opens, with its format and the audio files it could not find */
   onProjectOpen?: (result: OpenedProject) => void;
+  /**
+   * On narrow screens, keep only some items on the bar and move the rest into
+   * a More menu. `true` uses the defaults. The `more` item places its button;
+   * it goes last without one.
+   */
+  compact?: CompactToolbar | boolean;
 }
+
+export interface CompactToolbar {
+  /** Screen width, in CSS pixels, below which the toolbar turns compact; 640 when left out */
+  width?: number;
+  /** Items and action ids that stay on the bar; the file menu, browser, play, stop and record when left out */
+  keep?: readonly string[];
+}
+
+/** What a compact toolbar keeps on the bar unless told otherwise. */
+export const COMPACT_KEEP: readonly string[] = ['file', 'browser', 'play', 'stop', 'record'];
 
 export const DEFAULT_TOOLBAR: ToolbarItem[] = [
   'file',
@@ -144,6 +160,7 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   timeSignature: 'Time signature',
   meter: 'Output level',
   info: 'Session info',
+  more: 'More',
   mixer: 'Mixer',
   keys: 'Keys',
   browser: 'Browser: sounds and plugins',
@@ -189,6 +206,9 @@ export class StudioToolbar {
   private readonly notes?: NoteRecorder;
   private readonly keys?: StudioKeys;
   private infoDialog?: ReturnType<typeof createInfoDialog>;
+  private readonly compact?: Required<CompactToolbar>;
+  private moreButton?: HTMLButtonElement;
+  private isCompact = false;
 
   constructor(target: ContainerTarget, options: ToolbarOptions) {
     const container = resolveContainer(target);
@@ -238,7 +258,16 @@ export class StudioToolbar {
       else if (item === 'display') this.place(item, this.display());
       else if (item === 'meter') this.place(item, this.outputMeter());
       else if (item === 'file') this.place(item, this.fileButton());
-      else this.place(item, this.button(item as Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter' | 'file'>));
+      else if (item === 'more') {
+        if (options.compact) this.root.append(this.more());
+      } else this.place(item, this.button(item as Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter' | 'file' | 'more'>));
+    }
+
+    if (options.compact) {
+      const compact = options.compact === true ? {} : options.compact;
+
+      this.compact = { width: compact.width ?? 640, keep: compact.keep ?? COMPACT_KEEP };
+      if (!this.moreButton) this.root.append(this.more());
     }
 
     for (const action of actions.values()) this.addAction(action);
@@ -246,6 +275,12 @@ export class StudioToolbar {
     container.append(this.root);
     this.listen();
     this.refresh();
+    this.watchWidth();
+  }
+
+  /** Whether the toolbar shows only its kept items, with the rest in the More menu. */
+  get compacted() {
+    return this.isCompact;
   }
 
   /** What hooks and actions are given. */
@@ -272,8 +307,10 @@ export class StudioToolbar {
 
     if (anchor && action.before) anchor.before(button);
     else if (anchor) anchor.after(button);
+    else if (this.moreButton?.parentNode === this.root && this.moreButton === this.root.lastElementChild) this.moreButton.before(button);
     else this.root.append(button);
 
+    this.layout();
     this.refresh();
 
     return () => this.removeAction(action.id);
@@ -473,7 +510,7 @@ export class StudioToolbar {
 
     if (formats.length === 1 || !button) return void this.busy(button, () => this.saveProject(formats[0]!));
 
-    const box = button.getBoundingClientRect();
+    const box = this.anchor(button).getBoundingClientRect();
 
     openMenu(this.doc, { x: box.left, y: box.bottom + 4 }, this.saveItems(button), this.labels.saveProject);
   }
@@ -499,7 +536,7 @@ export class StudioToolbar {
     text.textContent = this.labels.file;
     button.append(text, renderIcon(this.doc, 'chevron', this.icons));
     button.addEventListener('click', () => {
-      const box = button.getBoundingClientRect();
+      const box = this.anchor(button).getBoundingClientRect();
       const exportLabel = this.onSave ? this.labels.save : this.labels.export;
 
       openMenu(
@@ -515,6 +552,103 @@ export class StudioToolbar {
     this.buttons.set('file', button);
 
     return button;
+  }
+
+  /** An item's element, or the More button while the item is tucked into the More menu. */
+  private anchor(element: HTMLElement) {
+    return element.classList.contains('tfs-toolbar-tucked') && this.moreButton ? this.moreButton : element;
+  }
+
+  /** The More button, which lists the items a compact toolbar tucks away. */
+  private more() {
+    const button = this.doc.createElement('button');
+
+    button.type = 'button';
+    button.className = 'tfs-tool tfs-toolbar-more';
+    button.dataset.tool = 'more';
+    button.title = this.labels.more;
+    button.hidden = true;
+    button.setAttribute('aria-label', this.labels.more);
+    button.setAttribute('aria-haspopup', 'menu');
+    button.append(renderIcon(this.doc, 'more', this.icons));
+    button.addEventListener('click', () => this.openMore());
+    this.moreButton = button;
+    this.placed.set('more', button);
+
+    return button;
+  }
+
+  /** The items tucked away, as a menu under the More button. */
+  private openMore() {
+    const button = this.moreButton;
+    if (!button) return;
+
+    const box = button.getBoundingClientRect();
+    const at = { x: box.left, y: box.bottom + 4 };
+    const items: MenuItem[] = [];
+
+    for (const element of this.root.querySelectorAll<HTMLElement>('.tfs-toolbar-tucked')) {
+      if (element instanceof HTMLButtonElement) {
+        // Keyboard shortcuts in brackets mean little on a phone
+        const label = (element.title || element.getAttribute('aria-label') || element.textContent || '').replace(/\s*\([^)]*\)$/, '');
+
+        items.push({
+          label: element.getAttribute('aria-pressed') === 'true' ? `✓ ${label}` : label,
+          disabled: element.disabled,
+          onSelect: () => element.click(),
+        });
+      } else if (element.classList.contains('tfs-snap-pick')) {
+        const select = element.querySelector('select');
+        const current = SNAPS.find(([value]) => value === this.timeline.grid.snap)?.[1] ?? '';
+        const snaps = SNAPS.map(([value, text]) => ({
+          label: value === this.timeline.grid.snap ? `✓ ${text}` : text,
+          onSelect: () => {
+            if (select) select.value = value;
+            this.timeline.setGrid({ snap: value });
+          },
+        }));
+
+        items.push({ label: `${this.labels.snap}: ${current}`, onSelect: () => openMenu(this.doc, at, snaps, this.labels.snap) });
+      }
+    }
+
+    openMenu(this.doc, at, items, this.labels.more);
+  }
+
+  /** Turn compact when the screen gets narrower than the compact width, and back. */
+  private watchWidth() {
+    const view = this.doc.defaultView;
+    const compact = this.compact;
+    if (!compact || !view?.matchMedia) return;
+
+    const query = view.matchMedia(`(max-width: ${compact.width - 0.02}px)`);
+    const update = () => {
+      this.isCompact = query.matches;
+      this.layout();
+    };
+
+    query.addEventListener('change', update);
+    this.unsubscribe.push(() => query.removeEventListener('change', update));
+    update();
+  }
+
+  /** Tuck away the items a compact toolbar doesn't keep, or bring them all back. */
+  private layout() {
+    if (!this.compact || !this.moreButton) return;
+
+    const keep = new Set(this.compact.keep);
+    const ids = new Map([...this.placed].map(([id, element]) => [element, id]));
+
+    this.root.classList.toggle('tfs-toolbar--compact', this.isCompact);
+    this.moreButton.hidden = !this.isCompact;
+
+    for (const element of this.root.children) {
+      if (element === this.moreButton || !(element instanceof HTMLElement)) continue;
+
+      const id = ids.get(element);
+
+      element.classList.toggle('tfs-toolbar-tucked', this.isCompact && !(id && keep.has(id)));
+    }
   }
 
   /** Download the session as a project; the app format keeps the plugins. */
@@ -626,7 +760,7 @@ export class StudioToolbar {
     return meter.element;
   }
 
-  private button(item: Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter' | 'file'>) {
+  private button(item: Exclude<ToolbarItem, '|' | 'snap' | 'display' | 'meter' | 'file' | 'more'>) {
     const button = this.doc.createElement('button');
 
     button.type = 'button';

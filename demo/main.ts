@@ -87,6 +87,7 @@ const toolbar = new StudioToolbar('#toolbar', {
   app: { name: 'Toneflix Studio', id: 'toneflix-studio-demo', version: '0.4', description: 'Demo session', copyright: '© Toneflix', extension: 'tfstudio' },
   onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks)),
   onProjectOpen: ({ missing }) => missing.length && console.warn('Audio not found:', missing),
+  compact: true,
 });
 loadSample(timeline, { engine, waveforms });
 timeline.showAutomation('keys', 'volume');
