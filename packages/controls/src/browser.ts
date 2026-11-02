@@ -452,6 +452,9 @@ export class StudioBrowser extends Emitter<BrowserEvents> {
     add.addEventListener('click', () => this.showAddMenu(item, source, add, row));
     row.append(add);
 
+    row.addEventListener('pointerdown', (e) => {
+      if (canAdd && e.pointerType !== 'mouse' && !(e.target as Element).closest('button')) this.touchDrag(e, row, item, source);
+    });
     row.addEventListener('dragstart', (e) => {
       this.dragging = { source, item };
       dragged = item.kind === 'audio' ? { name: item.name, source: this.sourceId(item, source), load: () => this.bufferOf(item, source, false) } : null;
@@ -465,6 +468,98 @@ export class StudioBrowser extends Emitter<BrowserEvents> {
     });
 
     return row;
+  }
+
+  /**
+   * Drag an item with a finger: hold it still for a moment, then move it where it
+   * goes. The drawer fades so the tracks under it show, and letting go drops the item
+   * there as a mouse drop would, so every drop target takes it. Moving before the
+   * hold ends scrolls the list instead.
+   */
+  private touchDrag(e: PointerEvent, row: HTMLElement, item: LibraryItem, source: LibrarySource) {
+    const doc = this.doc;
+    const view = doc.defaultView;
+    const start = { x: e.clientX, y: e.clientY };
+    let ghost: HTMLElement | null = null;
+    let at = start;
+
+    const lift = () => {
+      ghost = doc.createElement('div');
+      ghost.className = 'tfs-browser-ghost';
+      ghost.textContent = item.name;
+      doc.body.append(ghost);
+      this.dragging = { source, item };
+      dragged = item.kind === 'audio' ? { name: item.name, source: this.sourceId(item, source), load: () => this.bufferOf(item, source, false) } : null;
+      this.root.classList.add('tfs-browser--lifted');
+      row.classList.add('tfs-browser-item--lifted');
+      navigator.vibrate?.(10);
+      follow(at.x, at.y);
+    };
+    const follow = (x: number, y: number) => {
+      if (ghost) ghost.style.transform = `translate(${x}px, ${y}px)`;
+    };
+    const timer = view?.setTimeout(lift, 350);
+    // A lifted item keeps the page from scrolling under the finger
+    const block = (t: TouchEvent) => {
+      if (ghost) t.preventDefault();
+    };
+    const move = (m: PointerEvent) => {
+      if (m.pointerId !== e.pointerId) return;
+
+      at = { x: m.clientX, y: m.clientY };
+      if (ghost) follow(at.x, at.y);
+      else if (Math.hypot(at.x - start.x, at.y - start.y) > 8) end(false);
+    };
+    const up = (u: PointerEvent) => u.pointerId === e.pointerId && end(true);
+    const cancel = (c: PointerEvent) => c.pointerId === e.pointerId && end(false);
+    const menu = (c: Event) => c.preventDefault();
+    const end = (drop: boolean) => {
+      view?.clearTimeout(timer);
+      row.removeEventListener('touchmove', block);
+      row.removeEventListener('contextmenu', menu);
+      doc.removeEventListener('pointermove', move);
+      doc.removeEventListener('pointerup', up);
+      doc.removeEventListener('pointercancel', cancel);
+      row.draggable = true;
+      if (!ghost) return;
+
+      ghost.remove();
+      // Dropped while the drawer is still see-through, so the point finds what is under it
+      if (drop) this.dropAt(at.x, at.y, item, source);
+      this.root.classList.remove('tfs-browser--lifted');
+      row.classList.remove('tfs-browser-item--lifted');
+      this.dragging = null;
+      dragged = null;
+    };
+
+    // The finger drag replaces the browser's own drag, which most phones don't offer
+    row.draggable = false;
+    row.addEventListener('touchmove', block, { passive: false });
+    row.addEventListener('contextmenu', menu);
+    doc.addEventListener('pointermove', move);
+    doc.addEventListener('pointerup', up);
+    doc.addEventListener('pointercancel', cancel);
+  }
+
+  /** Drop a lifted item on whatever is under a point, with the same events a mouse drop sends. */
+  private dropAt(x: number, y: number, item: LibraryItem, source: LibrarySource) {
+    const target = this.doc.elementFromPoint(x, y);
+    if (!target || this.root.contains(target)) return;
+
+    const data = new DataTransfer();
+
+    data.setData(DRAG_TYPE, `${source.id}\n${item.id}`);
+    data.setData('text/plain', item.name);
+
+    const send = (type: string) => {
+      const event = new DragEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer: data });
+
+      target.dispatchEvent(event);
+
+      return event.defaultPrevented;
+    };
+
+    if (send('dragover')) send('drop');
   }
 
   /** The tracks to add to, and a new track for sounds or the master for plugins. */
