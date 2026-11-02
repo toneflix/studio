@@ -98,6 +98,7 @@ export const STYLES = `
 .tfs-clip:focus-visible { outline: 2px solid var(--tfs-select); outline-offset: -2px; }
 .tfs-clip.tfs-clip--selected { border-color: var(--tfs-select); box-shadow: inset 0 0 0 1px var(--tfs-select), -3px 0 6px -2px rgba(0, 0, 0, 0.55); filter: brightness(1.12); }
 .tfs-clip--dragging { cursor: grabbing; opacity: 0.92; }
+.tfs-clip[data-linked]::after { content: '⧉ ' attr(data-linked); position: absolute; top: 1px; right: 4px; z-index: 1; padding: 0 5px; border-radius: 7px; background: rgba(0, 0, 0, 0.35); color: #fff; font-size: 10px; font-weight: 600; line-height: 14px; pointer-events: none; }
 .tfs-clip-head { position: absolute; left: 0; right: 0; top: 0; height: 16px; padding: 1px 8px; box-sizing: border-box; font-size: 11px; color: #fff; font-weight: 600; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--clip, var(--tfs-clip)); pointer-events: none; }
 .tfs-wave { position: absolute; left: 0; right: 0; top: 16px; bottom: 0; pointer-events: none; }
 .tfs-wave canvas { position: absolute; top: 0; height: 100%; }

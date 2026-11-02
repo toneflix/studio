@@ -19,6 +19,7 @@ Clips are pieces of audio on a track. Each one says where it starts on the timel
 | Ctrl or ⌘ + wheel | Zooms around the pointer |
 | Drag a track's bottom edge | Makes the track taller or shorter; double-click to reset |
 | **+** above the track headers | Adds a track at the bottom and lets you name it |
+| Right-click a clip | Opens the clip menu: edit notes (note clips), make unique (copies of a pattern), split at the playhead, duplicate, delete |
 | Click a track's name, or right-click its header | Opens the track menu: rename, duplicate, add a track below, move up or down, delete |
 | Double-click a track's name | Renames it; Enter keeps the name, Esc cancels |
 

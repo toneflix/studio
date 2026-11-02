@@ -26,6 +26,12 @@ Pure functions that take a `TimelineState` and return a new one. They work witho
 | `audibleRanges(clips)` | The heard parts of one track's clips |
 | `stackOrder(clips)` | One track's clips from bottom to top |
 | `uid(prefix?)` | A short id unique in the page |
+| `replaceNotes(state, clip, notes)` | Sets a note clip's notes, and those of every clip playing the same pattern |
+| `linkedClips(state, clip)` | The note clips playing the same pattern as a clip, itself included |
+| `patternsOf(state, track?)` | The patterns on a track, or everywhere: `{ source, name, notes, clips }` |
+| `unlinkClip(state, clip, { name?, notes? })` | Gives a note clip a pattern of its own; returns `{ state, source }` |
+| `usePattern(state, clip, source)` | Makes a note clip play another pattern, keeping its place and length |
+| `nextPatternName(state, track, base)` | A numbered name not yet used on the track, like `Beat 2` |
 
 `ids` is a `Set<string>`. `sources` is the model's `sources` map; trims use it to stay inside the audio.
 

@@ -36,9 +36,23 @@ The add track button asks what to add: an empty audio track, audio from a file o
 | --- | --- |
 | `timeline.addNoteClip(track, time, bars?)` | Adds an empty note clip at the bar `time` falls in |
 | `timeline.setNotes(clip, notes)` | Replaces a note clip's notes |
+| `timeline.makeUnique(clip, notes?)` | Gives a note clip a pattern of its own |
+| `timeline.usePattern(clip, source)` | Makes a note clip play another pattern |
 | `timeline.setInstrument(track, choice)` | Picks a track's instrument, or changes its settings |
 
 Each one is a single undo step.
+
+## Patterns
+
+Note clips that are copies of each other play one pattern: duplicate a note clip (Ctrl+D, or Duplicate in its right-click menu) or split it, and every copy plays the same notes. Editing any copy, in the piano roll or the step sequencer, changes them all, so a beat or a riff can be built once and placed through the song. Copies show a badge with how many there are, and changing a pattern's length in **Bars** changes the copies that show all of it.
+
+| To | Do this |
+| --- | --- |
+| Edit one copy on its own | **Make unique** in the clip's right-click menu or the piano roll's pattern menu. It gets a numbered pattern, like Beat 2 |
+| Start a fresh pattern in a clip's place | **New empty pattern** in the pattern menu |
+| Switch a clip to another pattern on its track | Pick the pattern in the pattern menu, which opens from the clip's name in the piano roll |
+
+A note clip's `source` names its pattern, so clips with the same `source` share it. A duplicated track gets patterns of its own.
 
 ## Piano roll
 
@@ -108,7 +122,26 @@ timeline.setInstrument('keys', {
 engine.setBuffer('my-kick', kickBuffer); // the audio, by source id, as for clips
 ```
 
-A sample is `{ source, name?, root?, tune?, gain? }`. The engine looks each one up by `source` as it plays, so set its buffer before or after. App projects save the samples' audio with the clips', and `sourcesInUse(state)` lists every source a session needs. Pass `onSource` to the piano roll to get each loaded sample's audio, for example to upload it.
+A sample is `{ source, name?, root?, tune?, gain?, mode?, loopStart?, loopEnd? }`. The engine looks each one up by `source` as it plays, so set its buffer before or after. App projects save the samples' audio with the clips', and `sourcesInUse(state)` lists every source a session needs. Pass `onSource` to the piano roll to get each loaded sample's audio, for example to upload it.
+
+### Gate, one-shot and loop
+
+A sampler sample plays in one of three modes, set with `mode`:
+
+| Mode | What it does |
+| --- | --- |
+| `gate` (default) | Plays while the note is held and stops at the note's end |
+| `oneShot` | Plays to the end of the sample whatever the note's length, like a drum hit or a vocal chop |
+| `loop` | Plays from the start, then repeats `loopStart` to `loopEnd` (seconds into the sample) while the note is held, so a short sound can sustain |
+
+```ts
+timeline.setInstrument('pad', {
+  id: 'sampler',
+  state: { samples: [{ source: 'pad-c4', name: 'Pad', root: 60, mode: 'loop', loopStart: 0.4, loopEnd: 1.2 }] },
+});
+```
+
+Without loop points the whole sample loops. Stopping playback silences every mode at once. In the instrument panel, a sampler lists its samples with a root note picker, the three modes, and loop start and end knobs in loop mode. `loopPoints(sample, duration)` from `@toneflix/studio-audio` gives the points a sample will loop between.
 
 ## Keys and MIDI
 
@@ -164,7 +197,7 @@ instruments.open('lead'); // or from code
 | --- | --- |
 | Synth | Wave (saw, square, triangle, sine), detune, cutoff, resonance, filter envelope, attack, decay, sustain, release, volume |
 | Drums | Tune, decay, volume |
-| Sampler | Attack, release, volume |
+| Sampler | Attack, release, volume; for each sample its root note, mode (gate, one-shot, loop) and loop points |
 
 Drag a knob up or down, or use the arrow keys, to hear the change at once; letting go saves it as one undo step. Double-click a knob to reset it, and **Reset** puts every setting back. Cutoff and the envelope times turn in equal ratios, so the low end has room. The picker at the top switches the track to another instrument; pass `instruments` to offer your own, such as WAM instruments by URL. A WAM instrument shows its own editor, and its settings are saved to the track when the window closes. Each track gets one window, which can be dragged by its title and stays on screen on phones.
 

@@ -193,6 +193,13 @@ export const CONTROL_STYLES = `
 .tfs-instrument-name { color: var(--tfs-muted, #8d8d96); font-size: 11px; }
 .tfs-instrument-value { font-variant-numeric: tabular-nums; font-size: 11px; }
 .tfs-instrument-editor { min-height: 40px; }
+.tfs-instrument-samples { display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; max-width: min(420px, calc(100vw - 40px)); }
+.tfs-instrument-sample { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.tfs-instrument-sample-name { flex: 1 1 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.tfs-instrument-sample .tfs-instrument-pick { flex: none; width: 76px; }
+.tfs-instrument-sample .tfs-roll-views { margin: 0; }
+.tfs-instrument-loop { display: flex; gap: 16px; flex: 1 1 100%; justify-content: center; }
+.tfs-instrument-empty { margin: 0; color: var(--tfs-muted, #8d8d96); font-size: 12px; }
 .tfs-instrument-editor:not(:has(*)) { padding: 12px; color: var(--tfs-muted, #8d8d96); }
 .tfs-knob { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #4a4a52, #26262b 70%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4); cursor: ns-resize; touch-action: none; }
 .tfs-knob:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #03bfff); outline-offset: 2px; }
@@ -204,6 +211,12 @@ export const CONTROL_STYLES = `
 @media (prefers-reduced-motion: reduce) { .tfs-roll--overlay { animation: none; } }
 .tfs-roll--drums { --tfs-roll-keys: 96px; }
 .tfs-roll-bar { display: flex; flex: none; align-items: center; gap: 4px; padding: 4px 6px 4px 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); }
+.tfs-roll-pattern { display: inline-flex; flex: 0 1 auto; align-items: center; gap: 2px; min-width: 0; height: 30px; margin-right: 8px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.tfs-roll-pattern:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+.tfs-roll-pattern:disabled { cursor: default; }
+.tfs-roll-pattern:disabled .tfs-icon { display: none; }
+.tfs-roll-pattern .tfs-icon { flex: none; width: 14px; height: 14px; }
+.tfs-roll-pattern .tfs-roll-title { margin-right: 0; }
 .tfs-roll-title { flex: 0 1 auto; min-width: 0; margin-right: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
 .tfs-roll-gap { flex: 1 1 0; }
 .tfs-roll-bar .tfs-tool { flex: none; width: 30px; height: 30px; }

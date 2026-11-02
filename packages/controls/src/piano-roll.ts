@@ -11,6 +11,8 @@ import {
   noteName,
   quantizeNotes,
   replaceNotes,
+  linkedClips,
+  patternsOf,
   resizeNotes,
   uid,
   updateTrack,
@@ -51,6 +53,12 @@ export interface PianoRollLabels extends StepGridLabels {
   samples: string;
   /** Shows the keys, to play the open clip's track live */
   playKeys: string;
+  /** The patterns menu, opened from the clip's name */
+  patterns: string;
+  /** Gives the open clip a copy of its pattern to edit on its own */
+  makeUnique: string;
+  /** Gives the open clip a new, empty pattern */
+  newPattern: string;
   /** Opens the open clip's instrument settings */
   sound: string;
   /** Adds a sample on a key; `{note}` is the key last played */
@@ -81,6 +89,9 @@ export const DEFAULT_PIANO_ROLL_LABELS: PianoRollLabels = {
   velocity: 'Velocity',
   samples: 'Samples',
   playKeys: 'Keys',
+  patterns: 'Patterns',
+  makeUnique: 'Make unique',
+  newPattern: 'New empty pattern',
   sound: 'Sound',
   addSampleOn: 'Add sample on {note}…',
   loadSample: 'Load sample…',
@@ -155,6 +166,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
   private readonly doc: Document;
   private readonly grid: Grid;
   private readonly titleEl: HTMLElement;
+  private readonly patternButton: HTMLButtonElement;
   private readonly snapSelect: HTMLSelectElement;
   private readonly buttons: Record<'quantize' | 'delete' | 'zoomIn' | 'zoomOut', HTMLButtonElement>;
   private readonly scroller: HTMLDivElement;
@@ -250,8 +262,17 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     const bar = el('div', 'tfs-roll-bar', this.root);
     const snapLabel = el('label', 'tfs-roll-snap', bar);
 
-    this.titleEl = el('strong', 'tfs-roll-title', bar);
-    bar.prepend(this.titleEl);
+    // The clip's name opens the patterns menu
+    const pattern = el('button', 'tfs-roll-pattern', bar);
+
+    pattern.type = 'button';
+    pattern.setAttribute('aria-haspopup', 'menu');
+    pattern.title = this.labels.patterns;
+    this.titleEl = el('strong', 'tfs-roll-title', pattern);
+    pattern.append(renderIcon(doc, 'chevron', options.icons));
+    pattern.addEventListener('click', () => this.openPatternMenu(pattern));
+    this.patternButton = pattern;
+    bar.prepend(pattern);
 
     const views = el('div', 'tfs-roll-views', bar);
     const viewButton = (view: 'notes' | 'steps', text: string) => {
@@ -265,7 +286,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     };
 
     views.setAttribute('role', 'group');
-    this.titleEl.after(views);
+    pattern.after(views);
     this.viewButtons = { notes: viewButton('notes', this.labels.notesView), steps: viewButton('steps', this.labels.stepsView) };
     this.playButton = el('button', 'tfs-tool tfs-roll-play', bar);
     this.playButton.type = 'button';
@@ -642,6 +663,33 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     openMenu(this.doc, { x: box.left, y: box.bottom + 4 }, [add, ...remove], this.labels.samples);
   }
 
+  /** The patterns on the open clip's track, to switch to, and ways to start a new one. */
+  private openPatternMenu(anchor: HTMLElement) {
+    const clip = this.clip;
+    if (!clip) return;
+
+    const box = anchor.getBoundingClientRect();
+    const state = this.timeline.state;
+    const linked = linkedClips(state, clip.id).length;
+    const edit = this.editable;
+    const patterns = patternsOf(state, clip.track).map((pattern) => ({
+      label: `${pattern.source === clip.source ? '✓ ' : ''}${pattern.name || this.labels.title} (${pattern.clips.length})`,
+      disabled: !edit || pattern.source === clip.source,
+      onSelect: () => this.timeline.usePattern(clip.id, pattern.source),
+    }));
+
+    openMenu(
+      this.doc,
+      { x: box.left, y: box.bottom + 4 },
+      [
+        ...patterns,
+        { label: this.labels.makeUnique, disabled: !edit || linked < 2, onSelect: () => void this.timeline.makeUnique(clip.id) },
+        { label: this.labels.newPattern, disabled: !edit, onSelect: () => void this.timeline.makeUnique(clip.id, []) },
+      ],
+      this.labels.patterns,
+    );
+  }
+
   /** Seconds in one step of the step grid: the snap when it is finer than a beat, otherwise a sixteenth. */
   private stepLength() {
     const section = this.grid.sectionAt(this.origin);
@@ -670,10 +718,22 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
 
         if (!id || !this.editable) return;
 
-        model().apply('Pattern length', (state) => ({
-          ...state,
-          clips: state.clips.map((clip) => (clip.id === id ? { ...clip, duration: Math.max(0.05, duration - clip.offset) } : clip)),
-        }));
+        // Copies of the pattern that show all of it, as this clip does, change length with it
+        model().apply('Pattern length', (state) => {
+          const open = state.clips.find((clip) => clip.id === id);
+          if (!open) return state;
+
+          const whole = new Set(
+            linkedClips(state, id)
+              .filter((clip) => Math.abs(clip.offset - open.offset) < 1e-6 && Math.abs(clip.duration - open.duration) < 1e-6)
+              .map((clip) => clip.id),
+          );
+
+          return {
+            ...state,
+            clips: state.clips.map((clip) => (whole.has(clip.id) ? { ...clip, duration: Math.max(0.05, duration - clip.offset) } : clip)),
+          };
+        });
       },
       audition: (pitch: number, velocity: number) => this.audition(pitch, velocity),
       sampling: () => this.sampling(),
@@ -1222,6 +1282,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.root.classList.toggle('tfs-roll--empty', !clip);
     this.emptyEl.hidden = !!clip;
     this.titleEl.textContent = clip ? `${clip.name ?? track?.name ?? ''}` : this.labels.title;
+    this.patternButton.disabled = !clip;
 
     for (const b of Object.values(this.buttons)) b.disabled = !clip;
     this.renderPlay();

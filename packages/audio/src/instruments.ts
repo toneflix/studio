@@ -51,8 +51,8 @@ interface Sound {
   pitch: number;
   /** When it starts */
   from: number;
-  /** Fade out from a context time and stop */
-  end: (when: number) => void;
+  /** Fade out from a context time and stop; `hard` stops even sounds that ignore note ends */
+  end: (when: number, hard?: boolean) => void;
   /** When it stops on its own */
   until: number;
 }
@@ -77,7 +77,7 @@ class Sounds {
   }
 
   stopAll(when: number) {
-    for (const sound of this.list) if (sound.until > when) sound.end(Math.max(when, sound.from));
+    for (const sound of this.list) if (sound.until > when) sound.end(Math.max(when, sound.from), true);
     this.list = [];
   }
 }
@@ -460,6 +460,14 @@ export interface SamplerState {
 
 export const DEFAULT_SAMPLER: SamplerState = { samples: [], attack: 0.002, release: 0.15, volume: 0.8 };
 
+/** A sample's loop inside its audio, or null when the points leave nothing to loop. */
+export const loopPoints = (sample: SampleRef, duration: number) => {
+  const start = Math.min(Math.max(0, sample.loopStart ?? 0), duration);
+  const end = Math.min(Math.max(start, sample.loopEnd ?? duration), duration);
+
+  return end - start > 0.005 ? { start, end } : null;
+};
+
 /** The sample nearest a note: the closest root, the lower one on a tie. Samples without a root sit on C4. */
 export const sampleFor = (samples: readonly SampleRef[], pitch: number) => {
   let best: SampleRef | undefined;
@@ -475,8 +483,9 @@ export const sampleFor = (samples: readonly SampleRef[], pitch: number) => {
 };
 
 /**
- * Plays audio samples on notes, repitched from each sample's root note. Notes are
- * held for their length and fade out, or end sooner when the sample does.
+ * Plays audio samples on notes, repitched from each sample's root note. By each
+ * sample's `mode`, notes are held for their length and fade out (or end sooner when
+ * the sample does), play the whole sample, or loop it while held.
  */
 export class Sampler implements Instrument {
   readonly output: GainNode;
@@ -528,10 +537,19 @@ export class Sampler implements Instrument {
     if (!sample || !buffer) return;
 
     const { attack, release } = this.state;
+    const mode = sample.mode ?? 'gate';
     const source = new AudioBufferSourceNode(this.context, { buffer, playbackRate: rate(pitch - (sample.root ?? 60) + (sample.tune ?? 0)) });
     const amp = new GainNode(this.context, { gain: 0 });
     const level = Math.max(0.0001, velocity) * (sample.gain ?? 1);
-    const ends = when + buffer.duration / source.playbackRate.value;
+    const loop = mode === 'loop' && loopPoints(sample, buffer.duration);
+
+    if (loop) {
+      source.loop = true;
+      source.loopStart = loop.start;
+      source.loopEnd = loop.end;
+    }
+
+    const ends = loop ? Infinity : when + buffer.duration / source.playbackRate.value;
 
     amp.gain.setValueAtTime(0, when);
     amp.gain.linearRampToValueAtTime(level, when + attack);
@@ -540,8 +558,9 @@ export class Sampler implements Instrument {
     source.onended = () => amp.disconnect();
 
     let stopped = false;
-    const end = (at: number) => {
-      if (stopped) return;
+    const end = (at: number, hard = false) => {
+      // A one-shot plays to its end, whatever the note does
+      if (stopped || (mode === 'oneShot' && !hard)) return;
       stopped = true;
 
       const from = Math.max(at, when);
@@ -556,7 +575,10 @@ export class Sampler implements Instrument {
     };
 
     if (off !== Infinity && off < ends) end(off);
-    this.sounds.add({ pitch, from: when, end, until: off === Infinity ? Infinity : Math.min(ends, off + release) });
+
+    const until = mode === 'oneShot' ? ends : off === Infinity ? Infinity : Math.min(ends, off + release);
+
+    this.sounds.add({ pitch, from: when, end, until });
   }
 }
 
