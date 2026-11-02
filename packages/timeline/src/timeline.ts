@@ -662,7 +662,8 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
 
   // ---- tracks ----
 
-  private get tracksEditable() {
+  /** Whether people can add and remove tracks */
+  get tracksEditable() {
     return this.options.editTracks && !this.options.readonly;
   }
 

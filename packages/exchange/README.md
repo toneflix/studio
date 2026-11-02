@@ -1,6 +1,6 @@
 # @toneflix/studio-exchange
 
-Project exchange for [Toneflix Studio](https://toneflix.github.io/studio/). Save a session, with its audio, in the app's own format (plugins included) or as a REAPER project, and open either again: tracks, clips, fades, volume and pan automation, markers, tempo changes and mixer settings carry over.
+Project exchange for [Toneflix Studio](https://toneflix.github.io/studio/). Save a session, with its audio, in the app's own format (plugins included) or as a REAPER project, and open either again: tracks, clips, fades, volume and pan automation, markers, tempo changes and mixer settings carry over. Instrument tracks also go out and come back as MIDI files (`exportMidi`, `importMidi`, `toMidi`, `fromMidi`).
 
 ```sh
 pnpm add @toneflix/studio-exchange

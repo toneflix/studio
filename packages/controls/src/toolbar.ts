@@ -1,5 +1,5 @@
 import { encodeWav, type AudioEngine } from '@toneflix/studio-audio';
-import { DEFAULT_APP, openProject, saveProject, type AppIdentity, type OpenedProject, type ProjectFormat } from '@toneflix/studio-exchange';
+import { DEFAULT_APP, exportMidi, importMidi, openProject, saveProject, type AppIdentity, type OpenedProject, type ProjectFormat } from '@toneflix/studio-exchange';
 import type { SnapTo } from '@toneflix/studio-core';
 import type { PluginRack } from '@toneflix/studio-plugins';
 import type { NoteRecorder, Recorder } from '@toneflix/studio-recorder';
@@ -16,7 +16,7 @@ import { injectControlStyles } from './styles.ts';
 /** A toolbar button, the File menu, the snap picker, the transport display, the output meter, or `'|'` for a divider. */
 export type ToolbarItem = Exclude<IconName, 'pause' | 'mute' | 'solo' | 'save' | 'close' | 'chevron' | 'plugin' | 'add'> | 'file' | 'display' | 'meter' | '|';
 
-export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature' | 'save' | 'close' | 'appProject' | 'reaperProject', string>;
+export type ToolbarLabels = Record<Exclude<ToolbarItem, '|'> | 'pause' | 'tempo' | 'timeSignature' | 'save' | 'close' | 'appProject' | 'reaperProject' | 'importMidi' | 'exportMidi', string>;
 
 /** What hooks and custom actions get to work with. */
 export interface ToolbarContext {
@@ -152,6 +152,8 @@ export const DEFAULT_LABELS: ToolbarLabels = {
   openProject: 'Open project…',
   appProject: 'Save as {app} project (.{ext})',
   reaperProject: 'Save as REAPER project (.zip), without plugins',
+  importMidi: 'Import MIDI…',
+  exportMidi: 'Export MIDI (.mid)',
   save: 'Save',
   close: 'Close',
 };
@@ -507,6 +509,8 @@ export class StudioToolbar {
         { x: box.left, y: box.bottom + 4 },
         [
           ...(this.engine ? [{ label: this.labels.openProject, onSelect: () => this.openProject(button) }, ...this.saveItems(button)] : []),
+          ...(this.timeline.tracksEditable ? [{ label: this.labels.importMidi, onSelect: () => this.importMidi(button) }] : []),
+          ...(this.timeline.state.tracks.some((track) => track.instrument) ? [{ label: this.labels.exportMidi, onSelect: () => this.exportMidi() }] : []),
           { label: exportLabel, onSelect: () => void this.busy(button, () => (this.onSave ? this.onSave(this.context) : this.download())) },
         ],
         this.labels.file,
@@ -555,6 +559,31 @@ export class StudioToolbar {
       });
     });
     input.click();
+  }
+
+  /** Pick a .mid file and add its parts as instrument tracks from the playhead. */
+  private importMidi(button: HTMLButtonElement | undefined) {
+    const input = this.doc.createElement('input');
+
+    input.type = 'file';
+    input.accept = '.mid,.midi,audio/midi';
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+
+      if (file) void this.busy(button, async () => void (await importMidi(file, this.timeline, { at: this.timeline.time })));
+    });
+    input.click();
+  }
+
+  /** Download the instrument tracks as a .mid file. */
+  private exportMidi() {
+    const { blob, fileName } = exportMidi(this.timeline, { name: this.project.projectName });
+    const link = this.doc.createElement('a');
+
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
   }
 
   private async download() {
