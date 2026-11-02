@@ -77,7 +77,8 @@ export interface SampleOptions {
 
 /** Load four made-up stems into a timeline, draw their waveforms and hand their audio to an engine. */
 export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms(), engine }: SampleOptions = {}) => {
-  const sources = Object.entries(voices).map(([id, [seconds, voice]]) => ({ id, audio: synth(seconds, voice) }));
+  // Stem n starts n bars in, so each voice reads the song's time to stay on its chords
+  const sources = Object.entries(voices).map(([id, [seconds, voice]], i) => ({ id, audio: synth(seconds, (t) => voice(t + i * 2)) }));
 
   timeline.load({
     tracks: [
@@ -116,7 +117,7 @@ export const loadSample = (timeline: StudioTimeline, { waveforms = new Waveforms
 
   for (const { id, audio } of sources) {
     timeline.setSource({ id, duration: audio.duration });
-    waveforms.get(`sample:${id}`, () => audio).then((peaks) => timeline.setSource({ id }, peaks));
+    waveforms.get(`sample:${id}:song-time`, () => audio).then((peaks) => timeline.setSource({ id }, peaks));
 
     if (engine) {
       const buffer = new AudioBuffer({ length: audio.getChannelData().length, sampleRate: audio.sampleRate, numberOfChannels: 1 });
