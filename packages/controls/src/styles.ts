@@ -114,7 +114,10 @@ export const CONTROL_STYLES = `
 .tfs-browser-action:hover, .tfs-browser-more:hover { background: rgba(255, 255, 255, 0.05); }
 .tfs-browser-action[hidden], .tfs-browser-more[hidden], .tfs-browser-status[hidden] { display: none; }
 .tfs-browser-list { flex: 1 1 auto; min-height: 0; margin: 0; padding: 0 4px; overflow-y: auto; list-style: none; }
-.tfs-browser-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: grab; }
+.tfs-browser-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 6px; cursor: grab; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.tfs-browser-item--lifted { background: rgba(255, 255, 255, 0.08); }
+.tfs-browser--lifted { opacity: 0.08; pointer-events: none; transition: opacity 0.15s; }
+.tfs-browser-ghost { position: fixed; top: 0; left: 0; z-index: 2000; max-width: 180px; margin: -36px 0 0 -20px; padding: 6px 10px; border-radius: 6px; background: var(--tfs-select, #03bfff); color: #0b0b0d; font: 600 12px/1.3 system-ui, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); }
 .tfs-browser-item:hover { background: rgba(255, 255, 255, 0.05); }
 .tfs-browser-item[aria-busy='true'] { opacity: 0.55; cursor: progress; }
 .tfs-browser-item .tfs-tool { width: 26px; height: 26px; flex: none; border-radius: 6px; }

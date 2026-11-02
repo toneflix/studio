@@ -1707,6 +1707,17 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     on(this.content, 'pointermove', (e) => this.onPointerMove(e));
     on(this.content, 'pointerup', (e) => this.onPointerUp(e));
     on(this.content, 'pointercancel', () => this.cancelGesture());
+    // Keeps the page still while a finger drags a clip, edge, point or flag, for browsers that scroll despite touch-action
+    on(
+      this.content,
+      'touchmove',
+      (e) => {
+        const g = this.gesture;
+
+        if (g && g.kind !== 'click-clip' && !(g.kind === 'range' && g.touch)) e.preventDefault();
+      },
+      { passive: false },
+    );
     on(this.root, 'keydown', (e) => this.onKey(e));
     on(this.content, 'contextmenu', (e) => {
       const clip = (e.target as HTMLElement).closest<HTMLElement>('.tfs-clip')?.dataset.clip;
