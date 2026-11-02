@@ -1,5 +1,5 @@
 import { CURATED_WAMS, type CuratedWam } from './catalog.ts';
-import { COMMUNITY_WAMS, communityWamsBase, type CommunityWam } from './community.ts';
+import { COMMUNITY_WAM_PACKAGES, COMMUNITY_WAMS, type CommunityWam, type CommunityWamPackage } from './community.ts';
 import { WAMS_VERSION } from './version.ts';
 
 export * from './catalog.ts';
@@ -77,10 +77,10 @@ export const curatedWamSource = (options: CuratedWamSourceOptions = {}) => searc
 
 export interface CommunityWamsOptions {
   /**
-   * Where the community `plugins` folder is served, ending in a slash. By default
-   * jsDelivr, pinned to the version the plugins were tested at.
+   * Where each package's `plugins` folder is served, ending in a slash. By default
+   * the CDNs in `COMMUNITY_WAM_PACKAGES`, pinned to the versions the plugins were tested at.
    */
-  base?: string;
+  base?: Partial<Record<CommunityWamPackage, string>>;
   /** Which of the plugins to offer */
   allow?: (plugin: CommunityWam) => boolean;
 }
@@ -92,17 +92,19 @@ export interface CommunityWamItem extends Omit<CuratedWamItem, 'data'> {
 
 /** The vetted community plugins, effects and instruments, with their module URLs under `base`. */
 export const communityWams = (options: CommunityWamsOptions = {}): CommunityWamItem[] => {
-  const base = options.base ?? communityWamsBase();
+  return COMMUNITY_WAMS.filter((plugin) => options.allow?.(plugin) ?? true).map((plugin) => {
+    const base = options.base?.[plugin.package] ?? COMMUNITY_WAM_PACKAGES[plugin.package];
 
-  return COMMUNITY_WAMS.filter((plugin) => options.allow?.(plugin) ?? true).map((plugin) => ({
-    id: plugin.identifier,
-    name: plugin.name,
-    kind: 'plugin',
-    url: new URL(plugin.path, base).href,
-    detail: `${plugin.vendor} · ${plugin.description}`,
-    image: new URL(plugin.thumbnail, base).href,
-    data: plugin,
-  }));
+    return {
+      id: plugin.identifier,
+      name: plugin.name,
+      kind: 'plugin',
+      url: new URL(plugin.path, base).href,
+      detail: `${plugin.vendor} · ${plugin.description}`,
+      image: new URL(plugin.thumbnail, base).href,
+      data: plugin,
+    };
+  });
 };
 
 /** A tab of the vetted community effects for `StudioBrowser`. */

@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress';
 import { copyWams, serveWams } from '../../scripts/vite-wams.ts';
+import { communityWamsImportMap } from '../../packages/wams/src/community.ts';
 
 export default defineConfig({
   title: 'Toneflix Studio',
@@ -9,6 +10,9 @@ export default defineConfig({
   appearance: 'dark',
   lastUpdated: true,
   head: [['meta', { name: 'theme-color', content: '#0a0c10' }]],
+  // The import map for the Wimmics community plugins goes first in <head>, before
+  // VitePress's own module scripts, since browsers read an import map only before modules load
+  transformHtml: (html) => html.replace('<head>', `<head><script type="importmap">${JSON.stringify(communityWamsImportMap())}</script>`),
   // The curated plugins, served at wams/ for the playground and home page
   buildEnd: (site) => copyWams(site.outDir),
   vite: {
