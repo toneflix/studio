@@ -245,6 +245,28 @@ export const CONTROL_STYLES = `
   .tfs-roll-note::after { width: 5px; }
 }
 @media (max-width: 600px) { .tfs-roll { --tfs-roll-keys: 44px; height: var(--tfs-roll-height, 60vh); } .tfs-roll--drums { --tfs-roll-keys: 80px; } }
+.tfs-roll-views { display: inline-flex; flex: none; padding: 2px; margin-right: 6px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); }
+.tfs-roll-view { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--tfs-display-muted, #9a9aa2); font: 600 12px/1 system-ui, sans-serif; cursor: pointer; }
+.tfs-roll-view[aria-pressed='true'] { background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
+.tfs-roll-text[aria-pressed='true'] { border-color: transparent; background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
+.tfs-steps { display: none; flex: 1 1 auto; flex-direction: column; min-height: 0; }
+.tfs-roll--steps .tfs-steps { display: flex; }
+.tfs-roll--steps .tfs-roll-scroller, .tfs-roll--steps .tfs-roll-bar .tfs-tool:not(:last-child), .tfs-roll--empty .tfs-steps { display: none; }
+.tfs-steps-bar { display: flex; flex: none; align-items: center; gap: 12px; padding: 6px 12px; overflow-x: auto; scrollbar-width: none; }
+.tfs-steps-swing input { width: 110px; accent-color: var(--tfs-toolbar-active, #03bfff); }
+.tfs-steps-value { min-width: 32px; color: var(--tfs-toolbar-text, #e8e8ea); font-variant-numeric: tabular-nums; }
+.tfs-steps-scroller { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 12px 12px 0; }
+.tfs-steps-table { display: flex; flex-direction: column; gap: 3px; width: max-content; user-select: none; }
+.tfs-steps-row { display: flex; gap: 3px; }
+.tfs-steps-name { position: sticky; left: 0; z-index: 1; flex: none; width: var(--tfs-steps-name, 84px); padding: 0 8px 0 12px; overflow: hidden; background: var(--tfs-roll-bg, #141418); color: var(--tfs-toolbar-text, #e8e8ea); font-size: 11px; line-height: var(--tfs-step, 24px); white-space: nowrap; text-overflow: ellipsis; }
+.tfs-step { flex: none; width: var(--tfs-step, 24px); height: var(--tfs-step, 24px); box-sizing: border-box; border-radius: 4px; background: #26262c; cursor: pointer; touch-action: pan-x pan-y; }
+.tfs-step--odd { background: #1e1e23; }
+.tfs-step:hover { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
+.tfs-step--on { background: color-mix(in srgb, var(--clip, #4f9cf9) 75%, #1d1d22); }
+.tfs-step--accent { background: var(--clip, #4f9cf9); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.7); }
+.tfs-step--playing { outline: 2px solid rgba(255, 255, 255, 0.55); outline-offset: -1px; }
+@media (pointer: coarse) { .tfs-steps-table { --tfs-step: 32px; } .tfs-roll-view { height: 34px; } }
+@media (max-width: 600px) { .tfs-steps-table { --tfs-steps-name: 64px; } }
 `;
 
 /** Add the control styles to a document once. */

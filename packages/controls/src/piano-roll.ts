@@ -18,10 +18,14 @@ import {
 } from '@toneflix/studio-core';
 import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { renderIcon, type IconSet } from './icons.ts';
+import { StepGrid, type StepGridLabels } from './step-grid.ts';
 import { injectControlStyles } from './styles.ts';
 
-export interface PianoRollLabels {
+export interface PianoRollLabels extends StepGridLabels {
   title: string;
+  /** The view switch: notes on keys, or a step sequencer grid */
+  notesView: string;
+  stepsView: string;
   close: string;
   snap: string;
   /** Snap choices */
@@ -40,6 +44,11 @@ export interface PianoRollLabels {
 
 export const DEFAULT_PIANO_ROLL_LABELS: PianoRollLabels = {
   title: 'Piano roll',
+  notesView: 'Notes',
+  stepsView: 'Steps',
+  length: 'Bars',
+  swing: 'Swing',
+  accent: 'Accent',
   close: 'Close',
   snap: 'Snap',
   snapOff: 'Off',
@@ -71,6 +80,8 @@ export interface PianoRollOptions {
   snap?: SnapTo;
   /** Width of one beat in pixels at the start; 64 unless given */
   beatWidth?: number;
+  /** Open drum track clips in the step grid instead of on keys; true unless given */
+  stepsForDrums?: boolean;
 }
 
 export interface PianoRollEvents extends Record<string, unknown> {
@@ -139,6 +150,10 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
   private frameKey = '';
   private drums: boolean | null = null;
   private frame = 0;
+  private view: 'notes' | 'steps' = 'notes';
+  private readonly stepsForDrums: boolean;
+  private readonly steps: StepGrid;
+  private readonly viewButtons: Record<'notes' | 'steps', HTMLButtonElement>;
 
   constructor(target: ContainerTarget, options: PianoRollOptions) {
     super();
@@ -172,6 +187,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.labels = { ...DEFAULT_PIANO_ROLL_LABELS, ...options.labels };
     this.grid = new Grid({ snap: options.snap ?? '1/16' });
     this.beatWidth = options.beatWidth ?? 64;
+    this.stepsForDrums = options.stepsForDrums ?? true;
     injectControlStyles(doc);
 
     this.root = el('div', 'tfs-roll');
@@ -190,6 +206,21 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
 
     this.titleEl = el('strong', 'tfs-roll-title', bar);
     bar.prepend(this.titleEl);
+
+    const views = el('div', 'tfs-roll-views', bar);
+    const viewButton = (view: 'notes' | 'steps', text: string) => {
+      const node = el('button', 'tfs-roll-view', views);
+
+      node.type = 'button';
+      node.textContent = text;
+      node.addEventListener('click', () => this.setView(view));
+
+      return node;
+    };
+
+    views.setAttribute('role', 'group');
+    this.titleEl.after(views);
+    this.viewButtons = { notes: viewButton('notes', this.labels.notesView), steps: viewButton('steps', this.labels.stepsView) };
     snapLabel.append(this.labels.snap);
     this.snapSelect = el('select', '', snapLabel);
 
@@ -239,6 +270,8 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     velocityName.textContent = this.labels.velocity;
     this.velocity = el('div', 'tfs-roll-velocity', bottom);
     this.velocity.setAttribute('aria-label', this.labels.velocity);
+    this.steps = new StepGrid(doc, this.stepHost(), this.labels);
+    this.root.append(this.steps.root);
     this.emptyEl = el('div', 'tfs-roll-empty', this.root);
     this.emptyEl.textContent = this.labels.empty;
 
@@ -276,6 +309,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     if (next !== this.clipId) {
       this.clipId = next;
       this.picked.clear();
+      if (clip) this.view = this.stepsForDrums && this.isDrums(clip) ? 'steps' : 'notes';
       this.frameKey = '';
       this.render();
       this.emit('open', { clip: next });
@@ -315,6 +349,57 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.snapSelect.value = snap;
     this.frameKey = '';
     this.render();
+  }
+
+  /** Show the notes on keys, or as a step sequencer grid. */
+  setView(view: 'notes' | 'steps') {
+    if (view === this.view) return;
+
+    this.view = view;
+    this.frameKey = '';
+    this.render();
+    this.reveal();
+  }
+
+  private isDrums(clip: Clip) {
+    return this.timeline.state.tracks.find((track) => track.id === clip.track)?.instrument?.id === 'drums';
+  }
+
+  /** Seconds in one step of the step grid: the snap when it is finer than a beat, otherwise a sixteenth. */
+  private stepLength() {
+    const section = this.grid.sectionAt(this.origin);
+    const step = this.stepAt(0);
+
+    return step && step < section.beat ? step : 60 / section.bpm / 4;
+  }
+
+  private stepHost() {
+    const model = () => this.timeline.model;
+
+    return {
+      clip: () => {
+        const clip = this.clip;
+
+        return clip ? { clip, drums: this.isDrums(clip) } : null;
+      },
+      step: () => this.stepLength(),
+      bar: () => this.grid.sectionAt(this.origin).bar,
+      editable: () => this.editable,
+      draft: (label: string, notes: readonly Note[]) => this.draft(label, notes),
+      commit: (label: string) => model().commit(label),
+      cancel: () => model().cancel(),
+      setLength: (duration: number) => {
+        const id = this.clipId;
+
+        if (!id || !this.editable) return;
+
+        model().apply('Pattern length', (state) => ({
+          ...state,
+          clips: state.clips.map((clip) => (clip.id === id ? { ...clip, duration: Math.max(0.05, duration - clip.offset) } : clip)),
+        }));
+      },
+      audition: (pitch: number, velocity: number) => this.audition(pitch, velocity),
+    };
   }
 
   /** Put the picked notes' starts on the snap grid, or every note when none are picked, as one undo step. */
@@ -808,8 +893,10 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
 
   private placePlayhead() {
     const time = this.engine.time - this.origin;
+    const clip = this.clip;
 
-    this.playhead.hidden = !this.clip || time < 0;
+    this.steps.setPlaying(clip && this.engine.isPlaying && time < clip.offset + clip.duration ? time : null);
+    this.playhead.hidden = !clip || time < 0;
     this.playhead.style.transform = `translateX(${time * this.pps}px)`;
   }
 
@@ -823,12 +910,26 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
 
     for (const b of Object.values(this.buttons)) b.disabled = !clip;
 
+    this.root.classList.toggle('tfs-roll--steps', this.view === 'steps');
+    this.viewButtons.notes.setAttribute('aria-pressed', String(this.view === 'notes'));
+    this.viewButtons.steps.setAttribute('aria-pressed', String(this.view === 'steps'));
+
     if (!clip?.notes || !this.visible) return;
 
     const timelineGrid = this.timeline.grid;
 
     this.grid.set({ bpm: timelineGrid.bpm, meter: timelineGrid.meter });
     this.grid.setTempo(timelineGrid.tempo);
+
+    if (this.view === 'steps') {
+      this.root.style.setProperty('--clip', track ? this.timeline.colorOf(track) : '#4f9cf9');
+      this.buttons.quantize.disabled = !clip.notes.length || !this.editable || this.grid.snap === 'off';
+      this.steps.render();
+      this.placePlayhead();
+
+      return;
+    }
+
     this.rowHeight = parseFloat(this.doc.defaultView?.getComputedStyle(this.root).getPropertyValue('--tfs-roll-row') ?? '') || 14;
     this.root.style.setProperty('--clip', track ? this.timeline.colorOf(track) : '#4f9cf9');
     this.buttons.delete.disabled = !this.picked.size || !this.editable;

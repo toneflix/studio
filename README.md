@@ -6,7 +6,7 @@
 
 - **Edit without limits.** Split anything, drag clips anywhere, layer them and move them between tracks. Nothing snaps back unless you ask it to.
 - **Hear every edit.** Playback follows the timeline as you work, with a mixer, effects, loops, a metronome and mixdown to WAV.
-- **Play instruments.** Instrument tracks play note clips through a built-in synth and drum kit, or any Web Audio Module instrument. Draw and edit their notes in a piano roll, with a mouse or on a phone.
+- **Play instruments.** Instrument tracks play note clips through a built-in synth and drum kit, or any Web Audio Module instrument. Draw and edit their notes in a piano roll, or program beats in a step sequencer with swing, with a mouse or on a phone.
 - **Record over the mix.** Arm a track and record a voice or instrument while the music plays. Takes land where they were performed, with the waveform drawn as you go.
 - **Plugins, live.** Put Web Audio Module plugins on any track or the master and hear them as you play, with their own editors. They are saved with the project and printed into the mix.
 - **Fast with big sessions.** Waveforms are drawn in the background and cached on the device, so long recordings open instantly the next time.
@@ -63,7 +63,7 @@ timeline.on('change', ({ state, final }) => final && save(state));
 | Arrows | Nudge by the snap step, or move up and down a lane |
 | + above the headers, click a track name | Add an empty audio track, audio from a file, or an instrument or drum track; rename, duplicate, move or delete one from its menu |
 | Double-click an empty spot on an instrument track | Adds a one-bar note clip |
-| Double-click a note clip | Opens it in the piano roll: click to draw notes, drag to move or resize them |
+| Double-click a note clip | Opens it in the piano roll: click to draw notes, drag to move or resize them. Drum clips open as a step sequencer with swing |
 | Markers and tempo in the ruler | Right-click the ruler to add a marker or tempo change, or double-click above the bar numbers for a marker; drag to move, click a marker to jump there, click a tempo to set it or the meter |
 | Track menu, Show volume/pan automation | Opens a lane under the track: click to add points, drag to move, double-click to remove |
 | Ctrl+Z, Ctrl+Shift+Z | Undo and redo |
