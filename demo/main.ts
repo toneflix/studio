@@ -51,7 +51,7 @@ const timeline = new StudioTimeline('#timeline', {
 
 // The curated plugins, served by the dev server; apps use jsDelivr, the default
 const wams = { base: new URL('/wams/', location.href).href };
-// The vetted community plugins load from the wam-community package on jsDelivr
+// The vetted community plugins load from their own package on jsDelivr
 const catalog = [...curatedWams(wams), ...communityWams({ allow: (plugin) => !plugin.isInstrument })];
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
 // Play instrument tracks on screen, from the computer keyboard (A to ;) or a MIDI device

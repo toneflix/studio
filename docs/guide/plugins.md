@@ -94,7 +94,7 @@ The Toneflix plugins are in the package's `plugins/toneflix` folder, built on on
 
 ## Vetted community plugins
 
-`COMMUNITY_WAMS` lists plugins from the [WAM community](https://www.webaudiomodules.com/community) that passed the same tests as the curated ones, at `wam-community` 0.4.9: the Synth-101 instrument, and Simple Distortion, Microverb, Simple Delay, Simple EQ, PingPongDelay and QuadraFuzz. They load from that package on jsDelivr, pinned to the tested version, and are not copied into ours.
+`COMMUNITY_WAMS` lists plugins from the [WAM community](https://www.webaudiomodules.com/community) that passed the same tests as the curated ones: the Sequencer Party Synth-101 instrument, and Simple Distortion, Microverb, Simple Delay and Simple EQ. They load from their own package, `burns-audio-wam` 0.2.54, on jsDelivr, pinned to the tested version, and are not copied into ours. (The `wam-community` package holds the same files but is too large for jsDelivr to serve.)
 
 ```ts
 import { communityWamInstruments, communityWams, communityWamSource, curatedWams, DEFAULT_INSTRUMENT_OPTIONS, isMouseOnlyWam } from '@toneflix/studio';
@@ -107,6 +107,6 @@ new StudioBrowser('#editor', { timeline, engine, plugins, sources: [curatedWamSo
 new StudioInstrumentPanel({ timeline, engine, instruments: [...DEFAULT_INSTRUMENT_OPTIONS, ...communityWamInstruments()] });
 ```
 
-The Sequencer Party plugins' editors only answer the mouse. `mouseOnly` tells the rack which ones, and their editors then take one finger as mouse input, so they work on phones too. Editors wider than the screen are shrunk to fit.
+Their editors only answer the mouse. `mouseOnly` tells the rack which ones, and their editors then take one finger as mouse input, so they work on phones too. Editors wider than the screen are shrunk to fit.
 
-Of the 28 plugins tested, the others were left out: most Wimmics plugins fail to load from the published package, which is missing a file they import, and Envelope Follower, DRM-16, Soundfont Player and Big Muff stay silent or fail. Several Wimmics plugins are also GPL, and the Wimmics ones offered here state no licence of their own.
+Of the 28 plugins tested, the others were left out: the Wimmics plugins are only published in `wam-community`, which jsDelivr does not serve, and most of them also import two files from the wrong folder; several are GPL. Envelope Follower, DRM-16, Soundfont Player and Big Muff stay silent or fail.
