@@ -9,10 +9,17 @@ export class WamInstrument implements Instrument {
   readonly plugin: WebAudioModule;
   /** Some WAM instruments make their sound on the main thread, so offline renders wait for them */
   readonly mainThread = true;
+  private state: unknown;
 
-  constructor(plugin: WebAudioModule) {
+  constructor(plugin: WebAudioModule, state?: unknown) {
     this.plugin = plugin;
     this.output = plugin.audioNode;
+    this.state = state;
+  }
+
+  /** Many WAMs drop the state they were made with in an offline context, so it is set again once the render runs. */
+  prepare() {
+    if (this.state !== undefined) return this.plugin.audioNode.setState(this.state);
   }
 
   play(pitch: number, velocity: number, when: number, duration: number) {
@@ -38,6 +45,7 @@ export class WamInstrument implements Instrument {
   }
 
   setState(state: unknown) {
+    this.state = state;
     void this.plugin.audioNode.setState(state);
   }
 

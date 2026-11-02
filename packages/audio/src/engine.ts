@@ -37,8 +37,12 @@ export interface RenderOptions {
   to?: number;
   sampleRate?: number;
   channels?: number;
-  /** Effects for the render, made in its context. `track` is null for the master. */
-  effects?: (track: string | null, context: BaseAudioContext) => Effect[] | Promise<Effect[]>;
+  /**
+   * Effects for the render, made in its context. `track` is null for the master.
+   * Tasks passed to `atStart` run once the render starts, before any sound, for settings
+   * that only take hold while audio runs.
+   */
+  effects?: (track: string | null, context: BaseAudioContext, atStart: (task: () => unknown) => void) => Effect[] | Promise<Effect[]>;
 }
 
 interface Playing {
@@ -64,11 +68,17 @@ const MAIN_THREAD_WAIT = 4;
 
 /**
  * Pause an offline render just after each note starts or ends, and at the start, so
- * instruments that answer notes on the main thread can play them in time.
+ * instruments that answer notes on the main thread can play them in time. The start
+ * pause also runs the `atStart` tasks.
  */
-const pauseForNotes = (context: OfflineAudioContext, times: readonly number[]) => {
-  for (const time of noteBreaks(times, context.sampleRate, context.length)) {
+const pauseForNotes = (context: OfflineAudioContext, times: readonly number[], atStart: readonly (() => unknown)[]) => {
+  const breaks = noteBreaks(times, context.sampleRate, context.length);
+
+  if (atStart.length && breaks[0] !== 0) breaks.unshift(0);
+
+  for (const time of breaks) {
     void context.suspend(time).then(async () => {
+      if (time === 0) await Promise.all(atStart.map((task) => task()));
       await settle();
       await context.resume();
     });
@@ -312,16 +322,21 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
     engine.syncInstruments();
     await engine.instrumentsReady();
 
+    const atStart: (() => unknown)[] = [];
+    const onStart = (task: () => unknown) => void atStart.push(task);
+
+    for (const { instrument } of engine.loaded.values()) if (instrument?.prepare) atStart.push(() => instrument.prepare?.());
+
     if (options.effects) {
-      engine.mixer.master.setEffects(await options.effects(null, offline));
-      for (const track of this.current.tracks) engine.mixer.channel(track.id).setEffects(await options.effects(track.id, offline));
+      engine.mixer.master.setEffects(await options.effects(null, offline, onStart));
+      for (const track of this.current.tracks) engine.mixer.channel(track.id).setEffects(await options.effects(track.id, offline, onStart));
     }
 
     engine.origin = from;
     engine.holdAutomation(from);
     engine.noteTimes = [];
     engine.scheduleBetween(0, to - from, 0);
-    pauseForNotes(offline, engine.noteTimes);
+    pauseForNotes(offline, engine.noteTimes, atStart);
 
     try {
       return await offline.startRendering();

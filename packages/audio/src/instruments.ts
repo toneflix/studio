@@ -16,6 +16,8 @@ export interface Instrument {
    * WAM instruments do. Offline renders then pause at each note to let it catch up.
    */
   readonly mainThread?: boolean;
+  /** Runs when an offline render starts, before any sound, for settings that only take hold while audio runs */
+  prepare?(): unknown;
   /** Its settings, as saved in the track's instrument choice */
   getState?(): unknown;
   setState?(state: unknown): void;
