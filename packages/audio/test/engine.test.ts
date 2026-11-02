@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { makeClip, makeNoteClip } from '@toneflix/studio-core';
-import { AudioEngine } from '../src/engine.ts';
+import { AudioEngine, noteBreaks } from '../src/engine.ts';
 
 /** Just enough of Web Audio to see what the engine schedules. */
 class FakeParam {
@@ -294,4 +294,15 @@ test('instruments look samples up in the engine as they play', async () => {
   engine.setBuffer('kick', buffer);
   assert.equal(lookup!('kick'), buffer);
   engine.destroy();
+});
+
+test('offline renders pause once per quantum just after each main thread note', () => {
+  const rate = 128 * 100;
+
+  assert.deepEqual(noteBreaks([], rate, rate * 2), []);
+  // Two notes in one quantum share a pause; one past the end is dropped
+  assert.deepEqual(
+    noteBreaks([0.502, 0.508, 0.75, 5], rate, rate * 2).map((time) => Math.round(time * 100)),
+    [0, 52, 76],
+  );
 });

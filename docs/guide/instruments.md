@@ -160,6 +160,8 @@ engine.setInstruments(plugins.instruments());
 timeline.setInstrument('lead', { id: 'https://example.com/wams/synth/index.js' });
 ```
 
-`engine.instrument(track)` gives a track's instrument once it has loaded, with `noteOn` and `noteOff` for keys played live. Some WAM instruments play only live and stay silent in offline renders like Export mix, so test one in an export before you offer it. The built-in instruments render either way.
+`engine.instrument(track)` gives a track's instrument once it has loaded, with `noteOn` and `noteOff` for keys played live.
 
-To make your own instrument, implement `Instrument` (`output`, `play`, `noteOn`, `noteOff`, `stopAll`, `destroy`) and pass an `InstrumentFactory` to `engine.setInstruments`. Its fourth argument looks up a sample's audio by source id.
+Some WAM instruments, like Synth-101, make their sound on the main thread once a note reaches them, which an offline render normally runs past. WAM instruments say so with `mainThread`, and `engine.render` (and so Export mix) then pauses for a few milliseconds just after each of their notes, so they play in the export as they do live. An export with WAM instruments takes about a second per 60 notes longer; the built-in instruments need no pauses.
+
+To make your own instrument, implement `Instrument` (`output`, `play`, `noteOn`, `noteOff`, `stopAll`, `destroy`, and `mainThread` if it plays notes from the main thread) and pass an `InstrumentFactory` to `engine.setInstruments`. Its fourth argument looks up a sample's audio by source id.

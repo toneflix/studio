@@ -56,6 +56,42 @@ interface Loaded {
 }
 
 
+/** Lets queued messages between the audio thread and the page go through. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, MAIN_THREAD_WAIT));
+
+/** Milliseconds an offline render waits at each note for main thread instruments */
+const MAIN_THREAD_WAIT = 4;
+
+/**
+ * Pause an offline render just after each note starts or ends, and at the start, so
+ * instruments that answer notes on the main thread can play them in time.
+ */
+const pauseForNotes = (context: OfflineAudioContext, times: readonly number[]) => {
+  for (const time of noteBreaks(times, context.sampleRate, context.length)) {
+    void context.suspend(time).then(async () => {
+      await settle();
+      await context.resume();
+    });
+  }
+};
+
+/**
+ * Where an offline render of `length` frames pauses for notes at `times`: the start,
+ * then one render quantum after each note, once per quantum. None without notes.
+ */
+export const noteBreaks = (times: readonly number[], sampleRate: number, length: number) => {
+  if (!times.length) return [];
+
+  const quantum = 128 / sampleRate;
+  const last = Math.floor(length / 128) - 1;
+  const frames = new Set([0, ...times.map((time) => Math.ceil(time / quantum - 1e-9) + 1)]);
+
+  return [...frames]
+    .filter((frame) => frame <= last)
+    .sort((a, b) => a - b)
+    .map((frame) => frame * quantum);
+};
+
 /** Time between pressing play and the first sound, so the first notes are not cut. */
 const START_DELAY = 0.04;
 /** Length of the ramps that smooth cuts into audio */
@@ -88,6 +124,8 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
   /** Timeline time while paused */
   private position = 0;
   private timer: ReturnType<typeof setInterval> | undefined;
+  /** While rendering, the times of notes sent to instruments that play from the main thread */
+  private noteTimes: number[] | null = null;
 
   constructor(options: AudioEngineOptions = {}) {
     super();
@@ -281,9 +319,15 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
 
     engine.origin = from;
     engine.holdAutomation(from);
+    engine.noteTimes = [];
     engine.scheduleBetween(0, to - from, 0);
+    pauseForNotes(offline, engine.noteTimes);
 
-    return offline.startRendering();
+    try {
+      return await offline.startRendering();
+    } finally {
+      for (const track of [...engine.loaded.keys()]) engine.unload(track);
+    }
   }
 
   destroy() {
@@ -428,6 +472,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
         const length = Math.min(note.duration, range.end - at, pass.end - at);
 
         instrument.play(note.pitch, Math.min(1, note.velocity * clip.gain), Math.max(when, now), length);
+        if (instrument.mainThread) this.noteTimes?.push(Math.max(when, now), Math.max(when, now) + length);
       }
     }
   }
