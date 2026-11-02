@@ -52,10 +52,14 @@ new StudioToolbar('#toolbar', {
 | Markers | Yes | Yes; a REAPER region comes back as a marker at its start |
 | Tempo, meter and their changes | Yes | Yes |
 | Master volume and pan | Yes | Yes |
+| Note clips | Yes | Yes, as MIDI items; drums on MIDI channel 10 |
+| Instruments and their samples | Yes | No; a MIDI track comes back on the built-in drums or synth |
 | Plugins on tracks and the master, with their settings | Yes | No |
 | Who saved it | `app` in `project.json` | Project notes |
 
 Plugins are saved by URL with their settings, and load again from that URL when the project opens, so the plugin files must still be reachable. Opening a REAPER project clears the plugins that were loaded.
+
+In REAPER, give a MIDI track a virtual instrument to hear it. Coming back, a track whose MIDI items use channel 10 plays the drum kit and any other MIDI track plays the synth. Note times follow the tempo map both ways.
 
 ## From code
 
