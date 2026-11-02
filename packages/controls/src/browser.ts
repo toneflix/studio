@@ -12,6 +12,8 @@ export interface BrowserLabels {
   close: string;
   /** The add button on each item */
   add: string;
+  /** The remove button on items of a source that has `remove` */
+  remove: string;
   preview: string;
   stop: string;
   newTrack: string;
@@ -28,6 +30,7 @@ export const DEFAULT_BROWSER_LABELS: BrowserLabels = {
   search: 'Search',
   close: 'Close',
   add: 'Add',
+  remove: 'Remove',
   preview: 'Listen',
   stop: 'Stop',
   newTrack: 'New track',
@@ -338,6 +341,26 @@ export class StudioBrowser extends Emitter<BrowserEvents> {
     }
   }
 
+  /** Ask the source to remove an item, and drop its row unless it says no. */
+  private async removeItem(item: LibraryItem, source: LibrarySource, row: HTMLElement) {
+    if (!source.remove) return;
+
+    row.setAttribute('aria-busy', 'true');
+
+    try {
+      if ((await source.remove(item)) === false) return;
+
+      if (this.playing?.item === item) this.stopPreview();
+      this.items = this.items.filter((i) => i !== item);
+      row.remove();
+      if (source === this.current && !this.items.length) this.setStatus(this.labels.empty);
+    } catch (error) {
+      this.emit('error', { source, error });
+    } finally {
+      row.removeAttribute('aria-busy');
+    }
+  }
+
   /** Fetch a page of the open tab and add its rows. */
   private async load(page: number) {
     const source = this.current;
@@ -451,6 +474,18 @@ export class StudioBrowser extends Emitter<BrowserEvents> {
     add.append(renderIcon(doc, 'add', this.icons));
     add.addEventListener('click', () => this.showAddMenu(item, source, add, row));
     row.append(add);
+
+    if (source.remove) {
+      const remove = doc.createElement('button');
+
+      remove.type = 'button';
+      remove.className = 'tfs-tool tfs-browser-remove';
+      remove.title = this.labels.remove;
+      remove.setAttribute('aria-label', `${this.labels.remove} ${item.name}`);
+      remove.append(renderIcon(doc, 'delete', this.icons));
+      remove.addEventListener('click', () => void this.removeItem(item, source, row));
+      row.append(remove);
+    }
 
     row.addEventListener('pointerdown', (e) => {
       if (canAdd && e.pointerType !== 'mouse' && !(e.target as Element).closest('button')) this.touchDrag(e, row, item, source);

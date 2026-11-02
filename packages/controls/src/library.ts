@@ -47,6 +47,11 @@ export interface LibrarySource {
   list: (query: LibraryQuery) => LibraryPage | Promise<LibraryPage>;
   /** A button above the list, like Import files; the list reloads after it runs */
   action?: { label: string; run: () => void | Promise<void> };
+  /**
+   * Shows a remove button on each item, like Delete on your own uploads.
+   * Ask first if you need to; return false to keep the item, and the row goes otherwise.
+   */
+  remove?: (item: LibraryItem) => boolean | void | Promise<boolean | void>;
 }
 
 export interface ListSourceOptions {
