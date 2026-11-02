@@ -93,7 +93,7 @@ jobs:
           fi
 
           node scripts/set-version.ts "$VERSION"
-          git add package.json packages/*/package.json
+          git add package.json packages/*/package.json packages/wams/src/version.ts
           git commit -m "chore: release v$VERSION [skip ci]"
           git pull --rebase origin "$DEFAULT_BRANCH"
           git push origin "HEAD:$DEFAULT_BRANCH"
