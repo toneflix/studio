@@ -13,6 +13,7 @@ import {
   curatedWamSource,
   sessionSource,
   StudioBrowser,
+  StudioInstrumentPanel,
   StudioKeys,
   StudioMixer,
   StudioPianoRoll,
@@ -48,8 +49,10 @@ const catalog = curatedWams(wams);
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
 // Play instrument tracks on screen, from the computer keyboard (A to ;) or a MIDI device
 const keys = new StudioKeys('#timeline', { timeline, engine, recorder, notes, hidden: true });
+// Knobs for instrument tracks, from a track's menu or the piano roll's Sound button
+const instruments = new StudioInstrumentPanel({ timeline, engine });
 // Opens on a double-click on a note clip; its Keys button shows the keys
-const pianoRoll = new StudioPianoRoll('#timeline', { timeline, engine, keys, hidden: true });
+const pianoRoll = new StudioPianoRoll('#timeline', { timeline, engine, keys, instrumentPanel: instruments, hidden: true });
 const drawWaveform = (id: string, buffer: AudioBuffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks));
 const browser = new StudioBrowser('#timeline', {
   timeline,
@@ -83,4 +86,4 @@ linkPlayback(timeline, engine);
 linkRecorder(timeline, recorder, { waveforms });
 linkNoteRecorder(timeline, notes);
 
-Object.assign(window, { timeline, engine, mixer, pianoRoll, keys, notes, browser, recorder, plugins, toolbar, StudioToolbar });
+Object.assign(window, { timeline, engine, mixer, pianoRoll, instruments, keys, notes, browser, recorder, plugins, toolbar, StudioToolbar });

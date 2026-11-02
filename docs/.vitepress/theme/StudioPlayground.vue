@@ -9,7 +9,7 @@ let cleanup = () => {};
 
 onMounted(async () => {
   const studio = await import('@toneflix/studio');
-  const { AudioEngine, linkNoteRecorder, linkPlayback, linkRecorder, NoteRecorder, PluginRack, Recorder, StudioBrowser, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = studio;
+  const { AudioEngine, linkNoteRecorder, linkPlayback, linkRecorder, NoteRecorder, PluginRack, Recorder, StudioBrowser, StudioInstrumentPanel, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = studio;
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
   const engine = new AudioEngine();
   const recorder = new Recorder(engine);
@@ -29,7 +29,8 @@ onMounted(async () => {
   const catalog = studio.curatedWams(wams);
   const mixer = new StudioMixer(host.value!, { timeline, engine, plugins, catalog, hidden: true });
   const keys = new StudioKeys(host.value!, { timeline, engine, recorder, notes, hidden: true });
-  const pianoRoll = new StudioPianoRoll(host.value!, { timeline, engine, keys, hidden: true });
+  const instruments = new StudioInstrumentPanel({ timeline, engine });
+  const pianoRoll = new StudioPianoRoll(host.value!, { timeline, engine, keys, instrumentPanel: instruments, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline,
     engine,
@@ -73,6 +74,7 @@ onMounted(async () => {
     plugins.destroy();
     mixer.destroy();
     pianoRoll.destroy();
+    instruments.destroy();
     browser.destroy();
     engine.destroy();
     timeline.destroy();
@@ -86,7 +88,7 @@ onBeforeUnmount(() => cleanup());
   <div class="studio-playground">
     <div ref="bar" class="studio-playground__bar" />
     <div ref="host" class="studio-playground__timeline" :style="{ height: `${props.height}px` }" />
-    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Drag on the ruler to pick a range to loop, or on the tracks to select clips. Drag the Keys volume curve, and right-click the ruler to add a marker or tempo change. The library button opens the browser: listen to a sound, then drag it onto a track. Arm a track with R and press the red button to record over the music. The sliders button opens the mixer, where + adds an Echo or Drive plugin to a track. Double-click the Lead or Beat clip to edit its notes in the piano roll.</p>
+    <p class="studio-playground__hint">Press Space to play. Click the ruler to move the playhead, then split and drag the pieces. Drag on the ruler to pick a range to loop, or on the tracks to select clips. Drag the Keys volume curve, and right-click the ruler to add a marker or tempo change. The library button opens the browser: listen to a sound, then drag it onto a track. Arm a track with R and press the red button to record over the music. The sliders button opens the mixer, where + adds an Echo or Drive plugin to a track. Double-click the Lead or Beat clip to edit its notes in the piano roll, where Sound opens its instrument's knobs.</p>
   </div>
 </template>
 
