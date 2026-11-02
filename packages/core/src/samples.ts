@@ -11,7 +11,18 @@ export interface SampleRef {
   tune?: number;
   /** Level, 1 as recorded */
   gain?: number;
+  /**
+   * How a sampler plays it: `gate` (the default) for as long as the note is held,
+   * `oneShot` to its end whatever the note's length, or `loop` round its loop points
+   * for as long as the note is held
+   */
+  mode?: SampleMode;
+  /** Where the loop starts and ends in the sample, in seconds; the whole sample by default */
+  loopStart?: number;
+  loopEnd?: number;
 }
+
+export type SampleMode = 'gate' | 'oneShot' | 'loop';
 
 const isSample = (value: unknown): value is SampleRef =>
   !!value && typeof value === 'object' && typeof (value as SampleRef).source === 'string';

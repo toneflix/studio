@@ -193,6 +193,13 @@ export const CONTROL_STYLES = `
 .tfs-instrument-name { color: var(--tfs-muted, #8d8d96); font-size: 11px; }
 .tfs-instrument-value { font-variant-numeric: tabular-nums; font-size: 11px; }
 .tfs-instrument-editor { min-height: 40px; }
+.tfs-instrument-samples { display: flex; flex-direction: column; gap: 8px; padding: 0 12px 12px; max-width: min(420px, calc(100vw - 40px)); }
+.tfs-instrument-sample { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; background: rgba(255, 255, 255, 0.04); }
+.tfs-instrument-sample-name { flex: 1 1 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.tfs-instrument-sample .tfs-instrument-pick { flex: none; width: 76px; }
+.tfs-instrument-sample .tfs-roll-views { margin: 0; }
+.tfs-instrument-loop { display: flex; gap: 16px; flex: 1 1 100%; justify-content: center; }
+.tfs-instrument-empty { margin: 0; color: var(--tfs-muted, #8d8d96); font-size: 12px; }
 .tfs-instrument-editor:not(:has(*)) { padding: 12px; color: var(--tfs-muted, #8d8d96); }
 .tfs-knob { position: relative; flex: none; width: 30px; height: 30px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, #4a4a52, #26262b 70%); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4); cursor: ns-resize; touch-action: none; }
 .tfs-knob:focus-visible { outline: 2px solid var(--tfs-toolbar-active, #03bfff); outline-offset: 2px; }
