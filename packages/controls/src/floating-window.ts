@@ -6,16 +6,39 @@ export interface FloatingWindowOptions {
   close: string;
   icons?: Partial<IconSet>;
   onClose?: () => void;
+  /** The element the window opens in and stays inside, such as the studio's container; the page by default */
+  container?: HTMLElement;
 }
 
+/** The part of the screen a window may use: its container's visible box, or the whole screen. */
+const roomFor = (doc: Document, container?: HTMLElement) => {
+  const view = doc.defaultView;
+  const screen = { left: 0, top: 0, right: view?.innerWidth ?? 0, bottom: view?.innerHeight ?? 0 };
+  if (!container) return screen;
+
+  const box = container.getBoundingClientRect();
+
+  return { left: Math.max(screen.left, box.left), top: Math.max(screen.top, box.top), right: Math.min(screen.right, box.right), bottom: Math.min(screen.bottom, box.bottom) };
+};
+
+/** Each open window's container. */
+const containers = new WeakMap<Element, HTMLElement>();
+
+/** The container of the window that holds an element. */
+const containerOf = (element: Element) => {
+  const win = element.closest('.tfs-plugin-window');
+
+  return win ? containers.get(win) : undefined;
+};
+
 /**
- * Shrink an editor wider than the screen so all of it shows, as on a phone. Call it
- * once the editor is in a window.
+ * Shrink an editor wider than its window's room so all of it shows, as on a phone.
+ * Call it once the editor is in a window.
  */
 export const shrinkToFit = (editor: HTMLElement | SVGElement) => {
-  const view = editor.ownerDocument.defaultView;
   const width = Math.max(editor.getBoundingClientRect().width, editor.scrollWidth);
-  const room = (view?.innerWidth ?? 0) - 18;
+  const area = roomFor(editor.ownerDocument, containerOf(editor));
+  const room = area.right - area.left - 18;
   if (!width || room <= 0 || width <= room) return;
 
   // Its own width, so a block that fills the window shrinks with its content
@@ -52,19 +75,47 @@ export const openFloatingWindow = (doc: Document, options: FloatingWindowOptions
   win.append(bar, body);
   doc.body.append(win);
 
+  const { container } = options;
   const count = doc.querySelectorAll('.tfs-plugin-window').length;
+  const origin = () => {
+    const box = container?.getBoundingClientRect();
 
-  win.style.left = `${40 + count * 24}px`;
-  win.style.top = `${60 + count * 24}px`;
-
-  /** Keep the window on screen once its content has a size. */
-  const fit = () => {
-    const view = doc.defaultView;
-    if (!view || !open) return;
-
-    win.style.left = `${Math.max(8, Math.min(win.offsetLeft, view.innerWidth - win.offsetWidth - 8))}px`;
-    win.style.top = `${Math.max(8, Math.min(win.offsetTop, view.innerHeight - win.offsetHeight - 8))}px`;
+    return { x: box?.left ?? 0, y: box?.top ?? 0 };
   };
+  // Where the window sits from its container's corner, so it moves with it on scroll
+  let at = { x: 16 + count * 24, y: 16 + count * 24 };
+
+  if (container) containers.set(win, container);
+
+  /** Place the window at a spot on screen, kept inside its room. */
+  const place = (left: number, top: number) => {
+    const area = roomFor(doc, container);
+    const corner = origin();
+
+    win.style.maxWidth = `${Math.max(160, area.right - area.left - 16)}px`;
+    win.style.maxHeight = `${Math.max(120, area.bottom - area.top - 16)}px`;
+    left = Math.max(area.left + 8, Math.min(left, area.right - win.offsetWidth - 8));
+    top = Math.max(area.top + 8, Math.min(top, area.bottom - win.offsetHeight - 8));
+    win.style.left = `${left}px`;
+    win.style.top = `${top}px`;
+    at = { x: left - corner.x, y: top - corner.y };
+  };
+
+  /** Keep the window inside its room, for example once its content has a size. */
+  const fit = () => {
+    if (!open) return;
+
+    const corner = origin();
+    const keep = at;
+
+    place(corner.x + keep.x, corner.y + keep.y);
+    // Remember the spot it was given, so it comes back when there is room again
+    at = keep;
+  };
+  const view = doc.defaultView;
+
+  view?.addEventListener('scroll', fit, { capture: true, passive: true });
+  view?.addEventListener('resize', fit);
 
   // Drag by the title bar
   bar.addEventListener('pointerdown', (e) => {
@@ -72,10 +123,7 @@ export const openFloatingWindow = (doc: Document, options: FloatingWindowOptions
 
     const x = e.clientX - win.offsetLeft;
     const y = e.clientY - win.offsetTop;
-    const move = (m: PointerEvent) => {
-      win.style.left = `${Math.max(0, m.clientX - x)}px`;
-      win.style.top = `${Math.max(0, m.clientY - y)}px`;
-    };
+    const move = (m: PointerEvent) => place(m.clientX - x, m.clientY - y);
     const up = () => {
       bar.removeEventListener('pointermove', move);
       bar.removeEventListener('pointerup', up);
@@ -108,13 +156,16 @@ export const openFloatingWindow = (doc: Document, options: FloatingWindowOptions
       if (!open) return;
 
       open = false;
+      view?.removeEventListener('scroll', fit, { capture: true });
+      view?.removeEventListener('resize', fit);
       win.remove();
       options.onClose?.();
     },
   };
 
   close.addEventListener('click', () => handle.close());
-  doc.defaultView?.requestAnimationFrame(fit);
+  fit();
+  view?.requestAnimationFrame(fit);
 
   return handle;
 };
