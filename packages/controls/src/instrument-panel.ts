@@ -1,5 +1,5 @@
-import { INSTRUMENT_DEFAULTS, INSTRUMENT_PARAMS, type AudioEngine, type Instrument, type InstrumentParam } from '@toneflix/studio-audio';
-import { Emitter, updateTrack, type InstrumentChoice, type Track } from '@toneflix/studio-core';
+import { INSTRUMENT_DEFAULTS, INSTRUMENT_PARAMS, loopPoints, type AudioEngine, type Instrument, type InstrumentParam } from '@toneflix/studio-audio';
+import { Emitter, noteName, updateTrack, type InstrumentChoice, type SampleRef, type Track } from '@toneflix/studio-core';
 import type { StudioTimeline } from '@toneflix/studio-timeline';
 import { openFloatingWindow } from './floating-window.ts';
 import type { IconSet } from './icons.ts';
@@ -16,6 +16,15 @@ export interface InstrumentPanelLabels {
   failed: string;
   /** Shown for an instrument that has no settings and no editor of its own */
   noSettings: string;
+  /** The sampler's list of samples, and how each one plays */
+  samples: string;
+  noSamples: string;
+  root: string;
+  gate: string;
+  oneShot: string;
+  loop: string;
+  loopStart: string;
+  loopEnd: string;
   /** Names of the settings by key, over the built-in English ones */
   params: Record<string, string>;
 }
@@ -28,6 +37,14 @@ export const DEFAULT_INSTRUMENT_PANEL_LABELS: InstrumentPanelLabels = {
   loading: 'Loading…',
   failed: 'The instrument failed to load',
   noSettings: 'This instrument has no settings to show.',
+  samples: 'Samples',
+  noSamples: "No samples yet. Add them from the piano roll's Samples menu, or drop audio on its keys.",
+  root: 'Root',
+  gate: 'Gate',
+  oneShot: 'One-shot',
+  loop: 'Loop',
+  loopStart: 'Loop start',
+  loopEnd: 'Loop end',
   params: {},
 };
 
@@ -368,9 +385,134 @@ export class StudioInstrumentPanel extends Emitter<InstrumentPanelEvents> {
       grid.append(cell);
     }
 
+    if (choice.id === 'sampler') {
+      const list = doc.createElement('div');
+      const show = (state: Record<string, unknown>) => this.buildSamples(track, list, (state.samples as SampleRef[] | undefined) ?? []);
+
+      list.className = 'tfs-instrument-samples';
+      body.append(list);
+      show(settings);
+      updates.push(show);
+    }
+
     panel.refresh = (state) => {
       for (const update of updates) update(state);
     };
+  }
+
+  /** The sampler's samples, each with its root note, how it plays and its loop points. */
+  private buildSamples(track: string, list: HTMLElement, samples: readonly SampleRef[]) {
+    const doc = this.doc;
+    const labels = this.labels;
+    const readonly = this.timeline.readonly;
+    const heading = doc.createElement('div');
+    const change = (index: number, patch: Partial<SampleRef>) => {
+      const next = samples.map((sample, i) => (i === index ? { ...sample, ...patch } : sample));
+
+      this.save(track, { samples: next });
+    };
+
+    heading.className = 'tfs-instrument-name';
+    heading.textContent = labels.samples;
+    list.replaceChildren(heading);
+
+    if (!samples.length) {
+      const empty = doc.createElement('p');
+
+      empty.className = 'tfs-instrument-empty';
+      empty.textContent = labels.noSamples;
+      list.append(empty);
+
+      return;
+    }
+
+    samples.forEach((sample, index) => {
+      const row = doc.createElement('div');
+      const name = doc.createElement('span');
+      const root = doc.createElement('select');
+      const modes = doc.createElement('div');
+      const mode = sample.mode ?? 'gate';
+      const duration = this.engine.getBuffer(sample.source)?.duration ?? 0;
+
+      row.className = 'tfs-instrument-sample';
+      name.className = 'tfs-instrument-sample-name';
+      name.textContent = sample.name ?? sample.source;
+      name.title = name.textContent;
+      root.className = 'tfs-instrument-pick';
+      root.setAttribute('aria-label', `${labels.root}: ${name.textContent}`);
+      root.disabled = readonly;
+
+      for (let pitch = 24; pitch <= 108; pitch++) {
+        const option = doc.createElement('option');
+
+        option.value = String(pitch);
+        option.textContent = noteName(pitch);
+        root.append(option);
+      }
+
+      root.value = String(sample.root ?? 60);
+      root.addEventListener('change', () => change(index, { root: Number(root.value) }));
+      modes.className = 'tfs-roll-views';
+      modes.setAttribute('role', 'group');
+
+      for (const [value, text] of [
+        ['gate', labels.gate],
+        ['oneShot', labels.oneShot],
+        ['loop', labels.loop],
+      ] as const) {
+        const button = doc.createElement('button');
+
+        button.type = 'button';
+        button.className = 'tfs-roll-view';
+        button.textContent = text;
+        button.disabled = readonly;
+        button.setAttribute('aria-pressed', String(mode === value));
+        button.addEventListener('click', () => change(index, { mode: value }));
+        modes.append(button);
+      }
+
+      row.append(name, root, modes);
+
+      if (mode === 'loop' && duration > 0) {
+        const points = loopPoints(sample, duration) ?? { start: 0, end: duration };
+        const knob = (key: 'loopStart' | 'loopEnd', label: string, value: number) => {
+          const cell = doc.createElement('div');
+          const caption = doc.createElement('span');
+          const readout = doc.createElement('span');
+          const format = (v: number) => `${v.toFixed(2)} s`;
+          const control = createKnob(doc, {
+            label: `${label}: ${name.textContent}`,
+            min: 0,
+            max: duration,
+            initial: key === 'loopStart' ? 0 : duration,
+            step: 0.001,
+            format,
+            onInput: (next) => {
+              readout.textContent = format(next);
+            },
+            onCommit: (next) => change(index, { [key]: next }),
+          });
+
+          control.set(value);
+          cell.className = 'tfs-instrument-param';
+          caption.className = 'tfs-instrument-name';
+          caption.textContent = label;
+          readout.className = 'tfs-instrument-value';
+          readout.textContent = format(value);
+          cell.append(caption, control.element, readout);
+
+          return cell;
+        };
+
+        const loops = doc.createElement('div');
+
+        loops.className = 'tfs-instrument-loop';
+        loops.append(knob('loopStart', labels.loopStart, points.start), knob('loopEnd', labels.loopEnd, points.end));
+        row.append(loops);
+      }
+
+      list.append(row);
+    });
   }
 
   private buildEditor(track: string, panel: OpenPanel) {

@@ -122,7 +122,26 @@ timeline.setInstrument('keys', {
 engine.setBuffer('my-kick', kickBuffer); // the audio, by source id, as for clips
 ```
 
-A sample is `{ source, name?, root?, tune?, gain? }`. The engine looks each one up by `source` as it plays, so set its buffer before or after. App projects save the samples' audio with the clips', and `sourcesInUse(state)` lists every source a session needs. Pass `onSource` to the piano roll to get each loaded sample's audio, for example to upload it.
+A sample is `{ source, name?, root?, tune?, gain?, mode?, loopStart?, loopEnd? }`. The engine looks each one up by `source` as it plays, so set its buffer before or after. App projects save the samples' audio with the clips', and `sourcesInUse(state)` lists every source a session needs. Pass `onSource` to the piano roll to get each loaded sample's audio, for example to upload it.
+
+### Gate, one-shot and loop
+
+A sampler sample plays in one of three modes, set with `mode`:
+
+| Mode | What it does |
+| --- | --- |
+| `gate` (default) | Plays while the note is held and stops at the note's end |
+| `oneShot` | Plays to the end of the sample whatever the note's length, like a drum hit or a vocal chop |
+| `loop` | Plays from the start, then repeats `loopStart` to `loopEnd` (seconds into the sample) while the note is held, so a short sound can sustain |
+
+```ts
+timeline.setInstrument('pad', {
+  id: 'sampler',
+  state: { samples: [{ source: 'pad-c4', name: 'Pad', root: 60, mode: 'loop', loopStart: 0.4, loopEnd: 1.2 }] },
+});
+```
+
+Without loop points the whole sample loops. Stopping playback silences every mode at once. In the instrument panel, a sampler lists its samples with a root note picker, the three modes, and loop start and end knobs in loop mode. `loopPoints(sample, duration)` from `@toneflix/studio-audio` gives the points a sample will loop between.
 
 ## Keys and MIDI
 
@@ -178,7 +197,7 @@ instruments.open('lead'); // or from code
 | --- | --- |
 | Synth | Wave (saw, square, triangle, sine), detune, cutoff, resonance, filter envelope, attack, decay, sustain, release, volume |
 | Drums | Tune, decay, volume |
-| Sampler | Attack, release, volume |
+| Sampler | Attack, release, volume; for each sample its root note, mode (gate, one-shot, loop) and loop points |
 
 Drag a knob up or down, or use the arrow keys, to hear the change at once; letting go saves it as one undo step. Double-click a knob to reset it, and **Reset** puts every setting back. Cutoff and the envelope times turn in equal ratios, so the low end has room. The picker at the top switches the track to another instrument; pass `instruments` to offer your own, such as WAM instruments by URL. A WAM instrument shows its own editor, and its settings are saved to the track when the window closes. Each track gets one window, which can be dragged by its title and stays on screen on phones.
 
