@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { deflateRawSync } from 'node:zlib';
-import { makeClip, type TimelineState } from '@toneflix/studio-core';
+import { Grid, makeClip, makeNoteClip, type TimelineState } from '@toneflix/studio-core';
 import { fromReaper, toReaper } from '../src/rpp.ts';
 import { unzip, zip } from '../src/zip.ts';
 
@@ -110,4 +110,63 @@ test('project notes go to REAPER and come back line by line', () => {
   assert.match(text, /<NOTES 0 2\n {4}\|Made with Toneflix Music 2\.1\n {4}\|\n/);
   assert.equal(fromReaper(text).notes, notes);
   assert.equal(fromReaper(toReaper(state)).notes, undefined);
+});
+
+const round = (value: number) => Math.round(value * 1000) / 1000;
+
+test('note clips go to REAPER as MIDI items and come back as note clips', () => {
+  const notes: TimelineState = {
+    tracks: [
+      { id: 'lead', name: 'Lead', instrument: { id: 'synth' } },
+      { id: 'beat', name: 'Beat', instrument: { id: 'drums' } },
+    ],
+    clips: [
+      makeNoteClip({
+        track: 'lead',
+        start: 2,
+        duration: 2,
+        notes: [
+          { pitch: 60, start: 0, duration: 0.5, velocity: 1 },
+          { pitch: 60, start: 0.5, duration: 0.25, velocity: 0.5 },
+          { pitch: 67, start: 1, duration: 1.5, velocity: 0.8 },
+        ],
+      }),
+      makeNoteClip({ track: 'beat', start: 0, duration: 1, notes: [{ pitch: 36, start: 0, duration: 0.1, velocity: 1 }] }),
+    ],
+    tempo: [{ id: 'tc1', time: 3, bpm: 60 }],
+  };
+  const text = toReaper(notes, { bpm: 120 });
+
+  assert.match(text, /<SOURCE MIDI\n\s+HASDATA 1 960 QN\n\s+E 0 90 3c 7f\n\s+E 960 80 3c 00\n\s+E 0 90 3c 40/);
+  assert.match(text, /E 0 99 24 7f/);
+  assert.doesNotMatch(text, /notes:/);
+
+  const back = fromReaper(text).state;
+  const lead = back.clips.find((clip) => clip.track === 't1')!;
+
+  assert.deepEqual(
+    back.tracks.map((t) => t.instrument),
+    [{ id: 'synth' }, { id: 'drums' }],
+  );
+  assert.equal(lead.start, 2);
+  assert.equal(lead.duration, 2);
+  // The third note crosses the tempo change at 3s and is cut at the clip's end
+  assert.deepEqual(
+    lead.notes!.map((n) => [n.pitch, round(n.start), round(n.duration), round(n.velocity)]),
+    [
+      [60, 0, 0.5, 1],
+      [60, 0.5, 0.25, 0.504],
+      [67, 1, 1, 0.803],
+    ],
+  );
+});
+
+test('tempo maps turn times into quarter notes and back', () => {
+  const grid = new Grid({ bpm: 120 });
+
+  grid.setTempo([{ id: 'a', time: 2, bpm: 60 }]);
+  assert.equal(grid.quarters(1), 2);
+  assert.equal(grid.quarters(3), 5);
+  assert.equal(grid.timeAtQuarters(5), 3);
+  assert.equal(grid.timeAtQuarters(2), 1);
 });

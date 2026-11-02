@@ -143,6 +143,8 @@ With a `NoteRecorder`, the record button records notes when the armed track (or,
 | `drums` | Drum machine made of oscillators and noise, on General MIDI drum notes: kick 36, snare 38, clap 39, closed hat 42, open hat 46, toms 45, 47 and 50, crash 49, ride 51, cowbell 56. A note with a sample plays the sample | `volume`, `tune`, `decay`, `samples` (by note number) |
 | `sampler` | Plays samples repitched from their root notes, the nearest root for each note | `samples` (a list), `attack`, `release`, `volume` |
 
+Saving as a REAPER project turns note clips into MIDI items, as [Project files and REAPER](./projects) explains.
+
 ## WAM instruments
 
 With a `PluginRack`, any instrument choice whose id isn't built in loads as a Web Audio Module from that URL, and notes reach it as MIDI events:

@@ -32,6 +32,6 @@ Each change starts a new section of the grid. Bar numbers, grid lines, snapping,
 
 Clips keep their times in seconds when the tempo changes, so audio never moves or stretches.
 
-From code: `addTempoChange(time?, bpm?, meter?)`, `updateTempoChange(id, { time?, bpm?, meter? })` and `removeTempoChange(id)`. On the `grid`, `sections` lists every stretch of one tempo, and `sectionAt(time)`, `position(time)`, `barTime(bar)`, `bars(from, to)` and `beats(from, to)` work across them.
+From code: `addTempoChange(time?, bpm?, meter?)`, `updateTempoChange(id, { time?, bpm?, meter? })` and `removeTempoChange(id)`. On the `grid`, `sections` lists every stretch of one tempo, and `sectionAt(time)`, `position(time)`, `barTime(bar)`, `bars(from, to)` and `beats(from, to)` work across them, as do `quarters(time)` and `timeAtQuarters(quarters)`, which convert between seconds and quarter notes from the start.
 
 The ruler grows a little taller to fit the markers. Pass `markers: false` or `tempoTrack: false` to leave either out, and `rulerLabels` to rename what they show.

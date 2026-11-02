@@ -166,6 +166,32 @@ export class Grid {
     };
   }
 
+  /** Quarter notes from the start to a time, through every tempo change. */
+  quarters(time: number) {
+    let total = 0;
+
+    for (const section of this.sections) {
+      if (time <= section.start) break;
+      total += ((Math.min(time, section.end) - section.start) * section.bpm) / 60;
+    }
+
+    return total;
+  }
+
+  /** The time a number of quarter notes from the start falls at. */
+  timeAtQuarters(quarters: number) {
+    let left = Math.max(0, quarters);
+
+    for (const section of this.sections) {
+      const span = ((section.end - section.start) * section.bpm) / 60;
+
+      if (left <= span || section.end === Infinity) return section.start + (left * 60) / section.bpm;
+      left -= span;
+    }
+
+    return 0;
+  }
+
   /** The time where a bar (from 1) starts. */
   barTime(bar: number) {
     const index = bar - 1;
