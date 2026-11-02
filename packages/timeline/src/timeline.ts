@@ -601,10 +601,6 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
   }
 
   /**
-   * Split the selected clips at a time, or every clip under it when none are
-   * selected. Only the left pieces stay selected, so the right ones drag alone.
-   */
-  /**
    * Split the selected clips at a time, the playhead by default. With no clips
    * selected, a selected range is cut at both of its edges on its tracks.
    * Nothing happens when nothing is selected.
@@ -2299,7 +2295,7 @@ export class StudioTimeline extends Emitter<TimelineEvents> {
     else if (mod && key === 'a') this.select(this.state.clips.map((clip) => clip.id));
     else if (mod && key === 'd' && edit) this.duplicateSelected();
     else if ((key === 'delete' || key === 'backspace') && edit) this.deleteSelected();
-    else if (key === 's' && !mod && edit) this.split();
+    else if (key === 's' && !mod && !e.shiftKey && !e.altKey && edit) this.split();
     else if (key === 'escape') {
       if (this.gesture) this.cancelGesture();
       else {
