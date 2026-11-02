@@ -94,7 +94,12 @@ The Toneflix plugins are in the package's `plugins/toneflix` folder, built on on
 
 ## Vetted community plugins
 
-`COMMUNITY_WAMS` lists plugins from the [WAM community](https://www.webaudiomodules.com/community) that passed the same tests as the curated ones: the Sequencer Party Synth-101 instrument, and Simple Distortion, Microverb, Simple Delay and Simple EQ. They load from their own package, `burns-audio-wam` 0.2.54, on jsDelivr, pinned to the tested version, and are not copied into ours. (The `wam-community` package holds the same files but is too large for jsDelivr to serve.)
+`COMMUNITY_WAMS` lists plugins from the [WAM community](https://www.webaudiomodules.com/community) that passed the same tests as the curated ones:
+
+- **Sequencer Party** (MIT): the Synth-101 instrument, and Simple Distortion, Microverb, Simple Delay and Simple EQ. They load from their own package, `burns-audio-wam` 0.2.54, on jsDelivr.
+- **Wimmics** (no licence stated): Big Muff, Blipper, DualPitchShifter, OwlDirty, OWLShimmer, PingPongDelay, QuadraFuzz, SmoothDelay, StereoFreqShifter, SweetWah, ThruZeroFlanger and WeirdPhaser. They are only published in `wam-community` 0.4.9, which is too large for jsDelivr, so they load from unpkg.
+
+Each is pinned to the version tested, and none is copied into our package.
 
 ```ts
 import { communityWamInstruments, communityWams, communityWamSource, curatedWams, DEFAULT_INSTRUMENT_OPTIONS, isMouseOnlyWam } from '@toneflix/studio';
@@ -107,6 +112,14 @@ new StudioBrowser('#editor', { timeline, engine, plugins, sources: [curatedWamSo
 new StudioInstrumentPanel({ timeline, engine, instruments: [...DEFAULT_INSTRUMENT_OPTIONS, ...communityWamInstruments()] });
 ```
 
-Their editors only answer the mouse. `mouseOnly` tells the rack which ones, and their editors then take one finger as mouse input, so they work on phones too. Editors wider than the screen are shrunk to fit.
+The Sequencer Party editors only answer the mouse. `mouseOnly` tells the rack which ones, and their editors then take one finger as mouse input, so they work on phones too. Editors wider than the screen are shrunk to fit.
 
-Of the 28 plugins tested, the others were left out: the Wimmics plugins are only published in `wam-community`, which jsDelivr does not serve, and most of them also import two files from the wrong folder; several are GPL. Envelope Follower, DRM-16, Soundfont Player and Big Muff stay silent or fail.
+Most Wimmics plugins import two files from a folder they are not in. `communityWamsImportMap()` gives an import map that points those imports at the right files. Put it in your page before any module script, as browsers only read an import map before modules load:
+
+```html
+<script type="importmap">
+  {"imports":{"https://unpkg.com/wam-community@0.4.9/dist/plugins/wimmics/utils/sdk-parammgr/src/sdk/":"https://unpkg.com/wam-community@0.4.9/dist/plugins/wimmics/utils/sdk/"}}
+</script>
+```
+
+Of the 28 plugins tested, the others were left out: Envelope Follower, DRM-16 and Soundfont Player stay silent or fail, Graphic Equalizer, Temper, OSCTube, Overdriverix, Vox Amp 30 and DistoMachine have controls that don't respond to the mouse or to touch, Stereo Enhancer's settings don't change its export, and several Wimmics plugins are GPL.

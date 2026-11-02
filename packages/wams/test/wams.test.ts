@@ -94,3 +94,11 @@ test('the demo pages carry the import map', () => {
   assert.ok(readFileSync(join(root, 'demo/index.html'), 'utf8').includes(map));
   assert.ok(readFileSync(join(root, 'docs/.vitepress/config.ts'), 'utf8').includes('communityWamsImportMap'));
 });
+
+test('Wimmics plugins load from wam-community on unpkg and keep their own touch handling', () => {
+  const fuzz = communityWams().find((item) => item.name === 'QuadraFuzz')!;
+
+  assert.equal(fuzz.url, 'https://unpkg.com/wam-community@0.4.9/dist/plugins/wimmics/quadrafuzz/dist/index.js');
+  assert.equal(isMouseOnlyWam(fuzz.url), false);
+  assert.equal(communityWams({ base: { 'wam-community': 'https://example.com/w/' } }).find((item) => item.name === 'Big Muff')!.url, 'https://example.com/w/wimmics/BigMuff/index.js');
+});
