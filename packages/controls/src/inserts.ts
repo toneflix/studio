@@ -1,5 +1,5 @@
 import type { PluginRack, PluginSlot } from '@toneflix/studio-plugins';
-import { openFloatingWindow } from './floating-window.ts';
+import { openFloatingWindow, shrinkToFit } from './floating-window.ts';
 import { type IconSet } from './icons.ts';
 
 /** A plugin offered in the add menu. */
@@ -67,6 +67,8 @@ export const openPluginEditor = async (doc: Document, rack: PluginRack, slot: Pl
   try {
     editor = await rack.openEditor(slot);
     body.replaceChildren(editor);
+    if (editor instanceof HTMLElement) shrinkToFit(editor);
+    win.fit();
   } catch {
     body.textContent = labels.failed;
   }

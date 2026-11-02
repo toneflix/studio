@@ -54,7 +54,7 @@ const copy = async () => {
 };
 
 onMounted(async () => {
-  const { AudioEngine, curatedWams, curatedWamSource, importAudioFiles, linkNoteRecorder, linkPlayback, linkRecorder, listSource, NoteRecorder, PluginRack, Recorder, sessionSource, StudioBrowser, StudioInstrumentPanel, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
+  const { AudioEngine, communityWamInstruments, communityWams, communityWamSource, curatedWams, curatedWamSource, DEFAULT_INSTRUMENT_OPTIONS, isMouseOnlyWam, importAudioFiles, linkNoteRecorder, linkPlayback, linkRecorder, listSource, NoteRecorder, PluginRack, Recorder, sessionSource, StudioBrowser, StudioInstrumentPanel, StudioKeys, StudioMixer, StudioPianoRoll, StudioTimeline, StudioToolbar, trackStrip, uid, Waveforms } = await import(
     '@toneflix/studio'
   );
   const { demoSounds, loadSample } = await import('../../../demo/sample.ts');
@@ -62,7 +62,7 @@ onMounted(async () => {
   const audio = new AudioEngine();
   const recorder = new Recorder(audio);
   const notes = new NoteRecorder(audio);
-  const plugins = new PluginRack(audio);
+  const plugins = new PluginRack(audio, { mouseOnly: (url) => isMouseOnlyWam(url) });
 
   audio.setInstruments(plugins.instruments());
   const waveforms = new Waveforms();
@@ -77,10 +77,10 @@ onMounted(async () => {
     importAudio: (files) => importAudioFiles(view, audio, files, { onSource: (id, buffer) => void waveforms.get(`file:${id}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)) }),
   });
 
-  const catalog = curatedWams(wams);
+  const catalog = [...curatedWams(wams), ...communityWams({ allow: (plugin) => !plugin.isInstrument })];
   const mixer = new StudioMixer(host.value!, { timeline: view, engine: audio, plugins, catalog, hidden: true });
   const keys = new StudioKeys(host.value!, { timeline: view, engine: audio, recorder, notes, hidden: true });
-  const instruments = new StudioInstrumentPanel({ timeline: view, engine: audio });
+  const instruments = new StudioInstrumentPanel({ timeline: view, engine: audio, instruments: [...DEFAULT_INSTRUMENT_OPTIONS, ...communityWamInstruments()] });
   const pianoRoll = new StudioPianoRoll(host.value!, { timeline: view, engine: audio, keys, instrumentPanel: instruments, hidden: true });
   const browser = new StudioBrowser(host.value!, {
     timeline: view,
@@ -88,7 +88,7 @@ onMounted(async () => {
     plugins,
     hidden: true,
     onSource: (id, buffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => view.setSource({ id }, peaks)),
-    sources: [listSource('sounds', 'Sounds', demoSounds(audio)), sessionSource(view, audio), curatedWamSource(wams)],
+    sources: [listSource('sounds', 'Sounds', demoSounds(audio)), sessionSource(view, audio), curatedWamSource(wams), communityWamSource()],
   });
 
   toolbar.value = new StudioToolbar(actions.value!, {

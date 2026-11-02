@@ -8,6 +8,21 @@ export interface FloatingWindowOptions {
   onClose?: () => void;
 }
 
+/**
+ * Shrink an editor wider than the screen so all of it shows, as on a phone. Call it
+ * once the editor is in a window.
+ */
+export const shrinkToFit = (editor: HTMLElement | SVGElement) => {
+  const view = editor.ownerDocument.defaultView;
+  const width = Math.max(editor.getBoundingClientRect().width, editor.scrollWidth);
+  const room = (view?.innerWidth ?? 0) - 18;
+  if (!width || room <= 0 || width <= room) return;
+
+  // Its own width, so a block that fills the window shrinks with its content
+  editor.style.width = `${width}px`;
+  editor.style.zoom = String(room / width);
+};
+
 /** Stacking order of floating windows; the last one touched is on top. */
 let topLayer = 1000;
 
