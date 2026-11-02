@@ -11,6 +11,11 @@ export interface Instrument {
   noteOff(pitch: number): void;
   /** Stop every note from a context time on, including ones scheduled later */
   stopAll(when: number): void;
+  /**
+   * True when it makes sound from the main thread after its notes reach it, as some
+   * WAM instruments do. Offline renders then pause at each note to let it catch up.
+   */
+  readonly mainThread?: boolean;
   /** Its settings, as saved in the track's instrument choice */
   getState?(): unknown;
   setState?(state: unknown): void;
