@@ -13,3 +13,4 @@ export * from './inserts.ts';
 export * from './library.ts';
 export * from './browser.ts';
 export * from './piano-roll.ts';
+export * from './keys.ts';

@@ -3,14 +3,17 @@ import {
   filesSource,
   importAudioFiles,
   linkPlayback,
+  linkNoteRecorder,
   linkRecorder,
   listSource,
+  NoteRecorder,
   PluginRack,
   Recorder,
   curatedWams,
   curatedWamSource,
   sessionSource,
   StudioBrowser,
+  StudioKeys,
   StudioMixer,
   StudioPianoRoll,
   StudioTimeline,
@@ -23,6 +26,8 @@ import { demoSounds, loadSample } from './sample.ts';
 
 const engine = new AudioEngine();
 const recorder = new Recorder(engine);
+// Records notes played on the keys onto instrument tracks
+const notes = new NoteRecorder(engine);
 const plugins = new PluginRack(engine);
 
 // Instrument tracks play the built-in synth and drums, or a WAM instrument by URL
@@ -41,8 +46,10 @@ const timeline = new StudioTimeline('#timeline', {
 const wams = { base: new URL('/wams/', location.href).href };
 const catalog = curatedWams(wams);
 const mixer = new StudioMixer('#timeline', { timeline, engine, plugins, catalog, hidden: true });
-// Opens on a double-click on a note clip
-const pianoRoll = new StudioPianoRoll('#timeline', { timeline, engine, hidden: true });
+// Play instrument tracks on screen, from the computer keyboard (A to ;) or a MIDI device
+const keys = new StudioKeys('#timeline', { timeline, engine, recorder, notes, hidden: true });
+// Opens on a double-click on a note clip; its Keys button shows the keys
+const pianoRoll = new StudioPianoRoll('#timeline', { timeline, engine, keys, hidden: true });
 const drawWaveform = (id: string, buffer: AudioBuffer) => void waveforms.get(`library:${id}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks));
 const browser = new StudioBrowser('#timeline', {
   timeline,
@@ -62,7 +69,9 @@ const toolbar = new StudioToolbar('#toolbar', {
   engine,
   mixer,
   browser,
+  keys,
   recorder,
+  notes,
   plugins,
   app: { name: 'Toneflix Studio', id: 'toneflix-studio-demo', version: '0.4', description: 'Demo session', copyright: '© Toneflix', extension: 'tfstudio' },
   onProjectSource: (id, buffer) => void waveforms.get(`project:${id}:${buffer.length}`, () => buffer).then((peaks) => timeline.setSource({ id }, peaks)),
@@ -72,5 +81,6 @@ loadSample(timeline, { engine, waveforms });
 timeline.showAutomation('keys', 'volume');
 linkPlayback(timeline, engine);
 linkRecorder(timeline, recorder, { waveforms });
+linkNoteRecorder(timeline, notes);
 
-Object.assign(window, { timeline, engine, mixer, pianoRoll, browser, recorder, plugins, toolbar, StudioToolbar });
+Object.assign(window, { timeline, engine, mixer, pianoRoll, keys, notes, browser, recorder, plugins, toolbar, StudioToolbar });

@@ -189,7 +189,7 @@ export const CONTROL_STYLES = `
 .tfs-knob-dial::after { content: ''; position: absolute; left: 50%; top: 3px; width: 2px; height: 9px; margin-left: -1px; border-radius: 1px; background: var(--clip, #e8e8ea); }
 .tfs-roll { --tfs-roll-row: 14px; --tfs-roll-keys: 56px; display: flex; flex-direction: column; height: var(--tfs-roll-height, 340px); box-sizing: border-box; border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-roll-bg, #141418); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
 .tfs-roll[hidden] { display: none; }
-.tfs-roll--overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 30; max-height: 100%; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.45); animation: tfs-mixer-in 0.18s ease-out; }
+.tfs-roll--overlay { position: absolute; left: 0; right: 0; bottom: var(--tfs-keys-offset, 0px); z-index: 30; max-height: 100%; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.45); animation: tfs-mixer-in 0.18s ease-out; }
 @media (prefers-reduced-motion: reduce) { .tfs-roll--overlay { animation: none; } }
 .tfs-roll--drums { --tfs-roll-keys: 96px; }
 .tfs-roll-bar { display: flex; flex: none; align-items: center; gap: 4px; padding: 4px 6px 4px 12px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-mixer-bg, #111114); }
@@ -274,6 +274,30 @@ button.tfs-steps-name:hover, button.tfs-steps-name:focus-visible { color: var(--
 .tfs-step--playing { outline: 2px solid rgba(255, 255, 255, 0.55); outline-offset: -1px; }
 @media (pointer: coarse) { .tfs-steps-table { --tfs-step: 32px; } .tfs-roll-view { height: 34px; } }
 @media (max-width: 600px) { .tfs-steps-table { --tfs-steps-name: 64px; } }
+.tfs-keys { display: flex; flex-direction: column; box-sizing: border-box; border-top: 1px solid var(--tfs-mixer-line, rgba(255, 255, 255, 0.1)); background: var(--tfs-roll-bg, #141418); color: var(--tfs-toolbar-text, #e8e8ea); font: 12px/1.3 system-ui, sans-serif; }
+.tfs-keys[hidden] { display: none; }
+.tfs-keys--overlay { position: absolute; left: 0; right: 0; bottom: 0; z-index: 31; box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.45); animation: tfs-mixer-in 0.18s ease-out; }
+@media (prefers-reduced-motion: reduce) { .tfs-keys--overlay { animation: none; } }
+.tfs-keys--recording .tfs-roll-title { color: #ff4d5e; }
+.tfs-keys-octave { display: inline-flex; flex: none; align-items: center; gap: 4px; }
+.tfs-keys-value { min-width: 28px; text-align: center; color: var(--tfs-display-muted, #9a9aa2); font-variant-numeric: tabular-nums; }
+.tfs-keys-velocity input { width: 80px; accent-color: var(--clip, #4f9cf9); }
+.tfs-roll-text[aria-pressed="true"] { border-color: var(--clip, #4f9cf9); color: var(--clip, #4f9cf9); }
+.tfs-keys-midi--none { opacity: 0.6; }
+.tfs-keys-scroller { overflow-x: auto; overscroll-behavior: contain; padding: 8px 12px 12px; }
+.tfs-keys-scroller[hidden] { display: none; }
+.tfs-keys-board { position: relative; height: var(--tfs-keys-height, 120px); min-width: calc(var(--whites) * 34px); touch-action: none; user-select: none; -webkit-user-select: none; }
+.tfs-keys-key { position: absolute; top: 0; box-sizing: border-box; cursor: pointer; }
+.tfs-keys-key--white { left: calc(var(--i) * 100% / var(--whites)); width: calc(100% / var(--whites)); height: 100%; border: 1px solid #2a2a30; border-radius: 0 0 6px 6px; background: #ececf0; }
+.tfs-keys-key--black { z-index: 1; left: calc(var(--i) * 100% / var(--whites) - 100% / var(--whites) * 0.31); width: calc(100% / var(--whites) * 0.62); height: 62%; border-radius: 0 0 4px 4px; background: #1d1d22; box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.08); }
+.tfs-keys-key--down.tfs-keys-key--white { background: color-mix(in srgb, var(--clip, #4f9cf9) 55%, #ececf0); }
+.tfs-keys-key--down.tfs-keys-key--black { background: var(--clip, #4f9cf9); }
+.tfs-keys-key::after { position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; font-size: 10px; line-height: 1; pointer-events: none; content: attr(data-letter); color: #8a8a94; }
+.tfs-keys-key--black::after { color: #8a8a94; bottom: 5px; }
+.tfs-keys-key[data-name]::before { position: absolute; left: 0; right: 0; bottom: 20px; text-align: center; font-size: 10px; font-weight: 600; line-height: 1; pointer-events: none; content: attr(data-name); color: #55555e; }
+.tfs-keys-empty { padding: 20px 12px; color: var(--tfs-display-muted, #9a9aa2); }
+@media (max-width: 600px) { .tfs-keys-velocity { display: none; } }
+@media (pointer: coarse) { .tfs-keys-key::after { content: none; } .tfs-keys-board { --tfs-keys-height: 140px; min-width: calc(var(--whites) * 40px); } }
 `;
 
 /** Add the control styles to a document once. */
