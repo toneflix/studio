@@ -257,3 +257,25 @@ test('a track loses its instrument when it stops asking for one', async () => {
   assert.equal(engine.instrument('keys'), null);
   engine.destroy();
 });
+
+test('instruments look samples up in the engine as they play', async () => {
+  const { context } = fakeContext();
+  const fake = fakeInstrument();
+  let lookup: ((source: string) => AudioBuffer | undefined) | null = null;
+  const engine = new AudioEngine({
+    context: context as unknown as BaseAudioContext,
+    stopAtEnd: false,
+    instruments: (_choice, _context, _track, samples) => {
+      lookup = samples;
+      return fake.instrument;
+    },
+  });
+  const buffer = { duration: 1 } as AudioBuffer;
+
+  engine.load({ tracks: [{ id: 'pads', name: 'Pads', instrument: { id: 'sampler', state: { samples: [{ source: 'kick', root: 60 }] } } }], clips: [] });
+  await engine.instrumentsReady();
+  assert.equal(lookup!('kick'), undefined);
+  engine.setBuffer('kick', buffer);
+  assert.equal(lookup!('kick'), buffer);
+  engine.destroy();
+});

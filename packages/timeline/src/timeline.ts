@@ -158,6 +158,7 @@ export interface InstrumentTrackKind {
 export const DEFAULT_INSTRUMENT_TRACKS: InstrumentTrackKind[] = [
   { label: 'Instrument track', name: 'Synth {n}', instrument: { id: 'synth' } },
   { label: 'Drum track', name: 'Drums {n}', instrument: { id: 'drums' } },
+  { label: 'Sampler track', name: 'Sampler {n}', instrument: { id: 'sampler' } },
 ];
 
 export interface TrackLabels {

@@ -222,6 +222,8 @@ export const CONTROL_STYLES = `
 .tfs-roll-key--down { background: var(--clip, #4f9cf9); color: #fff; }
 .tfs-roll--drums .tfs-roll-key { justify-content: flex-start; padding-left: 6px; background: #1f1f24; color: var(--tfs-display-muted, #9a9aa2); }
 .tfs-roll--drums .tfs-roll-key--named { background: #2b2b33; color: var(--tfs-toolbar-text, #e8e8ea); font-size: 10px; }
+.tfs-roll--sampled { --tfs-roll-keys: 96px; }
+.tfs-roll .tfs-roll-key--sample { justify-content: flex-start; padding-left: 6px; background: color-mix(in srgb, var(--clip, #4f9cf9) 70%, #1f1f24); color: #fff; font-size: 10px; text-overflow: ellipsis; }
 .tfs-roll-area { position: relative; flex: none; width: var(--tfs-roll-width, 0px); height: var(--tfs-roll-height-px, 0px); outline: none; overflow: hidden; touch-action: pan-x pan-y; background: repeating-linear-gradient(to bottom, var(--tfs-roll-lane, #1d1d22) 0 calc(var(--tfs-roll-row) - 1px), rgba(0, 0, 0, 0.35) calc(var(--tfs-roll-row) - 1px) var(--tfs-roll-row)); cursor: crosshair; }
 .tfs-roll-area:focus-visible { box-shadow: inset 0 0 0 2px var(--tfs-toolbar-active, #03bfff); }
 .tfs-roll-lines { position: absolute; inset: 0; pointer-events: none; }
@@ -244,7 +246,7 @@ export const CONTROL_STYLES = `
   .tfs-roll-snap select, .tfs-roll-text { height: 36px; }
   .tfs-roll-note::after { width: 5px; }
 }
-@media (max-width: 600px) { .tfs-roll { --tfs-roll-keys: 44px; height: var(--tfs-roll-height, 60vh); } .tfs-roll--drums { --tfs-roll-keys: 80px; } }
+@media (max-width: 600px) { .tfs-roll { --tfs-roll-keys: 44px; height: var(--tfs-roll-height, 60vh); } .tfs-roll--drums, .tfs-roll--sampled { --tfs-roll-keys: 80px; } }
 .tfs-roll-views { display: inline-flex; flex: none; padding: 2px; margin-right: 6px; border-radius: 8px; background: rgba(255, 255, 255, 0.06); }
 .tfs-roll-view { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: none; color: var(--tfs-display-muted, #9a9aa2); font: 600 12px/1 system-ui, sans-serif; cursor: pointer; }
 .tfs-roll-view[aria-pressed='true'] { background: var(--tfs-toolbar-active, #03bfff); color: var(--tfs-toolbar-active-text, #03141c); }
@@ -258,7 +260,12 @@ export const CONTROL_STYLES = `
 .tfs-steps-scroller { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 0 12px 12px 0; }
 .tfs-steps-table { display: flex; flex-direction: column; gap: 3px; width: max-content; user-select: none; }
 .tfs-steps-row { display: flex; gap: 3px; }
-.tfs-steps-name { position: sticky; left: 0; z-index: 1; flex: none; width: var(--tfs-steps-name, 84px); padding: 0 8px 0 12px; overflow: hidden; background: var(--tfs-roll-bg, #141418); color: var(--tfs-toolbar-text, #e8e8ea); font-size: 11px; line-height: var(--tfs-step, 24px); white-space: nowrap; text-overflow: ellipsis; }
+button.tfs-steps-name { cursor: pointer; }
+button.tfs-steps-name:hover, button.tfs-steps-name:focus-visible { color: var(--clip, #4f9cf9); }
+.tfs-steps-row--sample .tfs-steps-name { color: var(--clip, #4f9cf9); font-weight: 600; }
+.tfs-steps-add { position: sticky; left: 0; margin: 6px 0 0 12px; padding: 4px 10px; border: 1px dashed var(--tfs-mixer-line, rgba(255, 255, 255, 0.25)); border-radius: 6px; background: transparent; color: var(--tfs-display-muted, #9a9aa2); font: inherit; font-size: 11px; cursor: pointer; }
+.tfs-steps-add:hover, .tfs-steps-add:focus-visible { color: var(--tfs-toolbar-text, #e8e8ea); border-color: var(--clip, #4f9cf9); }
+.tfs-steps-name { box-sizing: border-box; border: 0; border-radius: 0; margin: 0; font-family: inherit; text-align: left; position: sticky; left: 0; z-index: 1; flex: none; width: var(--tfs-steps-name, 84px); padding: 0 8px 0 12px; overflow: hidden; background: var(--tfs-roll-bg, #141418); color: var(--tfs-toolbar-text, #e8e8ea); font-size: 11px; line-height: var(--tfs-step, 24px); white-space: nowrap; text-overflow: ellipsis; }
 .tfs-step { flex: none; width: var(--tfs-step, 24px); height: var(--tfs-step, 24px); box-sizing: border-box; border-radius: 4px; background: #26262c; cursor: pointer; touch-action: pan-x pan-y; }
 .tfs-step--odd { background: #1e1e23; }
 .tfs-step:hover { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }

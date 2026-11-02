@@ -76,7 +76,20 @@ export interface AudioTarget {
   time?: number;
 }
 
-const DRAG_TYPE = 'application/x-toneflix-library-item';
+export const DRAG_TYPE = 'application/x-toneflix-library-item';
+
+/** A library sound being dragged out of a browser. */
+export interface DraggedSound {
+  name: string;
+  /** The source id it gets in the session */
+  source: string;
+  load(): Promise<AudioBuffer>;
+}
+
+let dragged: DraggedSound | null = null;
+
+/** The library sound being dragged out of a browser right now, if any, for drop targets outside the timeline. */
+export const draggedSound = () => dragged;
 
 const formatDuration = (seconds: number) =>
   seconds < 10 ? `${seconds.toFixed(1)}s` : `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
@@ -441,12 +454,14 @@ export class StudioBrowser extends Emitter<BrowserEvents> {
 
     row.addEventListener('dragstart', (e) => {
       this.dragging = { source, item };
+      dragged = item.kind === 'audio' ? { name: item.name, source: this.sourceId(item, source), load: () => this.bufferOf(item, source, false) } : null;
       e.dataTransfer?.setData(DRAG_TYPE, `${source.id}\n${item.id}`);
       e.dataTransfer?.setData('text/plain', item.name);
       if (e.dataTransfer) e.dataTransfer.effectAllowed = 'copy';
     });
     row.addEventListener('dragend', () => {
       this.dragging = null;
+      dragged = null;
     });
 
     return row;

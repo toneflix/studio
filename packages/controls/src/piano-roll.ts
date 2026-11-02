@@ -12,13 +12,17 @@ import {
   quantizeNotes,
   replaceNotes,
   resizeNotes,
+  uid,
+  updateTrack,
   type Clip,
   type Note,
+  type SampleRef,
   type SnapTo,
+  type Track,
 } from '@toneflix/studio-core';
-import { resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
+import { openMenu, resolveContainer, type ContainerTarget, type StudioTimeline } from '@toneflix/studio-timeline';
 import { renderIcon, type IconSet } from './icons.ts';
-import { StepGrid, type StepGridLabels } from './step-grid.ts';
+import { mayCarrySample, pickAudioFile, sampleInputOf, StepGrid, type SampleInput, type StepGridLabels } from './step-grid.ts';
 import { injectControlStyles } from './styles.ts';
 
 export interface PianoRollLabels extends StepGridLabels {
@@ -38,6 +42,10 @@ export interface PianoRollLabels extends StepGridLabels {
   zoomOut: string;
   keys: string;
   velocity: string;
+  /** A sampler track's samples menu */
+  samples: string;
+  /** Adds a sample on a key; `{note}` is the key last played */
+  addSampleOn: string;
   /** Shown when no note clip is open */
   empty: string;
 }
@@ -60,6 +68,13 @@ export const DEFAULT_PIANO_ROLL_LABELS: PianoRollLabels = {
   zoomOut: 'Zoom out',
   keys: 'Keys',
   velocity: 'Velocity',
+  samples: 'Samples',
+  addSampleOn: 'Add sample on {note}…',
+  loadSample: 'Load sample…',
+  builtInSound: 'Use built-in sound',
+  removeSample: 'Remove sample',
+  removePad: 'Remove pad',
+  addPad: 'Add pad',
   empty: 'Double-click a note clip to edit its notes.',
 };
 
@@ -82,6 +97,8 @@ export interface PianoRollOptions {
   beatWidth?: number;
   /** Open drum track clips in the step grid instead of on keys; true unless given */
   stepsForDrums?: boolean;
+  /** Gets the decoded audio of each sample loaded, for example to upload it */
+  onSource?: (id: string, buffer: AudioBuffer) => void;
 }
 
 export interface PianoRollEvents extends Record<string, unknown> {
@@ -149,11 +166,16 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
   private lastTap: { index: number; time: number } | null = null;
   private frameKey = '';
   private drums: boolean | null = null;
+  private keysKey = '';
   private frame = 0;
   private view: 'notes' | 'steps' = 'notes';
   private readonly stepsForDrums: boolean;
   private readonly steps: StepGrid;
   private readonly viewButtons: Record<'notes' | 'steps', HTMLButtonElement>;
+  private readonly samplesButton: HTMLButtonElement;
+  private readonly onSource?: PianoRollOptions['onSource'];
+  /** The key last pressed, where a sampler's next sample goes */
+  private lastKey = 60;
 
   constructor(target: ContainerTarget, options: PianoRollOptions) {
     super();
@@ -188,6 +210,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.grid = new Grid({ snap: options.snap ?? '1/16' });
     this.beatWidth = options.beatWidth ?? 64;
     this.stepsForDrums = options.stepsForDrums ?? true;
+    this.onSource = options.onSource;
     injectControlStyles(doc);
 
     this.root = el('div', 'tfs-roll');
@@ -239,6 +262,11 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
       zoomOut: button('zoomOut', bar),
       zoomIn: button('zoomIn', bar),
     };
+    this.samplesButton = el('button', 'tfs-roll-text', bar);
+    this.samplesButton.type = 'button';
+    this.samplesButton.textContent = this.labels.samples;
+    this.samplesButton.setAttribute('aria-haspopup', 'menu');
+    this.samplesButton.addEventListener('click', () => this.openSamplesMenu());
     el('span', 'tfs-roll-gap', bar);
     button('close', bar).addEventListener('click', () => this.hide());
     this.buttons.quantize.addEventListener('click', () => this.quantize());
@@ -365,6 +393,119 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     return this.timeline.state.tracks.find((track) => track.id === clip.track)?.instrument?.id === 'drums';
   }
 
+  private trackOf(clip: Clip | null = this.clip) {
+    return clip ? this.timeline.state.tracks.find((track) => track.id === clip.track) : undefined;
+  }
+
+  /** How the open clip's instrument takes samples: per drum pad, per sampler root note, or not at all. */
+  private sampling(): 'pads' | 'zones' | null {
+    const id = this.trackOf()?.instrument?.id;
+
+    return id === 'drums' ? 'pads' : id === 'sampler' ? 'zones' : null;
+  }
+
+  /** The open clip's instrument samples by note number. */
+  private samples(track: Track | undefined = this.trackOf()) {
+    const samples = (track?.instrument?.state as { samples?: unknown } | undefined)?.samples;
+    const map = new Map<number, SampleRef>();
+
+    if (Array.isArray(samples)) for (const sample of samples as SampleRef[]) map.set(sample.root ?? 60, sample);
+    else if (samples && typeof samples === 'object') for (const [pitch, sample] of Object.entries(samples as Record<string, SampleRef>)) map.set(Number(pitch), sample);
+
+    return map;
+  }
+
+  /** Decode a file or library sound into the engine, as a sample source. */
+  private async sourceOf(input: SampleInput) {
+    if (input instanceof File) {
+      const buffer = await this.engine.context.decodeAudioData(await input.arrayBuffer());
+
+      return { source: uid('sample'), name: input.name.replace(/\.[^.]+$/, ''), buffer };
+    }
+
+    return { source: input.source, name: input.name, buffer: await input.load() };
+  }
+
+  /** Put a sample on a note of the open clip's instrument, or take it off with null, as one undo step. */
+  async useSample(pitch: number, input: SampleInput | null) {
+    const track = this.trackOf();
+    const sampling = this.sampling();
+    if (!track?.instrument || !sampling || !this.editable) return;
+
+    let sample: SampleRef | null = null;
+
+    if (input) {
+      const { source, name, buffer } = await this.sourceOf(input);
+
+      if (this.engine.getBuffer(source) !== buffer) {
+        this.engine.setBuffer(source, buffer);
+        this.timeline.setSource({ id: source, duration: buffer.duration });
+        this.onSource?.(source, buffer);
+      }
+
+      sample = sampling === 'zones' ? { source, name, root: pitch } : { source, name };
+    }
+
+    this.writeSamples(track.id, input ? 'Load sample' : 'Remove sample', (samples) => {
+      samples.delete(pitch);
+      if (sample) samples.set(pitch, sample);
+    });
+    if (sample) this.audition(pitch, this.lastVelocity);
+  }
+
+  /** Change a track's samples and maybe its clips' notes, as one undo step. */
+  private writeSamples(id: string, label: string, change: (samples: Map<number, SampleRef>) => void, notes?: (clip: Clip) => Note[]) {
+    this.timeline.model.apply(label, (state) => {
+      const track = state.tracks.find((t) => t.id === id);
+      if (!track?.instrument) return state;
+
+      const samples = this.samples(track);
+
+      change(samples);
+
+      const zones = track.instrument.id === 'sampler';
+      const value = zones ? [...samples.values()] : Object.fromEntries([...samples].sort((a, b) => a[0] - b[0]));
+      const next = updateTrack(state, id, { instrument: { ...track.instrument, state: { ...(track.instrument.state as object | undefined), samples: value } } });
+
+      return notes ? { ...next, clips: next.clips.map((clip) => (clip.track === id && clip.notes ? { ...clip, notes: notes(clip) } : clip)) } : next;
+    });
+  }
+
+  /** Take a drum pad's sample off and delete the track's notes on it. */
+  private removePad(pitch: number) {
+    const track = this.trackOf();
+
+    if (track && this.editable) {
+      this.writeSamples(
+        track.id,
+        'Remove pad',
+        (samples) => samples.delete(pitch),
+        (clip) => clip.notes!.filter((note) => note.pitch !== pitch),
+      );
+    }
+  }
+
+  /** A sampler's samples: add one on the last key played, or remove one. */
+  private openSamplesMenu() {
+    if (this.sampling() !== 'zones') return;
+
+    const box = this.samplesButton.getBoundingClientRect();
+    const key = this.lastKey;
+    const add = {
+      label: this.labels.addSampleOn.replace('{note}', noteName(key)),
+      onSelect: () => void pickAudioFile(this.doc).then((file) => file && this.useSample(key, file)),
+      disabled: !this.editable,
+    };
+    const remove = [...this.samples()].map(([pitch, sample]) => ({
+      label: `${this.labels.removeSample}: ${sample.name ?? sample.source} (${noteName(pitch)})`,
+      onSelect: () => void this.useSample(pitch, null),
+      disabled: !this.editable,
+      danger: true,
+    }));
+
+    openMenu(this.doc, { x: box.left, y: box.bottom + 4 }, [add, ...remove], this.labels.samples);
+  }
+
   /** Seconds in one step of the step grid: the snap when it is finer than a beat, otherwise a sixteenth. */
   private stepLength() {
     const section = this.grid.sectionAt(this.origin);
@@ -399,6 +540,10 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
         }));
       },
       audition: (pitch: number, velocity: number) => this.audition(pitch, velocity),
+      sampling: () => this.sampling(),
+      samples: () => this.samples(),
+      useSample: (pitch: number, input: SampleInput | null) => void this.useSample(pitch, input),
+      removePad: (pitch: number) => this.removePad(pitch),
     };
   }
 
@@ -487,6 +632,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     keys.addEventListener('pointerdown', (e) => {
       const key = (e.target as HTMLElement).closest<HTMLElement>('.tfs-roll-key');
       const instrument = this.instrument();
+      if (key) this.lastKey = Number(key.dataset.pitch);
       if (!key || !instrument) return;
 
       const pitch = Number(key.dataset.pitch);
@@ -503,6 +649,23 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
       target.addEventListener('pointermove', (e) => this.onMove(e));
       target.addEventListener('pointerup', (e) => this.onUp(e, false));
       target.addEventListener('pointercancel', (e) => this.onUp(e, true));
+    }
+
+    // An audio file or library sound dropped on a key or row puts a sample on that note
+    for (const target of [keys, area]) {
+      target.addEventListener('dragover', (e) => {
+        if (!this.sampling() || !this.editable || !mayCarrySample(e)) return;
+
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'copy';
+      });
+      target.addEventListener('drop', (e) => {
+        const input = sampleInputOf(e);
+        if (!this.sampling() || !this.editable || !input) return;
+
+        e.preventDefault();
+        void this.useSample(this.pitchAt(e.clientY), input);
+      });
     }
 
     area.addEventListener('keydown', (e) => this.onKey(e));
@@ -911,6 +1074,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     for (const b of Object.values(this.buttons)) b.disabled = !clip;
 
     this.root.classList.toggle('tfs-roll--steps', this.view === 'steps');
+    this.samplesButton.hidden = !clip || this.sampling() !== 'zones';
     this.viewButtons.notes.setAttribute('aria-pressed', String(this.view === 'notes'));
     this.viewButtons.steps.setAttribute('aria-pressed', String(this.view === 'steps'));
 
@@ -934,24 +1098,32 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
     this.root.style.setProperty('--clip', track ? this.timeline.colorOf(track) : '#4f9cf9');
     this.buttons.delete.disabled = !this.picked.size || !this.editable;
     this.buttons.quantize.disabled = !clip.notes.length || !this.editable || this.grid.snap === 'off';
-    this.renderKeys(track?.instrument?.id === 'drums');
+    this.renderKeys(track?.instrument?.id === 'drums', this.samples(track ?? undefined));
     this.renderFrame(clip);
     this.renderNotes();
     this.placePlayhead();
   }
 
-  private renderKeys(drums: boolean) {
-    if (drums === this.drums) return;
+  /** Name the keys: drum names on drum tracks, sample names where samples sit, C notes otherwise. */
+  private renderKeys(drums: boolean, samples: ReadonlyMap<number, SampleRef>) {
+    const names = [...samples].map(([pitch, sample]) => `${pitch}:${sample.name ?? sample.source}`).join('\n');
+    const key = `${drums}|${names}`;
 
+    if (key === this.keysKey) return;
+
+    this.keysKey = key;
     this.drums = drums;
     this.root.classList.toggle('tfs-roll--drums', drums);
+    this.root.classList.toggle('tfs-roll--sampled', !drums && samples.size > 0);
 
-    this.keyEls.forEach((key, pitch) => {
-      const name = drums ? DRUM_NAMES[pitch] : pitch % 12 === 0 ? noteName(pitch) : '';
+    this.keyEls.forEach((el, pitch) => {
+      const sample = samples.get(pitch);
+      const name = sample ? (sample.name ?? sample.source) : drums ? DRUM_NAMES[pitch] : pitch % 12 === 0 ? noteName(pitch) : '';
 
-      key.textContent = name ?? '';
-      key.title = drums && name ? `${name} (${noteName(pitch)})` : noteName(pitch);
-      key.classList.toggle('tfs-roll-key--named', !!name);
+      el.textContent = name ?? '';
+      el.title = (drums || sample) && name ? `${name} (${noteName(pitch)})` : noteName(pitch);
+      el.classList.toggle('tfs-roll-key--named', !!name);
+      el.classList.toggle('tfs-roll-key--sample', !!sample);
     });
   }
 
@@ -1024,7 +1196,7 @@ export class StudioPianoRoll extends Emitter<PianoRollEvents> {
       const picked = this.picked.has(i);
 
       element.dataset.index = String(i);
-      element.title = `${this.drums ? (DRUM_NAMES[note.pitch] ?? noteName(note.pitch)) : noteName(note.pitch)} · ${Math.round(note.velocity * 127)}`;
+      element.title = `${this.keyEls[note.pitch]?.title ?? noteName(note.pitch)} · ${Math.round(note.velocity * 127)}`;
       element.style.transform = `translate(${note.start * pps}px, ${(MAX_PITCH - note.pitch) * this.rowHeight}px)`;
       element.style.width = `${Math.max(4, note.duration * pps)}px`;
       element.style.setProperty('--v', String(note.velocity));

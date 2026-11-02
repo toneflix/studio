@@ -437,7 +437,7 @@ export class AudioEngine extends Emitter<AudioEngineEvents> {
       const loading: Loaded = { id: choice.id, state: choice.state, instrument: null, ready: Promise.resolve(null) };
 
       loading.ready = Promise.resolve()
-        .then(() => this.factory(choice, this.context, track))
+        .then(() => this.factory(choice, this.context, track, (source) => this.buffers.get(source)))
         .then(
           (instrument) => {
             if (this.loaded.get(track.id) !== loading) {

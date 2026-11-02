@@ -222,8 +222,8 @@ export class PluginRack extends Emitter<PluginRackEvents> {
    * Pass it to `engine.setInstruments`.
    */
   instruments(fallback: InstrumentFactory = builtInInstruments): InstrumentFactory {
-    return async (choice, context, track) => {
-      const known = await fallback(choice, context, track);
+    return async (choice, context, track, samples) => {
+      const known = await fallback(choice, context, track, samples);
 
       return known ?? new WamInstrument(await this.create(context, choice.id, choice.state));
     };
