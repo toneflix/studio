@@ -1,7 +1,7 @@
 {
   "name": "@toneflix/studio-exchange",
   "version": "0.6.1",
-  "description": "Project exchange for Toneflix Studio: save sessions in the app's own format with plugins, or as REAPER projects, and open them again, with tracks, clips, fades, automation, markers and tempo.",
+  "description": "Project exchange for Toneflix Studio: save sessions in the app's own format with plugins, or as REAPER projects, and open them again, with tracks, clips, fades, automation, markers and tempo. Import and export instrument tracks as MIDI files.",
   "license": "MIT",
   "author": "Toneflix <code@toneflix.com.ng>",
   "repository": {
@@ -16,6 +16,7 @@
   "keywords": [
     "daw",
     "reaper",
+    "midi",
     "rpp",
     "project",
     "audio",

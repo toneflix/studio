@@ -77,3 +77,25 @@ const { state, bpm, meter, mixer, files, notes } = fromReaper(rpp);
 `saveAppProject` and `saveReaperProject` save one format each, and `openReaperProject` opens REAPER projects only. An app project is a zip with `project.json` (a `ProjectManifest`) beside an `audio` folder of WAV files.
 
 `toReaper` names each source's file `audio/<source>.wav` unless you pass `file: (source) => path`. `fromReaper` gives every audio file a source id made from its file name, and `files` maps those ids to the paths in the project. `zip(entries)` and `unzip(bytes)` are there too, for packing your own bundles.
+
+## MIDI files
+
+Instrument tracks also go out and come back as Standard MIDI Files (`.mid`), which every DAW and notation app opens. The toolbar's **File** menu has **Export MIDI (.mid)** when there is an instrument track, and **Import MIDI…** when people can add tracks.
+
+Export writes one MIDI track per instrument track with its note clips, drum tracks on channel 10 and the others on channels of their own. The tempo map, meters and markers go into the file's first track. Only the notes a clip plays are written, so the hidden parts of a trimmed clip stay behind, and a clip's gain scales its velocities.
+
+Import adds an instrument track with one note clip for each track and channel in the file, from the playhead. Channel 10 plays the drum kit and the rest play the synth. The notes keep their bars and beats on the project's tempo, so a file made at 90 BPM plays at the project's 120 BPM in step with the rest.
+
+```ts
+import { exportMidi, importMidi, fromMidi, toMidi, midiClip } from '@toneflix/studio';
+
+const { blob, fileName } = exportMidi(timeline, { name: 'My song' });
+const tracks = await importMidi(file, timeline, { at: timeline.time, synth: { id: wamUrl } });
+
+// Or the bytes alone, for example on a server
+const bytes = toMidi(state, { bpm: 120, meter: [4, 4], tracks: ['bass'] });
+const { bpm, meter, tempo, markers, parts, duration } = fromMidi(bytes);
+const clip = midiClip(parts[0], 'bass', 0, timeline.grid, duration);
+```
+
+`fromMidi` times notes in seconds on the file's own tempo map, which comes back as `bpm`, `meter` and `tempo`; pass `{ grid }` to time them on another grid instead. Each part has a `name`, its `channel`, `drums` for channel 10, and its `notes`. Files timed in SMPTE frames are not read.

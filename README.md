@@ -83,7 +83,7 @@ Install `@toneflix/studio` for everything, or only the parts your app uses. Ever
 | [`@toneflix/studio-recorder`](packages/recorder) | `Recorder`: records a microphone or line input onto a track, lined up with what was playing; `NoteRecorder` records notes played live |
 | [`@toneflix/studio-plugins`](packages/plugins) | `PluginRack`: Web Audio Module (WAM 2) plugins on tracks and the master, live, with their editors, saved with the project and in the mixdown |
 | [`@toneflix/studio-wams`](packages/wams) | `curatedWams` and `curatedWamSource`: reviewed Web Audio Module effects, served pinned from jsDelivr |
-| [`@toneflix/studio-exchange`](packages/exchange) | `saveProject` and `openProject`: sessions in the app's own format with plugins, or to and from REAPER, with tracks, clips, fades, automation, markers, tempo and the audio |
+| [`@toneflix/studio-exchange`](packages/exchange) | `saveProject` and `openProject`: sessions in the app's own format with plugins, or to and from REAPER, with tracks, clips, fades, automation, markers, tempo and the audio; instrument tracks to and from MIDI files |
 | [`@toneflix/studio-controls`](packages/controls) | `StudioToolbar`, `trackStrip`, `StudioMixer`, `StudioBrowser`, `StudioPianoRoll` and `StudioKeys`: playback, recording and editing buttons, track arm, mute, solo and volume, a mixer with plugin slots, a browser of sounds and plugins from any source, a piano roll and step sequencer, and keys with MIDI input, with Lucide icons you can replace |
 | [`@toneflix/studio-timeline`](packages/timeline) | `StudioTimeline`, the editor view. Restyle it with the `--tfs-*` CSS variables or fill track headers with `renderHeader` |
 
